@@ -9,6 +9,7 @@ export const MODES = {
   frigio: { name: 'Frígio', steps: [0, 1, 3, 5, 7, 8, 10], desc: 'Antigo e misterioso, por causa da segunda nota bem próxima da primeira.' },
   mixo:   { name: 'Mixolídio', steps: [0, 2, 4, 5, 7, 9, 10], desc: 'Luminoso e festivo, com um toque arcaico.' },
   penta:  { name: 'Pentatônica', steps: [0, 2, 4, 7, 9], desc: 'Cinco notas, nenhuma tensa. Qualquer combinação soa bem.' },
+  jonio:  { name: 'Jônio (maior)', steps: [0, 2, 4, 5, 7, 9, 11], desc: 'A escala maior de hoje. Alegre e familiar; é a das canções.' },
 };
 
 // Values are 0–100. "ruina" is the combination chosen for Corredor Invertido.

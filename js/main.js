@@ -9,7 +9,7 @@ import { STEPS, createTutorial, startStep, progress } from './tutorial.js';
 import { fx, onLand, whileSliding, onHit, onInstantFlip, onMilestone, updateFx, clearFx } from './fx.js';
 
 const $ = id => document.getElementById(id);
-const VERSION_LABEL = 'Versão 0.24';
+const VERSION_LABEL = 'Versão 0.24.1';
 const cvs = $('game');
 const ctx = cvs.getContext('2d');
 let W = 0, H = 0, DPR = 1;
