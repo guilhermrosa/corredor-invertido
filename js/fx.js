@@ -42,6 +42,9 @@ export function whileSliding(dt, side) {
   while (slideAcc >= 1) { slideAcc--; puff(1, side, 0.2, 0.9, 0.7, DUST, 0.07); }
 }
 
+// a column or a roof block hitting the floor
+export function onThud(z) { puff(16, -1, z, 2.4, 1.6, DUST, 0.1); }
+
 // a hit: a short freeze, then stone chips burst from the obstacle's face
 export function onHit(S) {
   fx.hitStop = 0.09;

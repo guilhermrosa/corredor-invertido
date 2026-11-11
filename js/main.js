@@ -7,10 +7,10 @@ import * as audio from './audio.js';
 import * as stats from './stats.js';
 import * as ach from './achievements.js';
 import { STEPS, createTutorial, startStep, progress } from './tutorial.js';
-import { fx, onLand, whileSliding, onHit, onInstantFlip, onMilestone, updateFx, clearFx } from './fx.js';
+import { fx, onLand, onThud, whileSliding, onHit, onInstantFlip, onMilestone, updateFx, clearFx } from './fx.js';
 
 const $ = id => document.getElementById(id);
-const VERSION_LABEL = 'Versão 0.25';
+const VERSION_LABEL = 'Versão 0.26';
 const cvs = $('game');
 const ctx = cvs.getContext('2d');
 let W = 0, H = 0, DPR = 1;
@@ -92,6 +92,7 @@ const emit = (type, data) => {
   audio.sfx(type, data);
   if (type === 'hurt') return onHurt(data);
   if (type === 'land') onLand(data.side);
+  else if (type === 'thud') { onThud(data.z); shake = Math.max(shake, 0.12); }
   else if (type === 'milestone') onMilestone(data.metres);
   else if (type === 'flip') {
     buzz(12);

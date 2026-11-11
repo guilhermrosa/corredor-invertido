@@ -8,6 +8,7 @@
 import {
   HM, HW, PH, PL, OH, LOWH, PIT, G, JG, JV, AIR, HIT, RUIN_DIP,
   SLIDE_TIME, SLIDE_H, FAST_FALL, PORTAL_GAP, PORTAL_FROM, FLIP_V, LIVES, INVULN_TIME,
+  FALL_FROM, FALL_LEAD, TOPPLE_TIME, DROP_TIME, FALL_WOBBLE,
   SPEED_START, SPEED_MAX, SPEED_RAMP, clamp,
 } from './config.js';
 
@@ -15,7 +16,22 @@ import {
 // The ruined wall is drawn with a jagged top, so it only counts up to its lowest dip.
 // A fallen portal is solid from just above its gap all the way to the opposite surface,
 // so the only way past is to slide through the gap on its side.
+// How far a falling obstacle has fallen: 0 before (and during the wobble), 1 once down.
+// Eased in, like something pulled by gravity.
+export function fallAmount(o) {
+  if (!o.p) return 0;
+  const f = Math.max(0, Math.min(1, (o.p - FALL_WOBBLE) / (1 - FALL_WOBBLE)));
+  return f * f;
+}
+
 export function blockHitbox(o) {
+  // a toppling column only counts once it is nearly down across the path
+  if (o.topple && fallAmount(o) < 0.75) return null;
+  // a dropping roof block counts all the way down (it is solid while it falls)
+  if (o.drop && !o.landed) {
+    const top = OH - HIT.y, d = fallAmount(o) * (HM - top);
+    return { z0: o.z + HIT.z, z1: Math.max(o.z + HIT.z + 0.05, o.z + o.len - HIT.z), y0: HM - top - d, y1: HM - d };
+  }
   if (o.type === 'portal') {
     const gap = PORTAL_GAP + HIT.y;
     return {
@@ -27,6 +43,7 @@ export function blockHitbox(o) {
   }
   let top;
   if (o.h) top = o.h - HIT.low;
+  else if (o.drop) top = OH - HIT.y; // a dropped beam keeps its straight edge
   else if (o.side < 0) top = OH - RUIN_DIP - HIT.y * 0.5;
   else top = OH - HIT.y;
   return {
@@ -50,6 +67,8 @@ export function playerBox(S) {
 
 // What an obstacle is, in words the stats screen can show (see stats.js).
 export function obstacleKind(o) {
+  if (o.topple) return 'pillar';
+  if (o.drop) return 'drop';
   if (o.type === 'portal') return 'portal';
   if (o.type === 'hole') return o.open ? 'void' : 'hole';
   if (o.h) return 'low';
@@ -160,13 +179,16 @@ function spawn(S) {
     S.lastSide = side;
     const r2 = Math.random();
     let ob;
-    if (far > PORTAL_FROM && r2 < 0.15) ob = { type: 'portal', len: 0.6 + Math.random() * 0.4 };
+    if (far > FALL_FROM && r2 > 0.92) ob = { type: 'block', h: LOWH, topple: true, len: 0.5, fixedSide: -1 };
+    else if (far > FALL_FROM && r2 > 0.84) ob = { type: 'block', drop: true, len: 0.9 + Math.random() * 0.6, fixedSide: 1 };
+    else if (far > PORTAL_FROM && r2 < 0.15) ob = { type: 'portal', len: 0.6 + Math.random() * 0.4 };
     else if (r2 < 0.3) ob = { type: 'hole', len: 1.8 + Math.random() * 1.8 };
     else if (r2 < 0.5 && far > 40) ob = { type: 'block', h: LOWH, len: 0.6 + Math.random() * 0.7 };
     else ob = { type: 'block', len: Math.random() < 0.18 ? 3 + Math.random() * 3 : 0.8 + Math.random() * 1.4 };
     // a portal may need a flip and a slide in a row: give it extra room in front
     ob.z = S.nextZ + (ob.type === 'portal' ? sp * 0.3 : 0);
-    ob.side = side;
+    ob.side = ob.fixedSide || side;
+    if (ob.fixedSide) { S.lastSide = ob.side; S.sameRun = 0; }
     S.obs.push(ob);
     S.nextZ = ob.z + ob.len + sp * 0.55 + 1.6 + Math.random() * sp * 0.6;
   }
@@ -226,6 +248,20 @@ export function update(S, dt, emit, opts = {}) {
   for (const o of S.obs) o.z -= v;
   S.obs = S.obs.filter(o => o.z + o.len > -8);
   spawn(S);
+
+  // falling obstacles: start when the player gets close, wobble, fall, land
+  for (const o of S.obs) {
+    if (!(o.topple || o.drop) || o.landed) continue;
+    if (!o.p && o.z < S.speed * FALL_LEAD + 3) { o.p = 1e-6; emit('crack', { kind: obstacleKind(o) }); }
+    if (o.p) {
+      o.p = Math.min(1, o.p + dt / (o.topple ? TOPPLE_TIME : DROP_TIME));
+      if (o.p >= 1) {
+        o.landed = true;
+        if (o.drop) o.side = -1; // now it sits on the floor
+        emit('thud', { z: o.z + o.len / 2, kind: obstacleKind(o) });
+      }
+    }
+  }
   if (opts.live && Math.floor(S.dist / 100) > Math.floor(before / 100)) emit('milestone', { metres: Math.floor(S.dist / 100) * 100 });
 
   if (opts.autopilot && S.grounded) {
@@ -266,7 +302,7 @@ export function update(S, dt, emit, opts = {}) {
     if (o.spent) continue;
     if (o.type === 'block' || o.type === 'portal') {
       const hb = blockHitbox(o);
-      if (hb.z0 < PL - HIT.player && hb.z1 > HIT.player && pb.y0 < hb.y1 && pb.y1 > hb.y0) { hit(S, emit, 'block', o); return; }
+      if (hb && hb.z0 < PL - HIT.player && hb.z1 > HIT.player && pb.y0 < hb.y1 && pb.y1 > hb.y0) { hit(S, emit, 'block', o); return; }
     } else if (S.grounded && o.side === S.grav && mid > holeKillZone(o).z0 && mid < holeKillZone(o).z1) {
       hit(S, emit, o.open ? 'void' : 'hole', o);
       return;

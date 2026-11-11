@@ -6,7 +6,7 @@
 // so the backdrop shows through: open sky above, the sea far below.
 
 import { HM, HW, PH, PL, OH, HIT, RUIN_DIP, PORTAL_GAP, clamp, lerp, mix, rgb, COL } from './config.js';
-import { blockHitbox, holeKillZone, playerBox } from './sim.js';
+import { blockHitbox, holeKillZone, playerBox, fallAmount } from './sim.js';
 import { drawAxolotl } from './hero.js';
 
 const CAM_Z = -4.4, NEAR = 0.6, BASE = CAM_Z + NEAR;
@@ -207,7 +207,9 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     if (!(idx & 1) && zc > BASE && !missingAt(S.obs, -1, zc + COL_D / 2)) {
       const broken = missingAt(S.obs, 1, zc + COL_D / 2);
       const h = broken ? HM * (0.3 + 0.4 * hash(idx)) : HM - FRIEZE;
-      for (const s of [-1, 1]) {
+      // a toppling column takes the place of the left column near it
+      const replaced = S.obs.some(o => o.topple && Math.abs(o.z - zc) < 2.2);
+      for (const s of replaced ? [1] : [-1, 1]) {
         const x0 = s * COL_X0, x1 = s * COL_X1;
         quad(P(x0, 0, zc), P(x0, 0, zc + COL_D), P(x0, h, zc + COL_D), P(x0, h, zc), fog(COL.columnShade, zc));
         if (broken) {
@@ -264,6 +266,16 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       continue;
     }
     if (o.type !== 'block') continue;
+    if (o.topple) {
+      items.push({ kind: 'pillar', z0: o.z, z1: o.z + o.len, x0: -HW, x1: HW, y0: 0, y1: OH, col: COL.column, ang: fallAmount(o) * Math.PI / 2, wobble: o.p && o.p < 0.27 });
+      continue;
+    }
+    if (o.drop) {
+      // hangs from the roof, wobbles, then drops to the floor
+      const d = fallAmount(o) * (HM - OH) + (o.p && o.p < 0.27 ? 0.03 * Math.sin(t * 70) : 0);
+      items.push({ x0: -HW, x1: HW, y0: HM - OH - d, y1: HM - d, z0: o.z, z1: o.z + o.len, col: COL.lintel, kind: 'lintel', seed: o.len });
+      continue;
+    }
     const bh = o.h || OH;
     const kind = o.h ? (hash(o.len * 97) < 0.5 ? 'wall' : 'drum') : (o.side < 0 ? 'ruin' : 'lintel');
     const col = { wall: COL.wall, drum: COL.column, ruin: COL.ruin, lintel: COL.lintel }[kind];
@@ -356,9 +368,9 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     };
     for (const o of S.obs) {
       if (o.z > FAR) continue;
-      if (o.type === 'block') {
+      if (o.type === 'block' || o.type === 'portal') {
         const hb = blockHitbox(o);
-        box(-HW, HW, hb.y0, hb.y1, hb.z0, hb.z1, 'rgba(220,40,40,1)');
+        if (hb) box(-HW, HW, hb.y0, hb.y1, hb.z0, hb.z1, 'rgba(220,40,40,1)');
       } else {
         const kz = holeKillZone(o), sy = o.side < 0 ? 0 : HM;
         box(-HW, HW, sy, sy, kz.z0, kz.z1, 'rgba(240,140,20,1)');
@@ -368,7 +380,32 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   }
   ctx.restore();
 
+  // A column of the colonnade toppling across the path: it turns as one piece around the
+  // corner of its base nearest the lane, like a tree falling, and lies on the floor when down.
+  function drawPillar(b, z0) {
+    const L = HM - FRIEZE, Wd = 0.5;
+    const a = b.ang + (b.wobble ? 0.03 * Math.sin(t * 60) : 0);
+    const ax = Math.sin(a), ay = Math.cos(a);   // along the column
+    const px = Math.cos(a), py = -Math.sin(a);  // across it, toward its far side
+    const piv = [-(HW + 0.05), 0];
+    const at = (u, w) => [piv[0] + ax * u - px * w, piv[1] + ay * u - py * w];
+    const p3 = ([x, y], z) => P(x, y, z);
+    const A = at(0, 0), B = at(L, 0), C = at(L, Wd), D = at(0, Wd);
+    // the side of the column the camera can see: its lane-facing side while standing, its top once low
+    const side = a < Math.PI / 4 ? [A, B] : [D, C];
+    quad(p3(side[0], z0), p3(side[1], z0), p3(side[1], b.z1), p3(side[0], b.z1), fog(COL.columnShade, z0));
+    quad(p3(A, z0), p3(B, z0), p3(C, z0), p3(D, z0), fog(COL.column, z0));
+    const fc = fog(COL.columnShade, z0);
+    for (const q of [0.33, 0.66]) line(p3(at(0.1, Wd * q), z0), p3(at(L - 0.1, Wd * q), z0), fc, lw(z0) * 0.8);
+    // a dark outline keeps the white column readable against the white marble floor
+    path([p3(A, z0), p3(B, z0), p3(C, z0), p3(D, z0)]);
+    ctx.strokeStyle = fog(COL.edge, z0);
+    ctx.lineWidth = lw(z0) * 1.6;
+    ctx.stroke();
+  }
+
   function drawObstacle(b, z0) {
+    if (b.kind === 'pillar') { drawPillar(b, z0); return; }
     const face = fog(b.col, z0);
     const lid = fog(mix(b.col, COL.cloud, 0.45), z0);
     const dark = fog(mix(b.col, COL.edge, 0.55), z0);

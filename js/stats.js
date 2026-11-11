@@ -10,6 +10,8 @@ export const KIND_LABEL = {
   portal: 'Pórtico caído',
   hole: 'Laje quebrada',
   void: 'Vazio (sem chão ou teto)',
+  pillar: 'Coluna que tombou',
+  drop: 'Bloco que despencou do teto',
 };
 
 export const BUCKETS = [[0, 49], [50, 99], [100, 199], [200, 399], [400, Infinity]];

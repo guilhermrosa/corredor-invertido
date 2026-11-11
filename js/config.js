@@ -36,6 +36,15 @@ export const FLIP_V = 7;
 export const LIVES = 2;
 export const INVULN_TIME = 1.6; // seconds of protection after losing a life
 
+// Falling obstacles (from FALL_FROM m): a column of the left colonnade that topples across
+// the path (then jump it, or flip away), and a roof block that drops to the floor (flip up).
+// They start falling FALL_LEAD seconds before the player arrives: a short wobble, then the fall.
+export const FALL_FROM = 200;
+export const FALL_LEAD = 1.2;
+export const TOPPLE_TIME = 0.6;  // seconds, wobble included
+export const DROP_TIME = 0.55;
+export const FALL_WOBBLE = 0.27; // share of that time spent wobbling before the fall
+
 export const SPEED_START = 9;
 export const SPEED_MAX = 22;
 export const SPEED_RAMP = 0.02; // m/s gained per metre run

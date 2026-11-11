@@ -57,6 +57,13 @@ export function sfx(type, data = {}) {
       lyre.pluck(deg(1), t + 0.09, 0.5, { sustain: 0, bright: 10, dur: 0.3 });
       break;
     }
+    case 'crack': // a column or a roof block starts to give way
+      lyre.pluck(deg(NOTES.length - 2), 0, 0.3, { sustain: 0, bright: 90, dur: 0.12 });
+      lyre.pluck(deg(NOTES.length - 3), ac.currentTime + 0.05, 0.25, { sustain: 0, bright: 90, dur: 0.12 });
+      break;
+    case 'thud':
+      lyre.pluck(deg(0), 0, 0.7, { sustain: 5, bright: 5, dur: 0.35 });
+      break;
     case 'slide':
       lyre.strum([deg(9), deg(7), deg(5), deg(3)], 0.028, 0.32, { sustain: 15, dur: 0.4 });
       break;
