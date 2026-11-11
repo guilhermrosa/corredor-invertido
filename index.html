@@ -36,10 +36,11 @@
 
   <div class="countdown" id="countdown" hidden aria-live="assertive"></div>
   <div class="pop" id="pop" hidden aria-hidden="true"></div>
+  <div class="toast" id="toast" hidden role="status"><small>Conquista desbloqueada</small><b id="toastName"></b><span id="toastDesc"></span></div>
 
   <div class="overlay" id="menu">
     <div class="card">
-      <p class="eyebrow" id="verLabel">Versão 0.24.1</p>
+      <p class="eyebrow" id="verLabel">Versão 0.25</p>
       <h1>Corredor <span class="flip">Invertido</span></h1>
       <p class="lead">Toque para pular. Toque de novo ainda no ar para inverter a gravidade e trocar entre chão e teto. Arraste para baixo para deslizar por baixo dos pórticos caídos. Em alguns trechos o chão ou o teto some: fique no lado que sobrou. Você tem 2 vidas por corrida.</p>
       <ul class="legend">
@@ -55,6 +56,7 @@
       <div class="actions">
         <button class="btn" id="btnTutorial" type="button">Tutorial</button>
         <button class="btn" id="btnStats" type="button">Estatísticas</button>
+        <button class="btn" id="btnAch" type="button">Conquistas</button>
         <button class="btn" id="btnOptions" type="button">Opções</button>
       </div>
       <p class="hint" id="bestMenu">Recorde: —</p>
@@ -102,6 +104,17 @@
       <p class="hint">Giro instantâneo troca de lado num corte rápido, sem girar a tela: ajuda quem fica tonto. Sensibilidade alta desliza com um arrasto mais curto. A vibração só funciona em celulares que a suportam. Na qualidade automática, o jogo reduz sozinho a resolução e alguns detalhes se o aparelho estiver travando.</p>
       <div class="actions">
         <button class="btn primary" id="optionsClose" type="button">Voltar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="achPanel" hidden>
+    <div class="card stats-card">
+      <p class="eyebrow" id="achCount"></p>
+      <h2 class="h2-small">Conquistas</h2>
+      <ul class="ach-list" id="achList"></ul>
+      <div class="actions">
+        <button class="btn primary" id="achClose" type="button">Voltar</button>
       </div>
     </div>
   </div>

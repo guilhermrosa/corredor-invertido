@@ -54,6 +54,7 @@ Sem etapa de build: são arquivos estáticos com módulos JavaScript nativos.
 | `js/lyre.js` | Motor de som da lira (compartilhado com o repositório `lira-de-bolso`) |
 | `js/tutorial.js` | Tutorial dos primeiros metros |
 | `js/stats.js` | Estatísticas salvas no aparelho |
+| `js/achievements.js` | Conquistas |
 | `js/fx.js` | Efeitos visuais: poeira, lascas, marcos de distância |
 | `js/config.js` | Constantes do mundo e paleta |
 | `sw.js` | Service worker (offline) |

@@ -116,3 +116,23 @@ h2 { font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; }
 .heart.pulse { animation: heart-lost .6s ease-out; }
 @keyframes heart-lost { 0% { transform: scale(1.8); color: #d6544a; } 100% { transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .heart.pulse { animation: none; } }
+/* achievements */
+.ach-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.ach { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--muted); }
+.ach span:last-child { display: grid; gap: 2px; min-width: 0; }
+.ach b { font: 700 14px/1.2 var(--display); }
+.ach small { font-size: 12px; }
+.ach.done { color: var(--ink); border-color: var(--accent); }
+.ach-mark { font-size: 20px; color: var(--muted); }
+.ach.done .ach-mark { color: #c79a2e; }
+.toast {
+  position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+  width: min(88%, 340px); display: grid; gap: 2px; text-align: center; pointer-events: none;
+  background: rgba(250, 249, 245, .96); border: 1px solid #c79a2e; border-radius: 12px; padding: 10px 14px;
+  box-shadow: 0 6px 24px rgba(29, 42, 51, .18); animation: toast-in .3s ease-out;
+}
+.toast small { font: 600 10.5px/1 var(--body); letter-spacing: .12em; text-transform: uppercase; color: #9a7520; }
+.toast b { font: 700 17px/1.2 var(--display); }
+.toast span { font-size: 12.5px; color: var(--muted); }
+@keyframes toast-in { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@media (prefers-reduced-motion: reduce) { .toast { animation: none; } }

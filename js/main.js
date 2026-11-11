@@ -5,11 +5,12 @@ import { createSim, update, press, slide } from './sim.js';
 import { drawTunnel, QUALITY } from './render.js';
 import * as audio from './audio.js';
 import * as stats from './stats.js';
+import * as ach from './achievements.js';
 import { STEPS, createTutorial, startStep, progress } from './tutorial.js';
 import { fx, onLand, whileSliding, onHit, onInstantFlip, onMilestone, updateFx, clearFx } from './fx.js';
 
 const $ = id => document.getElementById(id);
-const VERSION_LABEL = 'Versão 0.24.1';
+const VERSION_LABEL = 'Versão 0.25';
 const cvs = $('game');
 const ctx = cvs.getContext('2d');
 let W = 0, H = 0, DPR = 1;
@@ -76,6 +77,8 @@ let state = 'menu';
 let S = createSim();
 let tut = null;            // tutorial in progress, or null for a normal run
 let runSeconds = 0;        // time actually played in this run (pauses excluded)
+let run = { flips: 0, slides: 0, cleanMetres: 0, hurt: false }; // for achievements
+let achCheckIn = 0;
 let shake = 0, flash = 0, deadAt = 0;
 let countdownLeft = 0;
 let debug = store.get('debug', false); // hitbox view: H key, or tap the version label 5 times
@@ -84,6 +87,8 @@ const emit = (type, data) => {
   if (state !== 'play') return; // the menu's autopilot stays silent
   if (type === 'die') return onDie(data);
   if (!tut) stats.countAction(type);
+  if (!tut && type === 'flip') run.flips++;
+  if (!tut && type === 'slide') run.slides++;
   audio.sfx(type, data);
   if (type === 'hurt') return onHurt(data);
   if (type === 'land') onLand(data.side);
@@ -98,6 +103,7 @@ const CAUSE_TEXT = { void: 'Caiu no vazio', hole: 'Caiu no buraco', block: 'Bate
 
 // lost a life but the run goes on
 function onHurt({ cause, kind, lives }) {
+  run.hurt = true;
   stats.recordHurt(kind); // the hurt sound already played via emit
   buzz(30);
   shake = 0.3; flash = 0.7;
@@ -141,6 +147,7 @@ function onDie({ cause, kind, metres }) {
   }
 
   stats.recordRun({ metres, seconds: runSeconds, kind });
+  checkAchievements(metres);
   const isRecord = metres > best;
   if (isRecord) { best = metres; store.set('best-tunnel', best); }
   setTimeout(() => {
@@ -192,7 +199,11 @@ function frame(now) {
   if (fx.popT > 0 && $('pop').textContent !== fx.popText) { $('pop').textContent = fx.popText; }
   $('pop').hidden = !(fx.popT > 0 && state === 'play');
 
-  if (state === 'play' && !tut) $('dist').textContent = Math.floor(S.dist) + ' m';
+  if (state === 'play' && !tut) {
+    $('dist').textContent = Math.floor(S.dist) + ' m';
+    achCheckIn -= dt;
+    if (achCheckIn <= 0) { achCheckIn = 0.5; checkAchievements(Math.floor(S.dist)); }
+  }
   requestAnimationFrame(frame);
 }
 document.addEventListener('visibilitychange', () => {
@@ -228,10 +239,45 @@ function startTutorial() {
   $('btnSkipTut').hidden = false;
   showStepHint();
 }
+// ---- achievements ----
+function runState(metres) {
+  if (!run.hurt) run.cleanMetres = metres;
+  return { metres, cleanMetres: run.cleanMetres, flips: run.flips, slides: run.slides };
+}
+function checkAchievements(metres) {
+  for (const a of ach.evaluate(runState(metres), stats.get())) toast(a);
+}
+const toastQueue = [];
+let toastBusy = false;
+function toast(a) {
+  toastQueue.push(a);
+  if (toastBusy) return;
+  const next = () => {
+    const item = toastQueue.shift();
+    if (!item) { toastBusy = false; return; }
+    toastBusy = true;
+    $('toastName').textContent = item.name;
+    $('toastDesc').textContent = item.desc;
+    $('toast').hidden = false;
+    audio.sfx('milestone');
+    setTimeout(() => { $('toast').hidden = true; setTimeout(next, 250); }, 2600);
+  };
+  next();
+}
+function renderAchievements() {
+  $('achCount').textContent = `${ach.count()} de ${ach.ACHIEVEMENTS.length} desbloqueadas`;
+  $('achList').innerHTML = ach.ACHIEVEMENTS.map(a => {
+    const at = ach.unlockedAt(a.id);
+    const when = at ? new Date(at).toLocaleDateString('pt-BR') : '';
+    return `<li class="ach ${at ? 'done' : ''}"><span class="ach-mark" aria-hidden="true">${at ? '★' : '☆'}</span><span><b>${a.name}</b><small>${a.desc}${at ? ' · ' + when : ''}</small></span></li>`;
+  }).join('');
+}
+
 function finishTutorial() {
   stats.recordTutorial('completed');
   tutorialDone = true;
   store.set('tutorial-done', true);
+  checkAchievements(0);
   showHint('Pronto!', 'Agora é pra valer.');
   $('btnSkipTut').hidden = true;
   tut = null;
@@ -261,6 +307,7 @@ function start() {
   $('btnSkipTut').hidden = true;
   S = createSim();
   clearFx();
+  run = { flips: 0, slides: 0, cleanMetres: 0, hurt: false };
   enterPlay();
   $('dist').classList.remove('compact');
   $('dist').textContent = '0 m';
@@ -292,7 +339,7 @@ function toMenu() {
   audio.stopMusic();
   S = createSim();
   clearFx();
-  for (const id of ['over', 'hud', 'pause', 'stats', 'options', 'countdown', 'tutHint', 'pop']) $(id).hidden = true;
+  for (const id of ['over', 'hud', 'pause', 'stats', 'options', 'achPanel', 'countdown', 'tutHint', 'pop']) $(id).hidden = true;
   $('menu').hidden = false;
   refreshMenu();
 }
@@ -381,6 +428,8 @@ function closeStats() {
 $('btnPlay').addEventListener('click', start);
 $('btnTutorial').addEventListener('click', startTutorial);
 $('btnStats').addEventListener('click', openStats);
+$('btnAch').addEventListener('click', () => { renderAchievements(); $('menu').hidden = true; $('achPanel').hidden = false; $('achClose').focus({ preventScroll: true }); });
+$('achClose').addEventListener('click', () => { $('achPanel').hidden = true; $('menu').hidden = false; });
 $('btnOptions').addEventListener('click', () => { $('menu').hidden = true; $('options').hidden = false; $('optionsClose').focus({ preventScroll: true }); });
 $('optionsClose').addEventListener('click', () => { $('options').hidden = true; $('menu').hidden = false; });
 $('btnVibrate').addEventListener('click', () => { vibrate = !vibrate; store.set('vibrate', vibrate); buzz(30); refreshMenu(); });
@@ -465,9 +514,10 @@ addEventListener('keydown', e => {
   else if ((k === 'Escape' || k === 'KeyP') && (state === 'play' || state === 'countdown')) { e.preventDefault(); pause(); }
   else if ((k === 'Escape' || k === 'KeyP' || k === 'Space' || k === 'Enter') && state === 'paused') { e.preventDefault(); resume(); }
   else if (state === 'dead' && !tut && (k === 'Space' || k === 'Enter') && performance.now() - deadAt > 450) { e.preventDefault(); start(); }
-  else if (state === 'menu' && k === 'Enter' && $('stats').hidden && $('options').hidden) { e.preventDefault(); start(); }
+  else if (state === 'menu' && k === 'Enter' && $('stats').hidden && $('options').hidden && $('achPanel').hidden) { e.preventDefault(); start(); }
   else if (k === 'Escape' && !$('stats').hidden) closeStats();
   else if (k === 'Escape' && !$('options').hidden) { $('options').hidden = true; $('menu').hidden = false; }
+  else if (k === 'Escape' && !$('achPanel').hidden) { $('achPanel').hidden = true; $('menu').hidden = false; }
   else if (k === 'Escape' && state === 'dead') toMenu();
   else if (k === 'KeyH') toggleDebug();
 });
