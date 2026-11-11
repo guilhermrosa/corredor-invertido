@@ -9,7 +9,7 @@ export const LOWH = 0.5;  // low block height (jump to clear)
 export const PIT = 2.2;   // visual depth of holes
 export const G = 42;      // gravity during a flip / fall
 export const JG = 30;     // gravity while jumping (floatier)
-export const JV = Math.sqrt(2 * JG * 0.75); // jump speed for a 0.75 m hop
+export const JV = Math.sqrt(2 * JG * 0.85); // jump speed for a 0.85 m hop
 export const AIR = 2 * JV / JG;             // airtime of a jump, seconds
 
 // Hitboxes are a little smaller than what is drawn, so grazing an obstacle feels fair.
