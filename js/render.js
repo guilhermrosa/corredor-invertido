@@ -9,7 +9,8 @@ import { HM, HW, PH, PL, OH, HIT, RUIN_DIP, clamp, lerp, mix, rgb, COL } from '.
 import { blockHitbox, holeKillZone } from './sim.js';
 import { drawAxolotl } from './hero.js';
 
-const CAM_Z = -4.4, NEAR = 0.3, FAR = 75, BASE = CAM_Z + NEAR;
+const CAM_Z = -4.4, NEAR = 0.6, FAR = 75, BASE = CAM_Z + NEAR;
+const CAM_YAW = 0.14; // the camera looks a little to the left (radians, about 8°)
 const EDGE = HW + 0.5;                          // floor and roof extend under the colonnade
 const COL_X0 = HW + 0.1, COL_X1 = HW + 0.4;     // column box, outside the running lane
 const COL_D = 0.3;
@@ -105,7 +106,13 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   const roll = ease * Math.PI;
   const f = Math.min(H * 1.2, W * 1.4);
   const t = performance.now() / 1000;
-  const P = (x, y, z) => { const dz = z - CAM_Z; return [x * f / dz, -(y - camY) * f / dz]; };
+  // the yaw mirrors while the camera rolls onto the ceiling, so the screen keeps the same composition
+  const yaw = CAM_YAW * (1 - 2 * ease), cyw = Math.cos(yaw), syw = Math.sin(yaw);
+  const P = (x, y, z) => {
+    const dz = z - CAM_Z;
+    const xc = x * cyw + dz * syw, zc = Math.max(0.05, dz * cyw - x * syw);
+    return [xc * f / zc, -(y - camY) * f / zc];
+  };
   const fogK = z => Math.pow(clamp((z - 4) / (FAR - 8), 0, 1), 0.85);
   const fog = (c, z) => rgb(mix(c, COL.haze, fogK(z)));
   const lw = z => Math.max(0.6, f / (z - CAM_Z) * 0.03);
@@ -131,7 +138,10 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   ctx.save();
   ctx.translate(W / 2, H * 0.5);
   ctx.rotate(roll);
+  ctx.save();
+  ctx.translate(Math.tan(yaw) * f, 0); // the backdrop is infinitely far: it only pans
   drawBackdrop(ctx, W, H, t);
+  ctx.restore();
 
   // 1. the stoa, slice by slice, far to near: floor, roof, painted band, columns
   const seg = 2, off = S.dist % seg, n = Math.floor(S.dist / seg);

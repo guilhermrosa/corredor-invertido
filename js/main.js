@@ -6,7 +6,7 @@ import { drawTunnel } from './render.js';
 import * as audio from './audio.js';
 
 const $ = id => document.getElementById(id);
-const VERSION_LABEL = 'Versão 0.10';
+const VERSION_LABEL = 'Versão 0.11';
 const cvs = $('game');
 const ctx = cvs.getContext('2d');
 let W = 0, H = 0, DPR = 1;
