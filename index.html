@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Corredor Invertido</title>
+  <meta name="description" content="Endless runner em túnel: pule e inverta a gravidade para correr no chão ou no teto.">
+  <meta name="theme-color" content="#11141c">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Corredor">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;600&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <canvas id="game" tabindex="0" aria-label="Área do jogo. Toque uma vez para pular; toque de novo no ar para inverter a gravidade."></canvas>
+
+  <div class="hud" id="hud" hidden>
+    <button class="chip-btn" id="btnMenu" type="button">← Menu</button>
+    <div class="score"><b id="dist">0 m</b><small id="bestHud">recorde 0 m</small></div>
+    <button class="chip-btn" id="btnSound" type="button">Som: ligado</button>
+  </div>
+
+  <div class="overlay" id="menu">
+    <div class="card">
+      <p class="eyebrow">Versão 0.6</p>
+      <h1>Corredor <span class="flip">Invertido</span></h1>
+      <p class="lead">Toque uma vez para pular. Toque de novo ainda no ar para inverter a gravidade e trocar entre chão e teto. Pule os buracos e inverta para fugir dos blocos. Em alguns trechos o chão ou o teto some: fique no lado que sobrou.</p>
+      <ul class="legend">
+        <li><i style="--c:var(--floor)"></i>Chão</li>
+        <li><i style="--c:var(--ceil)"></i>Teto</li>
+        <li><i style="--c:var(--hazard)"></i>Bloco (inverta)</li>
+        <li><i style="--c:var(--low)"></i>Bloco baixo (pule)</li>
+        <li><i class="hole"></i>Buraco</li>
+      </ul>
+      <div class="actions">
+        <button class="btn primary" id="btnPlay" type="button">Jogar</button>
+      </div>
+      <div class="toggles">
+        <button class="toggle" id="btnMusic" type="button" aria-pressed="true">Música: ligada</button>
+        <button class="toggle" id="btnSfx" type="button" aria-pressed="true">Efeitos: ligados</button>
+      </div>
+      <p class="hint" id="bestMenu">Recorde: —</p>
+    </div>
+  </div>
+
+  <div class="overlay" id="over" hidden>
+    <div class="card">
+      <p class="eyebrow" id="overCause">Fim da corrida</p>
+      <h2 id="overDist">0 m</h2>
+      <p class="hint" id="overBest">Recorde: 0 m</p>
+      <div class="actions">
+        <button class="btn primary" id="btnAgain" type="button">Jogar de novo</button>
+        <button class="btn" id="btnBack" type="button">Menu</button>
+      </div>
+      <p class="hint">Espaço ou Enter também reinicia.</p>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
