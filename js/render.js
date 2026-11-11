@@ -10,15 +10,14 @@ import { blockHitbox, holeKillZone, playerBox } from './sim.js';
 import { drawAxolotl } from './hero.js';
 
 const CAM_Z = -4.4, NEAR = 0.6, FAR = 75, BASE = CAM_Z + NEAR;
-// Three-quarter chase view, after the user's framing sketch: the camera sits a little to the
-// right of the lane, turns left and looks slightly down, so the corridor runs off diagonally
-// to the upper right and the left colonnade fills the foreground.
+// Chase view turned a little to the left (the user preferred this to the stronger
+// three-quarter view of v0.12–0.13: yaw 0.36, pitch 0.28, x 0.6, anchor 0.46 / 0.64).
 export const CAMERA = {
-  yaw: 0.36,     // radians turned to the left (about 21°)
-  pitch: 0.28,   // radians looking down (about 16°)
-  x: 0.6,        // metres to the right of the lane's centre
-  anchorX: 0.46, // where the camera's optical centre sits on screen (fraction of width / height)
-  anchorY: 0.64,
+  yaw: 0.14,     // radians turned to the left (about 8°)
+  pitch: 0,      // radians looking down
+  x: 0,          // metres to the right of the lane's centre
+  anchorX: 0.5,  // where the camera's optical centre sits on screen (fraction of width / height)
+  anchorY: 0.5,
 };
 const EDGE = HW + 0.5;                          // floor and roof extend under the colonnade
 const COL_X0 = HW + 0.1, COL_X1 = HW + 0.4;     // column box, outside the running lane
