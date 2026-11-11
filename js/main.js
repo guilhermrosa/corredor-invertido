@@ -6,7 +6,7 @@ import { drawTunnel } from './render.js';
 import * as audio from './audio.js';
 
 const $ = id => document.getElementById(id);
-const VERSION_LABEL = 'Versão 0.14';
+const VERSION_LABEL = 'Versão 0.15';
 const cvs = $('game');
 const ctx = cvs.getContext('2d');
 let W = 0, H = 0, DPR = 1;
@@ -203,6 +203,16 @@ refreshMenu();
 requestAnimationFrame(frame);
 
 // ---- offline / installable (PWA) ----
+// When a new version takes over, reload once so it shows right away; check for one on every return.
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
-  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (hadController && !reloaded) { reloaded = true; location.reload(); }
+  });
+  addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); });
+    }).catch(() => {});
+  });
 }

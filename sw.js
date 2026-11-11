@@ -1,6 +1,6 @@
 // Service worker: makes the game load and play offline.
 // Bump VERSION on every release so installed copies pick up the new files.
-const VERSION = 'ci-v0.14.0';
+const VERSION = 'ci-v0.15.0';
 const SHELL = [
   './',
   'index.html',
@@ -20,7 +20,12 @@ const SHELL = [
 ];
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(VERSION).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
+  // cache: 'reload' skips the browser's HTTP cache, so a new version never stores stale files
+  event.waitUntil(
+    caches.open(VERSION)
+      .then(cache => cache.addAll(SHELL.map(u => new Request(u, { cache: 'reload' }))))
+      .then(() => self.skipWaiting()),
+  );
 });
 
 self.addEventListener('activate', event => {
@@ -31,8 +36,9 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Same-origin files: cache first, refreshed in the background.
-// Google Fonts: same idea, kept in the cache once seen so text keeps its face offline.
+// Same-origin files: network first (revalidated, so updates show on the next open),
+// falling back to the cached copy when offline or when the network takes over 3 s.
+// Google Fonts: cached copy first, refreshed in the background.
 self.addEventListener('fetch', event => {
   const req = event.request;
   if (req.method !== 'GET') return;
@@ -41,17 +47,26 @@ self.addEventListener('fetch', event => {
   const isFont = url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com';
   if (!sameOrigin && !isFont) return;
 
-  event.respondWith(
-    caches.open(VERSION).then(async cache => {
-      const cached = await cache.match(req, { ignoreSearch: sameOrigin });
-      const network = fetch(req)
-        .then(res => { if (res.ok || res.type === 'opaque') cache.put(req, res.clone()); return res; })
-        .catch(() => null);
+  event.respondWith(caches.open(VERSION).then(async cache => {
+    const fromCache = () => cache.match(req, { ignoreSearch: sameOrigin })
+      .then(r => r || (req.mode === 'navigate' ? cache.match('index.html') : null));
+    if (isFont) {
+      const cached = await cache.match(req);
+      const network = fetch(req).then(res => { cache.put(req, res.clone()); return res; }).catch(() => null);
       if (cached) { event.waitUntil(network); return cached; }
-      const res = await network;
+      return (await network) || new Response('', { status: 504 });
+    }
+    const network = fetch(req, { cache: 'no-cache' }).then(res => {
+      if (res.ok) cache.put(req, res.clone());
+      return res;
+    });
+    const timeout = new Promise(resolve => setTimeout(resolve, 3000, null));
+    try {
+      const res = await Promise.race([network, timeout]);
       if (res) return res;
-      if (req.mode === 'navigate') return cache.match('index.html');
-      return new Response('', { status: 504 });
-    }),
-  );
+      return (await fromCache()) || (await network);
+    } catch (e) {
+      return (await fromCache()) || new Response('', { status: 504 });
+    }
+  }));
 });
