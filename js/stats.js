@@ -27,7 +27,7 @@ function empty() {
     buckets: BUCKETS.map(() => 0),    // runs ending in each distance range
     actions: { jump: 0, flip: 0, slide: 0 },
     recent: [],                       // last runs, newest first: { at, metres, seconds, kind }
-    tutorial: { completed: 0, skipped: 0, retries: {} }, // retries by step number
+    tutorial: { completed: 0, skipped: 0, passed: {}, retries: {} }, // passed / retries by step number
   };
 }
 
@@ -38,7 +38,9 @@ function load() {
     const raw = localStorage.getItem(KEY);
     if (!raw) return empty();
     const d = JSON.parse(raw);
-    return d && d.version === 1 ? { ...empty(), ...d } : empty();
+    if (!d || d.version !== 1) return empty();
+    const base = empty();
+    return { ...base, ...d, tutorial: { ...base.tutorial, ...d.tutorial } };
   } catch (e) {
     return empty();
   }
@@ -69,6 +71,7 @@ export function recordRun({ metres, seconds, kind }) {
 
 export function recordTutorial(event, step) {
   if (event === 'retry') data.tutorial.retries[step] = (data.tutorial.retries[step] || 0) + 1;
+  else if (event === 'passed') data.tutorial.passed[step] = (data.tutorial.passed[step] || 0) + 1;
   else if (event in data.tutorial) data.tutorial[event]++;
   save();
 }

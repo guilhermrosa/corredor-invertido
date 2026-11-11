@@ -8,7 +8,7 @@ import * as stats from './stats.js';
 import { STEPS, createTutorial, startStep, progress } from './tutorial.js';
 
 const $ = id => document.getElementById(id);
-const VERSION_LABEL = 'Versão 0.20';
+const VERSION_LABEL = 'Versão 0.21';
 const cvs = $('game');
 const ctx = cvs.getContext('2d');
 let W = 0, H = 0, DPR = 1;
@@ -105,7 +105,8 @@ function frame(now) {
   }
   if (tut && state === 'play') {
     const p = progress(tut, S);
-    if (p === 'next') { stats.flush(); showHint('Muito bem!', ''); setTimeout(() => { if (tut) showStepHint(); }, 700); }
+    if (p) stats.recordTutorial('passed', p === 'done' ? STEPS.length : tut.step); // the step just cleared
+    if (p === 'next') { showHint('Muito bem!', ''); setTimeout(() => { if (tut) showStepHint(); }, 700); }
     else if (p === 'done') finishTutorial();
   }
   shake = Math.max(0, shake - dt);
@@ -254,7 +255,8 @@ function renderStats() {
   const avg = d.runs ? Math.round(d.totalMetres / d.runs) : 0;
   const deathRows = Object.entries(stats.KIND_LABEL).map(([k, label]) => [label, d.deaths[k] || 0]).sort((a, b) => b[1] - a[1]);
   const bucketRows = stats.BUCKETS.map((b, i) => [stats.bucketLabel(b), d.buckets[i] || 0]);
-  const retries = STEPS.map((st, i) => [`${i + 1}. ${st.hint}`, d.tutorial.retries[i + 1] || 0]);
+  const tutRows = STEPS.map((st, i) =>
+    `<tr><td>${i + 1}. ${esc(st.name)}</td><td class="num">${d.tutorial.passed[i + 1] || 0}</td><td class="num">${d.tutorial.retries[i + 1] || 0}</td></tr>`).join('');
   const recent = d.recent.slice(0, 10).map(r =>
     `<tr><td>${fmtDate(r.at)}</td><td class="num">${r.metres} m</td><td>${esc(stats.KIND_LABEL[r.kind] || '—')}</td></tr>`).join('');
   $('statsBody').innerHTML = d.runs === 0 && !d.tutorial.completed
@@ -272,8 +274,9 @@ function renderStats() {
     <h3>Até onde as corridas chegaram</h3>${bars(bucketRows)}
     <h3>Ações</h3>${bars([['Pulos', d.actions.jump], ['Inversões', d.actions.flip], ['Deslizes', d.actions.slide]])}
     <h3>Tutorial</h3>
-    <p class="hint">Concluído ${d.tutorial.completed} ${d.tutorial.completed === 1 ? 'vez' : 'vezes'} · pulado ${d.tutorial.skipped} · novas tentativas por passo:</p>
-    ${bars(retries)}
+    <p class="hint">Tutorial inteiro concluído ${d.tutorial.completed} ${d.tutorial.completed === 1 ? 'vez' : 'vezes'} · pulado ${d.tutorial.skipped} ${d.tutorial.skipped === 1 ? 'vez' : 'vezes'}.</p>
+    <div class="table-wrap"><table><thead><tr><th>Passo</th><th class="num">Concluído</th><th class="num">Repetições</th></tr></thead><tbody>${tutRows}</tbody></table></div>
+    <p class="hint">Repetições: quantas vezes o passo teve de ser refeito depois de uma batida ou queda.</p>
     ${recent ? `<h3>Últimas corridas</h3><div class="table-wrap"><table><thead><tr><th>Quando</th><th class="num">Distância</th><th>Fim</th></tr></thead><tbody>${recent}</tbody></table></div>` : ''}
     <p class="hint">Registrado desde ${fmtDate(d.since)}.</p>`;
 }

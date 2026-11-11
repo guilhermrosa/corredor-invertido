@@ -6,11 +6,11 @@ import { createSim } from './sim.js';
 import { HM, PH, LOWH } from './config.js';
 
 export const STEPS = [
-  { hint: 'Toque para pular', sub: 'Pule a mureta.', ob: { type: 'block', h: LOWH, len: 0.9 } },
-  { hint: 'Toque para pular', sub: 'Pule a laje quebrada.', ob: { type: 'hole', len: 2.4 } },
-  { hint: 'Toque e toque de novo', sub: 'No ar, o segundo toque inverte a gravidade. Fuja do muro.', ob: { type: 'block', len: 1.2 } },
-  { hint: 'Inverta de novo', sub: 'Funciona nos dois sentidos: volte para o outro lado.', ob: { type: 'block', len: 1.2 } },
-  { hint: 'Arraste para baixo', sub: 'Deslize pelo vão do pórtico caído.', ob: { type: 'portal', len: 0.8 } },
+  { name: 'Pular a mureta', hint: 'Toque para pular', sub: 'Pule a mureta.', ob: { type: 'block', h: LOWH, len: 0.9 } },
+  { name: 'Pular a laje quebrada', hint: 'Toque para pular', sub: 'Pule a laje quebrada.', ob: { type: 'hole', len: 2.4 } },
+  { name: 'Inverter a gravidade', hint: 'Toque e toque de novo', sub: 'No ar, o segundo toque inverte a gravidade. Fuja do muro.', ob: { type: 'block', len: 1.2 } },
+  { name: 'Inverter de volta', hint: 'Inverta de novo', sub: 'Funciona nos dois sentidos: volte para o outro lado.', ob: { type: 'block', len: 1.2 } },
+  { name: 'Deslizar', hint: 'Arraste para baixo', sub: 'Deslize pelo vão do pórtico caído.', ob: { type: 'portal', len: 0.8 } },
 ];
 
 const AHEAD = 24; // metres between the player and the step's obstacle when it appears
