@@ -5,7 +5,8 @@
 // Where a surface is missing (an "open" stretch in the simulation) nothing is drawn,
 // so the backdrop shows through: open sky above, the sea far below.
 
-import { HM, HW, PL, OH, clamp, lerp, mix, rgb, COL } from './config.js';
+import { HM, HW, PH, PL, OH, HIT, RUIN_DIP, clamp, lerp, mix, rgb, COL } from './config.js';
+import { blockHitbox, holeKillZone } from './sim.js';
 import { drawAxolotl } from './hero.js';
 
 const CAM_Z = -4.4, NEAR = 0.3, FAR = 75, BASE = CAM_Z + NEAR;
@@ -97,7 +98,8 @@ function drawBackdrop(ctx, W, H, t) {
   }
 }
 
-export function drawTunnel(ctx, S, W, H) {
+// opts.debug: outline every hitbox on top of the scene
+export function drawTunnel(ctx, S, W, H, opts = {}) {
   const ease = S.camT * S.camT * (3 - 2 * S.camT);
   const camY = lerp(2.3, HM - 2.3, ease);
   const roll = ease * Math.PI;
@@ -224,7 +226,7 @@ export function drawTunnel(ctx, S, W, H) {
     const col = { wall: COL.wall, drum: COL.column, ruin: COL.ruin, lintel: COL.lintel }[kind];
     items.push({ x0: -HW, x1: HW, y0: o.side < 0 ? 0 : HM - bh, y1: o.side < 0 ? bh : HM, z0: o.z, z1: o.z + o.len, col, kind, seed: o.len });
   }
-  items.push({ x0: -0.36, x1: 0.36, y0: S.py, y1: S.py + 0.9, z0: 0, z1: PL, player: true });
+  items.push({ x0: -0.36, x1: 0.36, y0: S.py, y1: S.py + PH, z0: 0, z1: PL, player: true });
   items.sort((a, b) => b.z1 - a.z1);
   for (const b of items) {
     const z0 = Math.max(b.z0, BASE);
@@ -261,6 +263,36 @@ export function drawTunnel(ctx, S, W, H) {
     }
     ctx.globalAlpha = 1;
   }
+
+  // 4. hitboxes (debug view): red = blocks, orange = where a hole makes you fall, green = player
+  if (opts.debug) {
+    const box = (x0, x1, y0, y1, z0, z1, col) => {
+      if (z1 <= BASE) return;
+      z0 = Math.max(z0, BASE);
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 2;
+      ctx.fillStyle = col.replace('1)', '0.18)');
+      path([P(x0, y0, z0), P(x1, y0, z0), P(x1, y1, z0), P(x0, y1, z0)]);
+      ctx.fill(); ctx.stroke();
+      path([P(x0, y0, z1), P(x1, y0, z1), P(x1, y1, z1), P(x0, y1, z1)]);
+      ctx.stroke();
+      for (const [x, y] of [[x0, y0], [x1, y0], [x1, y1], [x0, y1]]) {
+        const a = P(x, y, z0), c = P(x, y, z1);
+        ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(c[0], c[1]); ctx.stroke();
+      }
+    };
+    for (const o of S.obs) {
+      if (o.z > FAR) continue;
+      if (o.type === 'block') {
+        const hb = blockHitbox(o);
+        box(-HW, HW, hb.y0, hb.y1, hb.z0, hb.z1, 'rgba(220,40,40,1)');
+      } else {
+        const kz = holeKillZone(o), sy = o.side < 0 ? 0 : HM;
+        box(-HW, HW, sy, sy, kz.z0, kz.z1, 'rgba(240,140,20,1)');
+      }
+    }
+    box(-0.36, 0.36, S.py, S.py + PH, HIT.player, PL - HIT.player, 'rgba(30,170,70,1)');
+  }
   ctx.restore();
 
   function drawObstacle(b, z0) {
@@ -276,7 +308,7 @@ export function drawTunnel(ctx, S, W, H) {
       // ruined wall with a jagged broken top
       const pts = [P(x0, y0, z0), P(x1, y0, z0)];
       const steps = 7;
-      for (let i = steps; i >= 0; i--) pts.push(P(x0 + W2 * i / steps, y1 - 0.18 * hash(b.seed * 13 + i), z0));
+      for (let i = steps; i >= 0; i--) pts.push(P(x0 + W2 * i / steps, y1 - RUIN_DIP * hash(b.seed * 13 + i), z0));
       poly(pts, face);
       for (const r of [0.33, 0.66]) line(P(x0, y0 + Hh * r, z0), P(x1, y0 + Hh * r, z0), dark, lwz);
       for (let i = 1; i < 5; i++) {

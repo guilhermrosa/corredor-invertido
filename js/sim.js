@@ -6,9 +6,29 @@
 // side: -1 floor, +1 ceiling. grav: -1 pulls to the floor, +1 to the ceiling.
 
 import {
-  HM, HW, PH, PL, OH, LOWH, PIT, G, JG, JV, AIR,
+  HM, HW, PH, PL, OH, LOWH, PIT, G, JG, JV, AIR, HIT, RUIN_DIP,
   SPEED_START, SPEED_MAX, SPEED_RAMP, clamp,
 } from './config.js';
+
+// The part of a block that kills: follows its drawn shape, trimmed a little (see HIT).
+// The ruined wall is drawn with a jagged top, so it only counts up to its lowest dip.
+export function blockHitbox(o) {
+  let top;
+  if (o.h) top = o.h - HIT.low;
+  else if (o.side < 0) top = OH - RUIN_DIP - HIT.y * 0.5;
+  else top = OH - HIT.y;
+  return {
+    z0: o.z + HIT.z,
+    z1: Math.max(o.z + HIT.z + 0.05, o.z + o.len - HIT.z),
+    y0: o.side < 0 ? 0 : HM - top,
+    y1: o.side < 0 ? top : HM,
+  };
+}
+
+// Where standing on a hole makes you fall: the player's middle must be over it.
+export function holeKillZone(o) {
+  return { z0: o.z + 0.1, z1: o.z + o.len - 0.1 };
+}
 
 export function createSim() {
   const S = {
@@ -171,15 +191,12 @@ export function update(S, dt, emit, opts = {}) {
   S.camT += clamp((S.grav > 0 ? 1 : 0) - S.camT, -dt * 3.4, dt * 3.4);
 
   if (!opts.live) return;
-  const m = 0.08, mid = PL / 2;
+  const mid = PL / 2;
   for (const o of S.obs) {
     if (o.type === 'block') {
-      if (o.z < PL - m && o.z + o.len > m) {
-        const bh = o.h || OH;
-        const y0 = o.side < 0 ? 0 : HM - bh, y1 = o.side < 0 ? bh : HM;
-        if (S.py + m < y1 && S.py + PH - m > y0) { die(S, emit, 'block'); return; }
-      }
-    } else if (mid > o.z + 0.1 && mid < o.z + o.len - 0.1 && S.grounded && o.side === S.grav) {
+      const hb = blockHitbox(o);
+      if (hb.z0 < PL - HIT.player && hb.z1 > HIT.player && S.py < hb.y1 && S.py + PH > hb.y0) { die(S, emit, 'block'); return; }
+    } else if (S.grounded && o.side === S.grav && mid > holeKillZone(o).z0 && mid < holeKillZone(o).z1) {
       S.fallHole = o; // standing on a hole: fall through
       die(S, emit, o.open ? 'void' : 'hole');
       return;

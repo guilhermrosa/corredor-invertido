@@ -12,6 +12,15 @@ export const JG = 30;     // gravity while jumping (floatier)
 export const JV = Math.sqrt(2 * JG * 0.75); // jump speed for a 0.75 m hop
 export const AIR = 2 * JV / JG;             // airtime of a jump, seconds
 
+// Hitboxes are a little smaller than what is drawn, so grazing an obstacle feels fair.
+export const HIT = {
+  z: 0.12,     // trimmed from the front and back of every block
+  y: 0.08,     // trimmed from the top of tall blocks
+  low: 0.14,   // trimmed from the top of low blocks (they were the least forgiving)
+  player: 0.05 // trimmed from the front and back of the player
+};
+export const RUIN_DIP = 0.18; // the ruined wall's jagged top dips up to this far below OH
+
 export const SPEED_START = 9;
 export const SPEED_MAX = 22;
 export const SPEED_RAMP = 0.02; // m/s gained per metre run

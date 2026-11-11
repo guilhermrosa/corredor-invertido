@@ -11,6 +11,7 @@ Endless runner para navegador em túnel pseudo-3D. Um toque pula; um segundo toq
 | Pular | Toque | Espaço, ↑, ↓, W ou S |
 | Inverter a gravidade | Toque de novo no ar | A mesma tecla de novo no ar |
 | Voltar ao menu | Botão "← Menu" | Esc |
+| Ver as áreas de colisão | Tocar 5 vezes em "Versão" no menu | H |
 
 O mundo provisório é uma stoa (colunata coberta) de mármore branco à beira-mar, num dia de sol.
 
@@ -21,6 +22,8 @@ O mundo provisório é uma stoa (colunata coberta) de mármore branco à beira-m
 | Bloco alto no teto | Viga caída, com faixa pintada | Inverter para o chão |
 | Buraco | Laje quebrada, com o mar embaixo ou o céu em cima | Pular ou estar no outro lado |
 | Superfície ausente | Telhado desabado (céu aberto) ou chão sumido (mar lá embaixo) | Ficar no lado que sobrou |
+
+As áreas de colisão são um pouco menores que o desenho, para que raspar num obstáculo pareça justo. Os valores ficam em `HIT` (`js/config.js`).
 
 ## Instalar como app
 

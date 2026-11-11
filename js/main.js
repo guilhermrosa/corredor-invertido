@@ -6,6 +6,7 @@ import { drawTunnel } from './render.js';
 import * as audio from './audio.js';
 
 const $ = id => document.getElementById(id);
+const VERSION_LABEL = 'Versão 0.10';
 const cvs = $('game');
 const ctx = cvs.getContext('2d');
 let W = 0, H = 0, DPR = 1;
@@ -33,6 +34,7 @@ audio.settings.sfx = store.get('sfx', true);
 let state = 'menu'; // menu | play | dead
 let S = createSim();
 let shake = 0, flash = 0, deadAt = 0;
+let debug = store.get('debug', false); // hitbox view: H key, or tap the version label 5 times
 
 const emit = (type, data) => {
   if (state !== 'play') return; // the menu's autopilot stays silent
@@ -70,7 +72,7 @@ function frame(now) {
 
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   if (shake > 0) { const a = shake * 18; ctx.translate((Math.random() - 0.5) * a, (Math.random() - 0.5) * a); }
-  drawTunnel(ctx, S, W, H);
+  drawTunnel(ctx, S, W, H, { debug });
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   if (flash > 0) { ctx.fillStyle = rgb(COL.haz, flash * 0.45); ctx.fillRect(0, 0, W, H); }
   if (state === 'menu') { ctx.fillStyle = rgb(COL.bg, 0.25); ctx.fillRect(0, 0, W, H); }
@@ -90,6 +92,7 @@ const tempo = () => 64 + (S.speed - 9) * 2.4;
 // ---- UI ----
 function refreshMenu() {
   $('bestMenu').textContent = 'Recorde: ' + (best ? best + ' m' : '—');
+  $('verLabel').textContent = VERSION_LABEL + (debug ? ' · colisões visíveis' : '');
   $('btnMusic').textContent = 'Música: ' + (audio.settings.music ? 'ligada' : 'desligada');
   $('btnSfx').textContent = 'Efeitos: ' + (audio.settings.sfx ? 'ligados' : 'desligados');
   $('btnMusic').setAttribute('aria-pressed', audio.settings.music);
@@ -149,6 +152,20 @@ addEventListener('keydown', e => {
   else if (state === 'dead' && (k === 'Space' || k === 'Enter') && performance.now() - deadAt > 700) { e.preventDefault(); start(); }
   else if (state === 'menu' && k === 'Enter') { e.preventDefault(); start(); }
   else if (k === 'Escape' && state !== 'menu') toMenu();
+  else if (k === 'KeyH') toggleDebug();
+});
+
+function toggleDebug() {
+  debug = !debug;
+  store.set('debug', debug);
+  refreshMenu();
+}
+let versionTaps = 0, versionTimer = null;
+$('verLabel').addEventListener('click', () => {
+  versionTaps++;
+  clearTimeout(versionTimer);
+  versionTimer = setTimeout(() => { versionTaps = 0; }, 1200);
+  if (versionTaps >= 5) { versionTaps = 0; toggleDebug(); }
 });
 
 refreshMenu();
