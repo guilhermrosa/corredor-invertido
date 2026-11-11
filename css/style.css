@@ -26,6 +26,7 @@ body {
   overflow: hidden; background: var(--bg); box-shadow: 0 0 48px rgba(29, 42, 51, .18);
 }
 #game { position: absolute; inset: 0; width: 100%; height: 100%; display: block; outline: none; }
+#game.mirrored { transform: scaleX(-1); } /* menu option: mirror the scene left to right (HUD text stays readable) */
 
 .hud {
   position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;

@@ -6,7 +6,7 @@ import { drawTunnel } from './render.js';
 import * as audio from './audio.js';
 
 const $ = id => document.getElementById(id);
-const VERSION_LABEL = 'Versão 0.16';
+const VERSION_LABEL = 'Versão 0.17';
 const cvs = $('game');
 const ctx = cvs.getContext('2d');
 let W = 0, H = 0, DPR = 1;
@@ -29,6 +29,7 @@ const store = {
 let best = store.get('best-tunnel', 0);
 audio.settings.music = store.get('music', true);
 audio.settings.sfx = store.get('sfx', true);
+let mirrored = store.get('mirror', false);
 
 // ---- state ----
 let state = 'menu'; // menu | play | dead
@@ -97,6 +98,9 @@ function refreshMenu() {
   $('btnSfx').textContent = 'Efeitos: ' + (audio.settings.sfx ? 'ligados' : 'desligados');
   $('btnMusic').setAttribute('aria-pressed', audio.settings.music);
   $('btnSfx').setAttribute('aria-pressed', audio.settings.sfx);
+  $('btnMirror').textContent = 'Espelhar tela: ' + (mirrored ? 'sim' : 'não');
+  $('btnMirror').setAttribute('aria-pressed', mirrored);
+  cvs.classList.toggle('mirrored', mirrored);
   const muted = !audio.settings.music && !audio.settings.sfx;
   $('btnSound').textContent = muted ? 'Som: desligado' : 'Som: ligado';
 }
@@ -128,6 +132,7 @@ $('btnBack').addEventListener('click', toMenu);
 $('btnMenu').addEventListener('click', e => { e.stopPropagation(); toMenu(); });
 $('btnMusic').addEventListener('click', () => { audio.settings.music = !audio.settings.music; store.set('music', audio.settings.music); refreshMenu(); });
 $('btnSfx').addEventListener('click', () => { audio.settings.sfx = !audio.settings.sfx; store.set('sfx', audio.settings.sfx); refreshMenu(); });
+$('btnMirror').addEventListener('click', () => { mirrored = !mirrored; store.set('mirror', mirrored); refreshMenu(); });
 $('btnSound').addEventListener('click', e => {
   e.stopPropagation();
   const on = !(audio.settings.music || audio.settings.sfx);
