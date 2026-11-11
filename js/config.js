@@ -21,6 +21,13 @@ export const HIT = {
 };
 export const RUIN_DIP = 0.18; // the ruined wall's jagged top dips up to this far below OH
 
+// Slide (swipe down): the player lies flat for a moment and fits under fallen portals.
+export const SLIDE_TIME = 0.7;  // seconds
+export const SLIDE_H = 0.45;    // player height while sliding
+export const FAST_FALL = 14;    // m/s toward the surface when swiping down in the air
+export const PORTAL_GAP = 0.6;  // clear height under a fallen portal
+export const PORTAL_FROM = 150; // metres before portals start to appear
+
 export const SPEED_START = 9;
 export const SPEED_MAX = 22;
 export const SPEED_RAMP = 0.02; // m/s gained per metre run

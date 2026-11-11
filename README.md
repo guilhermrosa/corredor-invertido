@@ -8,8 +8,9 @@ Endless runner para navegador em túnel pseudo-3D. Um toque pula; um segundo toq
 
 | Ação | Celular | Teclado |
 | --- | --- | --- |
-| Pular | Toque | Espaço, ↑, ↓, W ou S |
+| Pular | Toque | Espaço, ↑ ou W |
 | Inverter a gravidade | Toque de novo no ar | A mesma tecla de novo no ar |
+| Deslizar | Arrastar para baixo (no ar: desce rápido e desliza ao tocar a superfície) | ↓ ou S |
 | Voltar ao menu | Botão "← Menu" | Esc |
 | Ver as áreas de colisão | Tocar 5 vezes em "Versão" no menu | H |
 
@@ -20,6 +21,7 @@ O mundo provisório é uma stoa (colunata coberta) de mármore branco à beira-m
 | Bloco baixo | Mureta de pedra ou coluna caída atravessada | Pular |
 | Bloco alto no chão | Muro em ruínas | Inverter para o teto |
 | Bloco alto no teto | Viga caída, com faixa pintada | Inverter para o chão |
+| Pórtico caído | Laje apoiada em dois tocos de coluna, com um vão baixo | Deslizar pelo vão (do lado em que ele está) |
 | Buraco | Laje quebrada, com o mar embaixo ou o céu em cima | Pular ou estar no outro lado |
 | Superfície ausente | Telhado desabado (céu aberto) ou chão sumido (mar lá embaixo) | Ficar no lado que sobrou |
 

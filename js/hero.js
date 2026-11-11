@@ -96,8 +96,56 @@ function gill(ctx, bx, by, ang, len, side, wig) {
   }
 }
 
-// phase: running cycle in radians; air: true while jumping or flipping
-export function drawAxolotl(ctx, phase, air) {
+// Belly slide, seen from behind: soles nearest the camera, flat body, head further ahead,
+// arms stretched forward on both sides of the head.
+function drawSlide(ctx, phase) {
+  ctx.fillStyle = 'rgba(0,0,0,.22)';
+  ctx.beginPath();
+  ctx.ellipse(0, 0.0, 0.46, 0.07, 0, 0, Math.PI * 2);
+  ctx.fill();
+  const wig = Math.sin(phase * 2.2) * 0.05;
+  // arms stretched forward
+  for (const side of [-1, 1]) {
+    limb(ctx, [[side * 0.14, -0.26], [side * 0.2, -0.4], [side * 0.23, -0.52]], 0.07);
+    hand(ctx, side * 0.23, -0.53, -Math.PI / 2 + side * 0.25);
+  }
+  // gills, smaller because the head is further away
+  for (const side of [-1, 1]) {
+    const spec = [[-1.15, 0.18], [-0.62, 0.2], [-0.12, 0.17]];
+    spec.forEach(([a, len], i) => {
+      const ang = side < 0 ? Math.PI - a : a;
+      gill(ctx, side * (0.12 + i * 0.035), -0.44 + i * 0.035, ang, len, side, wig * side);
+    });
+  }
+  blob(ctx, 0, -0.4, 0.17, 0.12, C.body);  // head
+  blob(ctx, 0, -0.2, 0.2, 0.12, C.body);   // flat body
+  // tail lying back toward the camera
+  const sw = Math.sin(phase * 0.6) * 0.05;
+  limb(ctx, [[0, -0.14], [sw, -0.02], [sw * 1.5, 0.08]], 0.06);
+  ctx.strokeStyle = C.crest;
+  ctx.lineWidth = 0.014;
+  ctx.beginPath(); ctx.moveTo(0, -0.12); ctx.lineTo(sw * 1.4, 0.06); ctx.stroke();
+  // legs back, soles up toward the camera
+  for (const side of [-1, 1]) {
+    const foot = [side * 0.2, 0.0];
+    limb(ctx, [[side * 0.08, -0.14], foot], 0.09);
+    blob(ctx, foot[0], foot[1], 0.05, 0.06, C.sole);
+    ctx.strokeStyle = C.line;
+    ctx.lineWidth = 0.016;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 4; i++) {
+      const a = Math.PI / 2 + (i - 1.5) * 0.35;
+      ctx.beginPath();
+      ctx.moveTo(foot[0] + Math.cos(a) * 0.045, foot[1] + Math.sin(a) * 0.045);
+      ctx.lineTo(foot[0] + Math.cos(a) * 0.085, foot[1] + Math.sin(a) * 0.085);
+      ctx.stroke();
+    }
+  }
+}
+
+// phase: running cycle in radians; air: true while jumping or flipping; sliding: belly slide
+export function drawAxolotl(ctx, phase, air, sliding = false) {
+  if (sliding) { drawSlide(ctx, phase); return; }
   const s = air ? 0 : Math.sin(phase);
   const k = (s + 1) / 2;            // 1: left leg kicked back / right arm raised; 0: the mirror pose
   const bob = air ? 0 : -Math.abs(Math.cos(phase)) * 0.025;

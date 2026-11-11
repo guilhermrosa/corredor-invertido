@@ -5,8 +5,8 @@
 // Where a surface is missing (an "open" stretch in the simulation) nothing is drawn,
 // so the backdrop shows through: open sky above, the sea far below.
 
-import { HM, HW, PH, PL, OH, HIT, RUIN_DIP, clamp, lerp, mix, rgb, COL } from './config.js';
-import { blockHitbox, holeKillZone } from './sim.js';
+import { HM, HW, PH, PL, OH, HIT, RUIN_DIP, PORTAL_GAP, clamp, lerp, mix, rgb, COL } from './config.js';
+import { blockHitbox, holeKillZone, playerBox } from './sim.js';
 import { drawAxolotl } from './hero.js';
 
 const CAM_Z = -4.4, NEAR = 0.6, FAR = 75, BASE = CAM_Z + NEAR;
@@ -244,12 +244,21 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   // 3. boxes: obstacles + the hero, far to near
   const items = [];
   for (const o of S.obs) {
-    if (o.type !== 'block' || o.z > FAR) continue;
+    if (o.z > FAR) continue;
+    if (o.type === 'portal') {
+      items.push({
+        x0: -HW, x1: HW, z0: o.z, z1: o.z + o.len, col: COL.ruin, kind: 'portal', side: o.side, seed: o.len,
+        y0: o.side < 0 ? PORTAL_GAP : 0, y1: o.side < 0 ? HM : HM - PORTAL_GAP,
+      });
+      continue;
+    }
+    if (o.type !== 'block') continue;
     const bh = o.h || OH;
     const kind = o.h ? (hash(o.len * 97) < 0.5 ? 'wall' : 'drum') : (o.side < 0 ? 'ruin' : 'lintel');
     const col = { wall: COL.wall, drum: COL.column, ruin: COL.ruin, lintel: COL.lintel }[kind];
     items.push({ x0: -HW, x1: HW, y0: o.side < 0 ? 0 : HM - bh, y1: o.side < 0 ? bh : HM, z0: o.z, z1: o.z + o.len, col, kind, seed: o.len });
   }
+  const pbox = playerBox(S);
   items.push({ x0: -0.36, x1: 0.36, y0: S.py, y1: S.py + PH, z0: 0, z1: PL, player: true });
   items.sort((a, b) => b.z1 - a.z1);
   for (const b of items) {
@@ -269,7 +278,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       ctx.save();
       ctx.translate(feet[0], feet[1]);
       ctx.scale(u, onCeil ? -u : u);
-      drawAxolotl(ctx, S.dist * 2.1, !S.grounded);
+      drawAxolotl(ctx, S.dist * 2.1, !S.grounded, S.slide > 0);
       ctx.restore();
       if (clipFall) ctx.restore();
       continue;
@@ -315,7 +324,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
         box(-HW, HW, sy, sy, kz.z0, kz.z1, 'rgba(240,140,20,1)');
       }
     }
-    box(-0.36, 0.36, S.py, S.py + PH, HIT.player, PL - HIT.player, 'rgba(30,170,70,1)');
+    box(-0.36, 0.36, pbox.y0, pbox.y1, HIT.player, PL - HIT.player, 'rgba(30,170,70,1)');
   }
   ctx.restore();
 
@@ -328,6 +337,35 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     if (camY < b.y0) quad(P(b.x0, b.y0, z0), P(b.x1, b.y0, z0), P(b.x1, b.y0, b.z1), P(b.x0, b.y0, b.z1), lid);
     const { x0, x1, y0, y1 } = b;
     const W2 = x1 - x0, Hh = y1 - y0;
+    if (b.kind === 'portal') {
+      // fallen portal: a heavy slab resting on two column drums, leaving a low gap to slide through
+      const sy = b.side < 0 ? 0 : HM;                    // surface the gap sits on
+      const gy = b.side < 0 ? PORTAL_GAP : HM - PORTAL_GAP; // underside of the slab
+      // shadow in the gap
+      quad(P(x0, sy, z0), P(x1, sy, z0), P(x1, sy, b.z1), P(x0, sy, b.z1), fog(mix(COL.edge, COL.ink, 0.35), z0));
+      // drums at the lane edges
+      for (const [da, db] of [[x0, x0 + 0.32], [x1 - 0.32, x1]]) {
+        quad(P(da, sy, z0), P(db, sy, z0), P(db, gy, z0), P(da, gy, z0), fog(COL.column, z0));
+        line(P((da + db) / 2, sy, z0), P((da + db) / 2, gy, z0), fog(COL.columnShade, z0), lwz);
+      }
+      // the slab, with a broken far edge and a painted band along the gap
+      const far = b.side < 0 ? y1 : y0;
+      const pts = [P(x0, gy, z0), P(x1, gy, z0)];
+      const steps = 6;
+      for (let i = steps; i >= 0; i--) pts.push(P(x0 + W2 * i / steps, far - (b.side < 0 ? 1 : -1) * 0.25 * hash(b.seed * 7 + i), z0));
+      poly(pts, face);
+      const bandA = gy, bandB = gy + (b.side < 0 ? 0.22 : -0.22);
+      quad(P(x0, bandA, z0), P(x1, bandA, z0), P(x1, bandB, z0), P(x0, bandB, z0), fog(COL.frieze, z0));
+      for (let i = 1; i < 8; i += 2) {
+        const xa = x0 + W2 * i / 8, xc = x0 + W2 * (i + 0.5) / 8;
+        quad(P(xa, bandA, z0), P(xc, bandA, z0), P(xc, bandB, z0), P(xa, bandB, z0), fog(COL.friezeAlt, z0));
+      }
+      for (const r of [0.45, 0.72]) {
+        const yy = lerp(gy, far, r);
+        line(P(x0, yy, z0), P(x1, yy, z0), dark, lwz);
+      }
+      return;
+    }
     if (b.kind === 'ruin') {
       // ruined wall with a jagged broken top
       const pts = [P(x0, y0, z0), P(x1, y0, z0)];

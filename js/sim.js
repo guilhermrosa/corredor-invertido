@@ -7,12 +7,24 @@
 
 import {
   HM, HW, PH, PL, OH, LOWH, PIT, G, JG, JV, AIR, HIT, RUIN_DIP,
+  SLIDE_TIME, SLIDE_H, FAST_FALL, PORTAL_GAP, PORTAL_FROM,
   SPEED_START, SPEED_MAX, SPEED_RAMP, clamp,
 } from './config.js';
 
-// The part of a block that kills: follows its drawn shape, trimmed a little (see HIT).
+// The part of an obstacle that kills: follows its drawn shape, trimmed a little (see HIT).
 // The ruined wall is drawn with a jagged top, so it only counts up to its lowest dip.
+// A fallen portal is solid from just above its gap all the way to the opposite surface,
+// so the only way past is to slide through the gap on its side.
 export function blockHitbox(o) {
+  if (o.type === 'portal') {
+    const gap = PORTAL_GAP + HIT.y;
+    return {
+      z0: o.z + HIT.z,
+      z1: Math.max(o.z + HIT.z + 0.05, o.z + o.len - HIT.z),
+      y0: o.side < 0 ? gap : 0,
+      y1: o.side < 0 ? HM : HM - gap,
+    };
+  }
   let top;
   if (o.h) top = o.h - HIT.low;
   else if (o.side < 0) top = OH - RUIN_DIP - HIT.y * 0.5;
@@ -30,12 +42,19 @@ export function holeKillZone(o) {
   return { z0: o.z + 0.1, z1: o.z + o.len - 0.1 };
 }
 
+// The player's vertical extent: lower while sliding, hugging the surface it slides on.
+export function playerBox(S) {
+  const h = S.slide > 0 ? SLIDE_H : PH;
+  return S.grav > 0 ? { y0: S.py + PH - h, y1: S.py + PH } : { y0: S.py, y1: S.py + h };
+}
+
 export function createSim() {
   const S = {
     dist: 0, speed: SPEED_START, py: 0, vy: 0, grav: -1, grounded: true, buffer: 0,
     obs: [], nextZ: 24, lastSide: 0, sameRun: 0,
     mode: 'ground', camT: 0, // camT: 0 = camera on the floor side, 1 = rolled to the ceiling side
     dead: false, falling: false, fallT: 0, fallHole: null,
+    slide: 0, slideQueued: false, // slide: seconds left lying flat; queued: slide on landing
   };
   spawn(S);
   return S;
@@ -53,7 +72,11 @@ function jumpables(S, from, to, side, sp, jd, avoid = []) {
   const step = sp * (AIR + 0.3) + 1;
   for (let oz = from; oz < to; oz += step + Math.random() * sp * 0.35) {
     if (avoid.some(t => oz + 2 > t.z - step && oz < t.z + t.len + step)) continue;
-    if (Math.random() < 0.55) {
+    if (S.dist + oz > PORTAL_FROM && Math.random() < 0.2) {
+      const pl = 0.6 + Math.random() * 0.4;
+      S.obs.push({ type: 'portal', z: oz, len: pl, side });
+      oz += pl;
+    } else if (Math.random() < 0.55) {
       const bl = 0.6 + Math.random() * 0.7;
       S.obs.push({ type: 'block', h: LOWH, z: oz, len: bl, side });
       oz += bl;
@@ -123,19 +146,37 @@ function spawn(S) {
     S.lastSide = side;
     const r2 = Math.random();
     let ob;
-    if (r2 < 0.3) ob = { type: 'hole', len: 1.8 + Math.random() * 1.8 };
+    if (far > PORTAL_FROM && r2 < 0.15) ob = { type: 'portal', len: 0.6 + Math.random() * 0.4 };
+    else if (r2 < 0.3) ob = { type: 'hole', len: 1.8 + Math.random() * 1.8 };
     else if (r2 < 0.5 && far > 40) ob = { type: 'block', h: LOWH, len: 0.6 + Math.random() * 0.7 };
     else ob = { type: 'block', len: Math.random() < 0.18 ? 3 + Math.random() * 3 : 0.8 + Math.random() * 1.4 };
-    ob.z = S.nextZ;
+    // a portal may need a flip and a slide in a row: give it extra room in front
+    ob.z = S.nextZ + (ob.type === 'portal' ? sp * 0.3 : 0);
     ob.side = side;
     S.obs.push(ob);
-    S.nextZ += ob.len + sp * 0.55 + 1.6 + Math.random() * sp * 0.6;
+    S.nextZ = ob.z + ob.len + sp * 0.55 + 1.6 + Math.random() * sp * 0.6;
   }
 }
 
 function jump(S, emit) {
   S.grounded = false; S.mode = 'jump'; S.vy = -S.grav * JV; S.buffer = 0;
+  S.slide = 0; S.slideQueued = false;
   emit('jump');
+}
+
+function startSlide(S, emit) {
+  S.slide = SLIDE_TIME; S.slideQueued = false;
+  emit('slide');
+}
+
+// Swipe down: slide when on a surface; in the air, drop fast and slide on landing.
+export function slide(S, emit) {
+  if (S.dead) return;
+  if (S.grounded) { if (S.slide <= 0) startSlide(S, emit); return; }
+  S.mode = 'fall';
+  S.vy = S.grav * Math.max(FAST_FALL, Math.abs(S.vy));
+  S.slideQueued = true;
+  S.buffer = 0;
 }
 
 function flip(S, emit) {
@@ -173,6 +214,11 @@ export function update(S, dt, emit, opts = {}) {
   if (opts.live && Math.floor(S.dist / 100) > Math.floor(before / 100)) emit('milestone', { metres: Math.floor(S.dist / 100) * 100 });
 
   if (opts.autopilot && S.grounded) {
+    const pt = S.obs.find(o => o.type === 'portal' && o.z + o.len > 0);
+    if (pt && pt.side === S.grav && pt.z < S.speed * 0.2 + PL && S.slide <= 0) slide(S, emit);
+    else if (pt && pt.side !== S.grav && pt.z < S.speed * 0.45 + PL) { jump(S, emit); flip(S, emit); slide(S, emit); }
+  }
+  if (opts.autopilot && S.grounded) {
     const nx = S.obs.find(o => o.z + o.len > PL / 2 && o.side === S.grav);
     if (nx && (nx.open || (nx.type === 'block' && !nx.h)) && nx.z < S.speed * 0.4 + PL) { jump(S, emit); flip(S, emit); }
     else if (nx && nx.type === 'block' && nx.h && nx.z < PL + S.speed * 0.08) jump(S, emit);
@@ -185,17 +231,23 @@ export function update(S, dt, emit, opts = {}) {
   if (S.grav < 0 && S.py <= 0) { S.py = 0; S.vy = 0; S.grounded = true; }
   else if (S.grav > 0 && S.py >= top) { S.py = top; S.vy = 0; S.grounded = true; }
   else S.grounded = false;
-  if (S.grounded) { S.mode = 'ground'; if (S.buffer > 0) jump(S, emit); }
+  if (S.grounded) {
+    S.mode = 'ground';
+    if (S.buffer > 0) jump(S, emit);
+    else if (S.slideQueued) startSlide(S, emit);
+  }
   if (S.buffer > 0) S.buffer -= dt;
+  if (S.slide > 0) S.slide = Math.max(0, S.slide - dt);
   // the camera roll follows gravity, not the height of a jump
   S.camT += clamp((S.grav > 0 ? 1 : 0) - S.camT, -dt * 3.4, dt * 3.4);
 
   if (!opts.live) return;
   const mid = PL / 2;
+  const pb = playerBox(S);
   for (const o of S.obs) {
-    if (o.type === 'block') {
+    if (o.type === 'block' || o.type === 'portal') {
       const hb = blockHitbox(o);
-      if (hb.z0 < PL - HIT.player && hb.z1 > HIT.player && S.py < hb.y1 && S.py + PH > hb.y0) { die(S, emit, 'block'); return; }
+      if (hb.z0 < PL - HIT.player && hb.z1 > HIT.player && pb.y0 < hb.y1 && pb.y1 > hb.y0) { die(S, emit, 'block'); return; }
     } else if (S.grounded && o.side === S.grav && mid > holeKillZone(o).z0 && mid < holeKillZone(o).z1) {
       S.fallHole = o; // standing on a hole: fall through
       die(S, emit, o.open ? 'void' : 'hole');

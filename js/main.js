@@ -1,12 +1,12 @@
 // Entry point: game loop, input, menus, record and offline support.
 
 import { COL, rgb } from './config.js';
-import { createSim, update, press } from './sim.js';
+import { createSim, update, press, slide } from './sim.js';
 import { drawTunnel } from './render.js';
 import * as audio from './audio.js';
 
 const $ = id => document.getElementById(id);
-const VERSION_LABEL = 'Versão 0.12';
+const VERSION_LABEL = 'Versão 0.13';
 const cvs = $('game');
 const ctx = cvs.getContext('2d');
 let W = 0, H = 0, DPR = 1;
@@ -141,14 +141,45 @@ $('btnSound').addEventListener('click', e => {
 $('over').addEventListener('pointerdown', e => {
   if (e.target === $('over') && performance.now() - deadAt > 700) start();
 });
+// Touch controls.
+// On a surface, a tap jumps at once. In the air, a touch waits for its finger: a swipe down
+// drops fast and slides on landing; otherwise it flips gravity when the finger lifts
+// (or after 110 ms), so a swipe never flips by accident.
+// A swipe down that starts on a surface jumps first, then dives into a slide.
+const SWIPE_PX = 26, AIR_WAIT = 110;
+let touch = null;
+function resolveAirTap() {
+  if (!touch || !touch.pending) return;
+  clearTimeout(touch.timer);
+  touch.pending = false;
+  if (state === 'play') press(S, emit);
+}
 cvs.addEventListener('pointerdown', e => {
   e.preventDefault();
   audio.unlock();
-  if (state === 'play') press(S, emit);
+  if (state !== 'play') return;
+  if (touch && touch.pending) resolveAirTap();
+  touch = { id: e.pointerId, y: e.clientY, t: performance.now(), swiped: false, pending: false, timer: null };
+  if (S.grounded) press(S, emit);
+  else { touch.pending = true; touch.timer = setTimeout(resolveAirTap, AIR_WAIT); }
+  try { cvs.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
 });
+cvs.addEventListener('pointermove', e => {
+  if (!touch || touch.swiped || e.pointerId !== touch.id || state !== 'play') return;
+  if (performance.now() - touch.t > 450) return;
+  if (e.clientY - touch.y > SWIPE_PX) {
+    touch.swiped = true;
+    if (touch.pending) { clearTimeout(touch.timer); touch.pending = false; }
+    slide(S, emit);
+  }
+});
+const endTouch = e => { if (touch && e.pointerId === touch.id) { resolveAirTap(); touch = null; } };
+cvs.addEventListener('pointerup', endTouch);
+cvs.addEventListener('pointercancel', endTouch);
 addEventListener('keydown', e => {
   const k = e.code;
-  if (state === 'play' && ['Space', 'ArrowUp', 'ArrowDown', 'KeyW', 'KeyS'].includes(k)) { e.preventDefault(); press(S, emit); }
+  if (state === 'play' && ['Space', 'ArrowUp', 'KeyW'].includes(k)) { e.preventDefault(); press(S, emit); }
+  else if (state === 'play' && ['ArrowDown', 'KeyS'].includes(k)) { e.preventDefault(); slide(S, emit); }
   else if (state === 'dead' && (k === 'Space' || k === 'Enter') && performance.now() - deadAt > 700) { e.preventDefault(); start(); }
   else if (state === 'menu' && k === 'Enter') { e.preventDefault(); start(); }
   else if (k === 'Escape' && state !== 'menu') toMenu();
