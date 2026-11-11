@@ -35,10 +35,11 @@
   </div>
 
   <div class="countdown" id="countdown" hidden aria-live="assertive"></div>
+  <div class="pop" id="pop" hidden aria-hidden="true"></div>
 
   <div class="overlay" id="menu">
     <div class="card">
-      <p class="eyebrow" id="verLabel">Versão 0.21</p>
+      <p class="eyebrow" id="verLabel">Versão 0.22</p>
       <h1>Corredor <span class="flip">Invertido</span></h1>
       <p class="lead">Toque para pular. Toque de novo ainda no ar para inverter a gravidade e trocar entre chão e teto. Arraste para baixo para deslizar por baixo dos pórticos caídos. Em alguns trechos o chão ou o teto some: fique no lado que sobrou.</p>
       <ul class="legend">
@@ -54,11 +55,7 @@
       <div class="actions">
         <button class="btn" id="btnTutorial" type="button">Tutorial</button>
         <button class="btn" id="btnStats" type="button">Estatísticas</button>
-      </div>
-      <div class="toggles">
-        <button class="toggle" id="btnMusic" type="button" aria-pressed="true">Música: ligada</button>
-        <button class="toggle" id="btnSfx" type="button" aria-pressed="true">Efeitos: ligados</button>
-        <button class="toggle" id="btnMirror" type="button" aria-pressed="false">Espelhar tela: não</button>
+        <button class="btn" id="btnOptions" type="button">Opções</button>
       </div>
       <p class="hint" id="bestMenu">Recorde: —</p>
     </div>
@@ -86,6 +83,25 @@
         <button class="btn" id="btnQuit" type="button">Menu</button>
       </div>
       <p class="hint">Ao continuar, uma contagem de 3 segundos dá tempo de se preparar. Esc ou P também pausam.</p>
+    </div>
+  </div>
+
+  <div class="overlay" id="options" hidden>
+    <div class="card">
+      <p class="eyebrow">Som, controles e conforto</p>
+      <h2 class="h2-small">Opções</h2>
+      <div class="option-list">
+        <button class="toggle" id="btnMusic" type="button" aria-pressed="true">Música: ligada</button>
+        <button class="toggle" id="btnSfx" type="button" aria-pressed="true">Efeitos: ligados</button>
+        <button class="toggle" id="btnVibrate" type="button" aria-pressed="false">Vibração: desligada</button>
+        <button class="toggle" id="btnMirror" type="button" aria-pressed="false">Espelhar tela: não</button>
+        <button class="toggle" id="btnCamera" type="button">Giro da câmera: animado</button>
+        <button class="toggle" id="btnSwipe" type="button">Sensibilidade do arrasto: normal</button>
+      </div>
+      <p class="hint">Giro instantâneo troca de lado num corte rápido, sem girar a tela: ajuda quem fica tonto. Sensibilidade alta desliza com um arrasto mais curto. A vibração só funciona em celulares que a suportam.</p>
+      <div class="actions">
+        <button class="btn primary" id="optionsClose" type="button">Voltar</button>
+      </div>
     </div>
   </div>
 

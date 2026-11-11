@@ -100,3 +100,13 @@ h2 { font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; }
 .stats-card .num { text-align: right; font-variant-numeric: tabular-nums; }
 .chip-btn { white-space: nowrap; }
 .score b.compact { font-size: 18px; white-space: nowrap; }
+.option-list { display: grid; gap: 8px; }
+.option-list .toggle { text-align: left; padding: 12px 14px; border-radius: 10px; color: var(--ink); background: #fff; }
+.option-list .toggle[aria-pressed="false"] { color: var(--muted); }
+.pop {
+  position: absolute; left: 0; right: 0; top: 30%; text-align: center; pointer-events: none;
+  font: 700 34px/1 var(--display); color: var(--ink); text-shadow: 0 2px 14px rgba(255, 255, 255, .9);
+  animation: pop 1.1s ease-out both;
+}
+@keyframes pop { 0% { opacity: 0; transform: scale(.7); } 15% { opacity: 1; transform: scale(1.08); } 30% { transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
+@media (prefers-reduced-motion: reduce) { .pop { animation: none; } }

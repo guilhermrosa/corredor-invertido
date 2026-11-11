@@ -1,6 +1,6 @@
 // Service worker: makes the game load and play offline.
 // Bump VERSION on every release so installed copies pick up the new files.
-const VERSION = 'ci-v0.21.0';
+const VERSION = 'ci-v0.22.0';
 const SHELL = [
   './',
   'index.html',
@@ -14,6 +14,7 @@ const SHELL = [
   'js/lyre.js',
   'js/stats.js',
   'js/tutorial.js',
+  'js/fx.js',
   'manifest.webmanifest',
   'icons/icon-192.png',
   'icons/icon-512.png',

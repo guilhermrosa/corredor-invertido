@@ -107,7 +107,7 @@ function drawBackdrop(ctx, W, H, t) {
   }
 }
 
-// opts.debug: outline every hitbox on top of the scene
+// opts.debug: outline every hitbox on top of the scene; opts.fx: particles from fx.js
 export function drawTunnel(ctx, S, W, H, opts = {}) {
   const ease = S.camT * S.camT * (3 - 2 * S.camT);
   const camY = lerp(2.3, HM - 2.3, ease);
@@ -296,7 +296,35 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     ctx.globalAlpha = 1;
   }
 
-  // 4. hitboxes (debug view): red = blocks, orange = where a hole makes you fall, green = player
+  // 4. particles (dust, stone chips), projected with the scene
+  if (opts.fx) {
+    for (const p of opts.fx.particles) {
+      if (p.z <= BASE + 0.2) continue;
+      const q = P(p.x, p.y, p.z);
+      const r = Math.max(0.8, p.size * f / (p.z - CAM_Z));
+      ctx.fillStyle = rgb(p.col, 0.85 * (1 - p.age / p.life));
+      ctx.fillRect(q[0] - r, q[1] - r, r * 2, r * 2);
+    }
+  }
+
+  // 5. speed lines streaming from the far end once the run gets fast
+  const rush = clamp((S.speed - 13) / 7, 0, 1);
+  if (rush > 0) {
+    const R = Math.hypot(W, H), vx = Math.tan(yaw) * f;
+    ctx.strokeStyle = rgb(COL.ink, 0.22 * rush); // dark enough to read over white marble
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    for (let i = 0; i < 26; i++) {
+      const a = hash(i * 3.1) * Math.PI * 2;
+      const k = (t * (0.9 + hash(i) * 0.8) + hash(i * 7.7)) % 1;
+      const r0 = R * (0.22 + 0.5 * k), r1 = r0 + R * (0.06 + 0.12 * k) * rush;
+      ctx.moveTo(vx + Math.cos(a) * r0, Math.sin(a) * r0);
+      ctx.lineTo(vx + Math.cos(a) * r1, Math.sin(a) * r1);
+    }
+    ctx.stroke();
+  }
+
+  // 6. hitboxes (debug view): red = blocks, orange = where a hole makes you fall, green = player
   if (opts.debug) {
     const box = (x0, x1, y0, y1, z0, z1, col) => {
       if (z1 <= BASE) return;

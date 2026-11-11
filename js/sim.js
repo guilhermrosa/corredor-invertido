@@ -237,12 +237,14 @@ export function update(S, dt, emit, opts = {}) {
     else if (nx && nx.type === 'hole' && nx.z < PL / 2 + 0.15) jump(S, emit);
   }
 
+  const wasGrounded = S.grounded;
   S.vy += S.grav * (S.mode === 'jump' ? JG : G) * dt;
   S.py += S.vy * dt;
   const top = HM - PH;
   if (S.grav < 0 && S.py <= 0) { S.py = 0; S.vy = 0; S.grounded = true; }
   else if (S.grav > 0 && S.py >= top) { S.py = top; S.vy = 0; S.grounded = true; }
   else S.grounded = false;
+  if (S.grounded && !wasGrounded) emit('land', { side: S.grav });
   if (S.grounded) {
     S.mode = 'ground';
     if (S.buffer > 0) jump(S, emit);

@@ -6,9 +6,10 @@ import { drawTunnel } from './render.js';
 import * as audio from './audio.js';
 import * as stats from './stats.js';
 import { STEPS, createTutorial, startStep, progress } from './tutorial.js';
+import { fx, onLand, whileSliding, onHit, onInstantFlip, onMilestone, updateFx, clearFx } from './fx.js';
 
 const $ = id => document.getElementById(id);
-const VERSION_LABEL = 'Versão 0.21';
+const VERSION_LABEL = 'Versão 0.22';
 const cvs = $('game');
 const ctx = cvs.getContext('2d');
 let W = 0, H = 0, DPR = 1;
@@ -33,6 +34,15 @@ audio.settings.music = store.get('music', true);
 audio.settings.sfx = store.get('sfx', true);
 let mirrored = store.get('mirror', false);
 let tutorialDone = store.get('tutorial-done', false);
+// comfort options (menu → Opções)
+let vibrate = store.get('vibrate', false);  // off unless the player turns it on
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let cameraMode = store.get('camera', reduceMotion ? 'instant' : 'animated'); // animated | instant
+const SWIPE = { low: 40, normal: 26, high: 14 };  // pixels a finger must travel down to slide
+const SWIPE_LABEL = { low: 'baixa', normal: 'normal', high: 'alta' };
+let swipeLevel = store.get('swipe', 'normal');
+if (!SWIPE[swipeLevel]) swipeLevel = 'normal';
+function buzz(ms) { if (vibrate) { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) { /* ignore */ } } }
 
 // ---- state ----
 // menu | play | dead | paused | countdown
@@ -49,6 +59,12 @@ const emit = (type, data) => {
   if (type === 'die') return onDie(data);
   if (!tut) stats.countAction(type);
   audio.sfx(type, data);
+  if (type === 'land') onLand(data.side);
+  else if (type === 'milestone') onMilestone(data.metres);
+  else if (type === 'flip') {
+    buzz(12);
+    if (cameraMode === 'instant') { S.camT = data.toCeiling ? 1 : 0; onInstantFlip(); }
+  } else if (type === 'slide') buzz(10);
 };
 
 const CAUSE_TEXT = { void: 'Caiu no vazio', hole: 'Caiu no buraco', block: 'Bateu' };
@@ -58,8 +74,8 @@ function onDie({ cause, kind, metres }) {
   deadAt = performance.now();
   audio.stopMusic();
   audio.sfx(cause);
-  if (cause === 'block') { shake = 0.45; flash = 1; }
-  try { navigator.vibrate && navigator.vibrate(40); } catch (e) { /* ignore */ }
+  if (cause === 'block') { shake = 0.45; flash = 1; onHit(S); }
+  buzz(40);
 
   if (tut) { // tutorial: no game over, just try the same step again
     stats.recordTutorial('retry', tut.step + 1);
@@ -68,6 +84,7 @@ function onDie({ cause, kind, metres }) {
     setTimeout(() => {
       if (!tut || state !== 'dead') return;
       S = startStep(tut, grav);
+      clearFx();
       state = 'play';
       showStepHint();
       audio.startMusic(tempo);
@@ -85,7 +102,7 @@ function onDie({ cause, kind, metres }) {
     $('overBest').textContent = isRecord ? 'Novo recorde!' : `Recorde: ${best} m`;
     $('over').hidden = false;
     $('btnAgain').focus({ preventScroll: true });
-  }, cause === 'block' ? 550 : 750);
+  }, cause === 'block' ? 380 : 600);
 }
 
 // ---- loop ----
@@ -99,9 +116,13 @@ function frame(now) {
     $('countdown').textContent = n > 0 ? n : '';
     if (countdownLeft <= 0) { $('countdown').hidden = true; state = 'play'; audio.startMusic(tempo); }
   }
-  if (state !== 'paused' && state !== 'countdown') {
+  const frozen = fx.hitStop > 0; // a short freeze right after a hit
+  if (frozen) fx.hitStop -= dt;
+  if (!frozen && state !== 'paused' && state !== 'countdown') {
     update(S, dt, emit, { live: state === 'play', autopilot: state === 'menu' });
     if (state === 'play') runSeconds += dt;
+    if (state === 'play' && S.slide > 0 && S.grounded) whileSliding(dt, S.grav);
+    updateFx(dt, state === 'dead' ? 0 : S.speed);
   }
   if (tut && state === 'play') {
     const p = progress(tut, S);
@@ -109,15 +130,17 @@ function frame(now) {
     if (p === 'next') { showHint('Muito bem!', ''); setTimeout(() => { if (tut) showStepHint(); }, 700); }
     else if (p === 'done') finishTutorial();
   }
-  shake = Math.max(0, shake - dt);
-  flash = Math.max(0, flash - dt * 3);
+  if (!frozen) { shake = Math.max(0, shake - dt); flash = Math.max(0, flash - dt * 3); }
 
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   if (shake > 0) { const a = shake * 18; ctx.translate((Math.random() - 0.5) * a, (Math.random() - 0.5) * a); }
-  drawTunnel(ctx, S, W, H, { debug });
+  drawTunnel(ctx, S, W, H, { debug, fx });
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   if (flash > 0) { ctx.fillStyle = rgb(COL.haz, flash * 0.45); ctx.fillRect(0, 0, W, H); }
+  if (fx.flipFade > 0) { ctx.fillStyle = rgb(COL.cloud, fx.flipFade / 0.16 * 0.55); ctx.fillRect(0, 0, W, H); }
   if (state === 'menu') { ctx.fillStyle = rgb(COL.bg, 0.25); ctx.fillRect(0, 0, W, H); }
+  if (fx.popT > 0 && $('pop').textContent !== fx.popText) { $('pop').textContent = fx.popText; }
+  $('pop').hidden = !(fx.popT > 0 && state === 'play');
 
   if (state === 'play' && !tut) $('dist').textContent = Math.floor(S.dist) + ' m';
   requestAnimationFrame(frame);
@@ -174,7 +197,7 @@ function skipTutorial() {
 function enterPlay() {
   state = 'play';
   runSeconds = 0;
-  for (const id of ['menu', 'over', 'pause', 'stats', 'countdown']) $(id).hidden = true;
+  for (const id of ['menu', 'over', 'pause', 'stats', 'options', 'countdown']) $(id).hidden = true;
   $('hud').hidden = false;
   audio.startMusic(tempo);
   cvs.focus({ preventScroll: true });
@@ -186,6 +209,7 @@ function start() {
   $('tutHint').hidden = true;
   $('btnSkipTut').hidden = true;
   S = createSim();
+  clearFx();
   enterPlay();
   $('dist').classList.remove('compact');
   $('dist').textContent = '0 m';
@@ -214,7 +238,8 @@ function toMenu() {
   tut = null;
   audio.stopMusic();
   S = createSim();
-  for (const id of ['over', 'hud', 'pause', 'stats', 'countdown', 'tutHint']) $(id).hidden = true;
+  clearFx();
+  for (const id of ['over', 'hud', 'pause', 'stats', 'options', 'countdown', 'tutHint', 'pop']) $(id).hidden = true;
   $('menu').hidden = false;
   refreshMenu();
 }
@@ -227,6 +252,10 @@ function refreshMenu() {
   $('btnSfx').setAttribute('aria-pressed', audio.settings.sfx);
   $('btnMirror').textContent = 'Espelhar tela: ' + (mirrored ? 'sim' : 'não');
   $('btnMirror').setAttribute('aria-pressed', mirrored);
+  $('btnVibrate').textContent = 'Vibração: ' + (vibrate ? 'ligada' : 'desligada');
+  $('btnVibrate').setAttribute('aria-pressed', vibrate);
+  $('btnCamera').textContent = 'Giro da câmera: ' + (cameraMode === 'instant' ? 'instantâneo' : 'animado');
+  $('btnSwipe').textContent = 'Sensibilidade do arrasto: ' + SWIPE_LABEL[swipeLevel];
   cvs.classList.toggle('mirrored', mirrored);
   const muted = !audio.settings.music && !audio.settings.sfx;
   $('btnSound').textContent = muted ? 'Som: desligado' : 'Som: ligado';
@@ -297,6 +326,16 @@ function closeStats() {
 $('btnPlay').addEventListener('click', start);
 $('btnTutorial').addEventListener('click', startTutorial);
 $('btnStats').addEventListener('click', openStats);
+$('btnOptions').addEventListener('click', () => { $('menu').hidden = true; $('options').hidden = false; $('optionsClose').focus({ preventScroll: true }); });
+$('optionsClose').addEventListener('click', () => { $('options').hidden = true; $('menu').hidden = false; });
+$('btnVibrate').addEventListener('click', () => { vibrate = !vibrate; store.set('vibrate', vibrate); buzz(30); refreshMenu(); });
+$('btnCamera').addEventListener('click', () => { cameraMode = cameraMode === 'instant' ? 'animated' : 'instant'; store.set('camera', cameraMode); refreshMenu(); });
+$('btnSwipe').addEventListener('click', () => {
+  const order = ['low', 'normal', 'high'];
+  swipeLevel = order[(order.indexOf(swipeLevel) + 1) % order.length];
+  store.set('swipe', swipeLevel);
+  refreshMenu();
+});
 $('statsClose').addEventListener('click', closeStats);
 $('btnCopyStats').addEventListener('click', () => {
   const text = JSON.stringify(stats.get(), null, 2);
@@ -332,14 +371,13 @@ $('btnSound').addEventListener('click', e => {
   refreshMenu();
 });
 $('over').addEventListener('pointerdown', e => {
-  if (e.target === $('over') && performance.now() - deadAt > 700) start();
+  if (e.target === $('over') && performance.now() - deadAt > 450) start();
 });
 
 // Touch controls: every touch acts at once (jump on a surface, flip in the air).
 // Dragging that same touch down then slides: on a surface right away; in the air it drops
 // fast toward the surface gravity points to and slides on landing (after a flip, that is the
 // new surface, so tap + tap-and-drag gets you sliding on the other side).
-const SWIPE_PX = 26;
 let touch = null;
 cvs.addEventListener('pointerdown', e => {
   e.preventDefault();
@@ -352,7 +390,7 @@ cvs.addEventListener('pointerdown', e => {
 cvs.addEventListener('pointermove', e => {
   if (!touch || touch.swiped || e.pointerId !== touch.id || state !== 'play') return;
   if (performance.now() - touch.t > 450) return;
-  if (e.clientY - touch.y > SWIPE_PX) { touch.swiped = true; slide(S, emit); }
+  if (e.clientY - touch.y > SWIPE[swipeLevel]) { touch.swiped = true; slide(S, emit); }
 });
 const endTouch = e => { if (touch && e.pointerId === touch.id) touch = null; };
 cvs.addEventListener('pointerup', endTouch);
@@ -363,9 +401,10 @@ addEventListener('keydown', e => {
   else if (state === 'play' && ['ArrowDown', 'KeyS'].includes(k)) { e.preventDefault(); slide(S, emit); }
   else if ((k === 'Escape' || k === 'KeyP') && (state === 'play' || state === 'countdown')) { e.preventDefault(); pause(); }
   else if ((k === 'Escape' || k === 'KeyP' || k === 'Space' || k === 'Enter') && state === 'paused') { e.preventDefault(); resume(); }
-  else if (state === 'dead' && !tut && (k === 'Space' || k === 'Enter') && performance.now() - deadAt > 700) { e.preventDefault(); start(); }
-  else if (state === 'menu' && k === 'Enter' && $('stats').hidden) { e.preventDefault(); start(); }
+  else if (state === 'dead' && !tut && (k === 'Space' || k === 'Enter') && performance.now() - deadAt > 450) { e.preventDefault(); start(); }
+  else if (state === 'menu' && k === 'Enter' && $('stats').hidden && $('options').hidden) { e.preventDefault(); start(); }
   else if (k === 'Escape' && !$('stats').hidden) closeStats();
+  else if (k === 'Escape' && !$('options').hidden) { $('options').hidden = true; $('menu').hidden = false; }
   else if (k === 'Escape' && state === 'dead') toMenu();
   else if (k === 'KeyH') toggleDebug();
 });

@@ -27,7 +27,7 @@ O mundo provisório é uma stoa (colunata coberta) de mármore branco à beira-m
 
 As áreas de colisão são um pouco menores que o desenho, para que raspar num obstáculo pareça justo. Os valores ficam em `HIT` (`js/config.js`).
 
-Na primeira partida, um tutorial curto ensina pular, inverter e deslizar; ele pode ser revisto pelo menu. O menu também mostra **Estatísticas** das partidas, salvas só no aparelho.
+Na primeira partida, um tutorial curto ensina pular, inverter e deslizar; ele pode ser revisto pelo menu. O menu também mostra **Estatísticas** das partidas, salvas só no aparelho, e **Opções**: música, efeitos, vibração (desligada por padrão), espelhar a tela, giro da câmera animado ou instantâneo (para quem fica tonto) e sensibilidade do arrasto.
 
 ## Instalar como app
 
@@ -52,6 +52,7 @@ Sem etapa de build: são arquivos estáticos com módulos JavaScript nativos.
 | `js/lyre.js` | Motor de som da lira (compartilhado com o repositório `lira-de-bolso`) |
 | `js/tutorial.js` | Tutorial dos primeiros metros |
 | `js/stats.js` | Estatísticas salvas no aparelho |
+| `js/fx.js` | Efeitos visuais: poeira, lascas, marcos de distância |
 | `js/config.js` | Constantes do mundo e paleta |
 | `sw.js` | Service worker (offline) |
 | `manifest.webmanifest` | Dados do app instalável |
