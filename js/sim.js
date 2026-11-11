@@ -7,7 +7,7 @@
 
 import {
   HM, HW, PH, PL, OH, LOWH, PIT, G, JG, JV, AIR, HIT, RUIN_DIP,
-  SLIDE_TIME, SLIDE_H, FAST_FALL, PORTAL_GAP, PORTAL_FROM,
+  SLIDE_TIME, SLIDE_H, FAST_FALL, PORTAL_GAP, PORTAL_FROM, FLIP_V,
   SPEED_START, SPEED_MAX, SPEED_RAMP, clamp,
 } from './config.js';
 
@@ -180,7 +180,8 @@ export function slide(S, emit) {
 }
 
 function flip(S, emit) {
-  S.grav *= -1; S.grounded = false; S.mode = 'flip'; S.vy = S.grav * 3; S.buffer = 0;
+  S.grav *= -1; S.grounded = false; S.mode = 'flip'; S.buffer = 0;
+  S.vy = S.grav * Math.max(FLIP_V, S.vy * S.grav); // keep momentum toward the new surface
   emit('flip', { toCeiling: S.grav > 0 });
 }
 
@@ -239,7 +240,7 @@ export function update(S, dt, emit, opts = {}) {
   if (S.buffer > 0) S.buffer -= dt;
   if (S.slide > 0) S.slide = Math.max(0, S.slide - dt);
   // the camera roll follows gravity, not the height of a jump
-  S.camT += clamp((S.grav > 0 ? 1 : 0) - S.camT, -dt * 3.4, dt * 3.4);
+  S.camT += clamp((S.grav > 0 ? 1 : 0) - S.camT, -dt * 4.5, dt * 4.5); // full roll in about 0.22 s
 
   if (!opts.live) return;
   const mid = PL / 2;

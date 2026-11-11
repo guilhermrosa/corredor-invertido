@@ -28,6 +28,10 @@ export const FAST_FALL = 14;    // m/s toward the surface when swiping down in t
 export const PORTAL_GAP = 0.6;  // clear height under a fallen portal
 export const PORTAL_FROM = 150; // metres before portals start to appear
 
+// Flip: the player keeps any speed it already has toward the new surface, and never
+// starts slower than this (m/s), so a flip from mid-jump leaves at once.
+export const FLIP_V = 7;
+
 export const SPEED_START = 9;
 export const SPEED_MAX = 22;
 export const SPEED_RAMP = 0.02; // m/s gained per metre run

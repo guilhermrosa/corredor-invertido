@@ -6,7 +6,7 @@ import { drawTunnel } from './render.js';
 import * as audio from './audio.js';
 
 const $ = id => document.getElementById(id);
-const VERSION_LABEL = 'Versão 0.18';
+const VERSION_LABEL = 'Versão 0.19';
 const cvs = $('game');
 const ctx = cvs.getContext('2d');
 let W = 0, H = 0, DPR = 1;
@@ -146,39 +146,26 @@ $('btnSound').addEventListener('click', e => {
 $('over').addEventListener('pointerdown', e => {
   if (e.target === $('over') && performance.now() - deadAt > 700) start();
 });
-// Touch controls.
-// On a surface, a tap jumps at once. In the air, a touch waits for its finger: a swipe down
-// drops fast and slides on landing; otherwise it flips gravity when the finger lifts
-// (or after 110 ms), so a swipe never flips by accident.
-// A swipe down that starts on a surface jumps first, then dives into a slide.
-const SWIPE_PX = 26, AIR_WAIT = 110;
+// Touch controls: every touch acts at once (jump on a surface, flip in the air).
+// Dragging that same touch down then slides: on a surface right away; in the air it drops
+// fast toward the surface gravity points to and slides on landing (after a flip, that is the
+// new surface, so tap + tap-and-drag gets you sliding on the other side).
+const SWIPE_PX = 26;
 let touch = null;
-function resolveAirTap() {
-  if (!touch || !touch.pending) return;
-  clearTimeout(touch.timer);
-  touch.pending = false;
-  if (state === 'play') press(S, emit);
-}
 cvs.addEventListener('pointerdown', e => {
   e.preventDefault();
   audio.unlock();
   if (state !== 'play') return;
-  if (touch && touch.pending) resolveAirTap();
-  touch = { id: e.pointerId, y: e.clientY, t: performance.now(), swiped: false, pending: false, timer: null };
-  if (S.grounded) press(S, emit);
-  else { touch.pending = true; touch.timer = setTimeout(resolveAirTap, AIR_WAIT); }
+  press(S, emit);
+  touch = { id: e.pointerId, y: e.clientY, t: performance.now(), swiped: false };
   try { cvs.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
 });
 cvs.addEventListener('pointermove', e => {
   if (!touch || touch.swiped || e.pointerId !== touch.id || state !== 'play') return;
   if (performance.now() - touch.t > 450) return;
-  if (e.clientY - touch.y > SWIPE_PX) {
-    touch.swiped = true;
-    if (touch.pending) { clearTimeout(touch.timer); touch.pending = false; }
-    slide(S, emit);
-  }
+  if (e.clientY - touch.y > SWIPE_PX) { touch.swiped = true; slide(S, emit); }
 });
-const endTouch = e => { if (touch && e.pointerId === touch.id) { resolveAirTap(); touch = null; } };
+const endTouch = e => { if (touch && e.pointerId === touch.id) touch = null; };
 cvs.addEventListener('pointerup', endTouch);
 cvs.addEventListener('pointercancel', endTouch);
 addEventListener('keydown', e => {
