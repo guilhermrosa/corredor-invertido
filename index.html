@@ -23,14 +23,22 @@
   <canvas id="game" tabindex="0" aria-label="Área do jogo. Toque uma vez para pular; toque de novo no ar para inverter a gravidade."></canvas>
 
   <div class="hud" id="hud" hidden>
-    <button class="chip-btn" id="btnMenu" type="button">← Menu</button>
+    <button class="chip-btn" id="btnPause" type="button" aria-label="Pausar">❚❚ Pausa</button>
     <div class="score"><b id="dist">0 m</b><small id="bestHud">recorde 0 m</small></div>
     <button class="chip-btn" id="btnSound" type="button">Som: ligado</button>
   </div>
 
+  <div class="tut-hint" id="tutHint" hidden aria-live="polite">
+    <b id="tutTitle"></b>
+    <span id="tutSub"></span>
+    <button class="link-btn" id="btnSkipTut" type="button" hidden>Pular tutorial</button>
+  </div>
+
+  <div class="countdown" id="countdown" hidden aria-live="assertive"></div>
+
   <div class="overlay" id="menu">
     <div class="card">
-      <p class="eyebrow" id="verLabel">Versão 0.19</p>
+      <p class="eyebrow" id="verLabel">Versão 0.20</p>
       <h1>Corredor <span class="flip">Invertido</span></h1>
       <p class="lead">Toque para pular. Toque de novo ainda no ar para inverter a gravidade e trocar entre chão e teto. Arraste para baixo para deslizar por baixo dos pórticos caídos. Em alguns trechos o chão ou o teto some: fique no lado que sobrou.</p>
       <ul class="legend">
@@ -42,6 +50,10 @@
       </ul>
       <div class="actions">
         <button class="btn primary" id="btnPlay" type="button">Jogar</button>
+      </div>
+      <div class="actions">
+        <button class="btn" id="btnTutorial" type="button">Tutorial</button>
+        <button class="btn" id="btnStats" type="button">Estatísticas</button>
       </div>
       <div class="toggles">
         <button class="toggle" id="btnMusic" type="button" aria-pressed="true">Música: ligada</button>
@@ -62,6 +74,33 @@
         <button class="btn" id="btnBack" type="button">Menu</button>
       </div>
       <p class="hint">Espaço ou Enter também reinicia.</p>
+    </div>
+  </div>
+
+  <div class="overlay" id="pause" hidden>
+    <div class="card">
+      <p class="eyebrow">Jogo parado</p>
+      <h2>Pausa</h2>
+      <div class="actions">
+        <button class="btn primary" id="btnResume" type="button">Continuar</button>
+        <button class="btn" id="btnQuit" type="button">Menu</button>
+      </div>
+      <p class="hint">Ao continuar, uma contagem de 3 segundos dá tempo de se preparar. Esc ou P também pausam.</p>
+    </div>
+  </div>
+
+  <div class="overlay" id="stats" hidden>
+    <div class="card stats-card">
+      <p class="eyebrow">Salvas só neste aparelho</p>
+      <h2 class="h2-small">Estatísticas</h2>
+      <div id="statsBody"></div>
+      <div class="actions">
+        <button class="btn" id="btnCopyStats" type="button">Copiar dados</button>
+        <button class="btn" id="btnReset" type="button">Apagar estatísticas</button>
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="statsClose" type="button">Voltar</button>
+      </div>
     </div>
   </div>
 

@@ -11,7 +11,7 @@ Endless runner para navegador em túnel pseudo-3D. Um toque pula; um segundo toq
 | Pular | Toque | Espaço, ↑ ou W |
 | Inverter a gravidade | Toque de novo no ar | A mesma tecla de novo no ar |
 | Deslizar | Arrastar para baixo (no ar: desce rápido e desliza ao tocar a superfície) | ↓ ou S |
-| Voltar ao menu | Botão "← Menu" | Esc |
+| Pausar | Botão "Pausa" (pausa sozinho ao sair do app) | Esc ou P |
 | Ver as áreas de colisão | Tocar 5 vezes em "Versão" no menu | H |
 
 O mundo provisório é uma stoa (colunata coberta) de mármore branco à beira-mar, num dia de sol.
@@ -26,6 +26,8 @@ O mundo provisório é uma stoa (colunata coberta) de mármore branco à beira-m
 | Superfície ausente | Telhado desabado (céu aberto) ou chão sumido (mar lá embaixo) | Ficar no lado que sobrou |
 
 As áreas de colisão são um pouco menores que o desenho, para que raspar num obstáculo pareça justo. Os valores ficam em `HIT` (`js/config.js`).
+
+Na primeira partida, um tutorial curto ensina pular, inverter e deslizar; ele pode ser revisto pelo menu. O menu também mostra **Estatísticas** das partidas, salvas só no aparelho.
 
 ## Instalar como app
 
@@ -48,6 +50,8 @@ Sem etapa de build: são arquivos estáticos com módulos JavaScript nativos.
 | `js/hero.js` | Personagem (axolote provisório), desenhado de costas |
 | `js/audio.js` | Efeitos e música que reagem ao jogo |
 | `js/lyre.js` | Motor de som da lira (compartilhado com o repositório `lira-de-bolso`) |
+| `js/tutorial.js` | Tutorial dos primeiros metros |
+| `js/stats.js` | Estatísticas salvas no aparelho |
 | `js/config.js` | Constantes do mundo e paleta |
 | `sw.js` | Service worker (offline) |
 | `manifest.webmanifest` | Dados do app instalável |

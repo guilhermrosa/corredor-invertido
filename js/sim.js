@@ -48,8 +48,18 @@ export function playerBox(S) {
   return S.grav > 0 ? { y0: S.py + PH - h, y1: S.py + PH } : { y0: S.py, y1: S.py + h };
 }
 
-export function createSim() {
+// What an obstacle is, in words the stats screen can show (see stats.js).
+export function obstacleKind(o) {
+  if (o.type === 'portal') return 'portal';
+  if (o.type === 'hole') return o.open ? 'void' : 'hole';
+  if (o.h) return 'low';
+  return o.side < 0 ? 'ruin' : 'lintel';
+}
+
+// opts.scripted: no random obstacles; the caller places them (used by the tutorial)
+export function createSim(opts = {}) {
   const S = {
+    scripted: !!opts.scripted,
     dist: 0, speed: SPEED_START, py: 0, vy: 0, grav: -1, grounded: true, buffer: 0,
     obs: [], nextZ: 24, lastSide: 0, sameRun: 0,
     mode: 'ground', camT: 0, // camT: 0 = camera on the floor side, 1 = rolled to the ceiling side
@@ -89,6 +99,7 @@ function jumpables(S, from, to, side, sp, jd, avoid = []) {
 }
 
 function spawn(S) {
+  if (S.scripted) return;
   while (S.nextZ < 95) {
     const sp = Math.max(S.speed, 12);
     const jd = S.speed * AIR;
@@ -248,18 +259,18 @@ export function update(S, dt, emit, opts = {}) {
   for (const o of S.obs) {
     if (o.type === 'block' || o.type === 'portal') {
       const hb = blockHitbox(o);
-      if (hb.z0 < PL - HIT.player && hb.z1 > HIT.player && pb.y0 < hb.y1 && pb.y1 > hb.y0) { die(S, emit, 'block'); return; }
+      if (hb.z0 < PL - HIT.player && hb.z1 > HIT.player && pb.y0 < hb.y1 && pb.y1 > hb.y0) { die(S, emit, 'block', o); return; }
     } else if (S.grounded && o.side === S.grav && mid > holeKillZone(o).z0 && mid < holeKillZone(o).z1) {
       S.fallHole = o; // standing on a hole: fall through
-      die(S, emit, o.open ? 'void' : 'hole');
+      die(S, emit, o.open ? 'void' : 'hole', o);
       return;
     }
   }
 }
 
-function die(S, emit, cause) {
+function die(S, emit, cause, o) {
   S.dead = true;
   S.falling = cause !== 'block';
   if (S.falling) S.vy = S.grav * 2;
-  emit('die', { cause, metres: Math.floor(S.dist) });
+  emit('die', { cause, kind: obstacleKind(o), metres: Math.floor(S.dist) });
 }

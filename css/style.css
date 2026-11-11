@@ -64,3 +64,39 @@ h2 { font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; }
 .toggle { flex: 1 1 120px; font: 600 13px/1 var(--body); padding: 10px 12px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; }
 .toggle[aria-pressed="true"] { color: var(--ink); border-color: var(--accent); }
 .hint { margin: 0; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* tutorial hint, under the HUD */
+.tut-hint {
+  position: absolute; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top, 0px) + 72px);
+  width: min(88%, 360px); display: grid; justify-items: center; gap: 4px; text-align: center;
+  background: rgba(250, 249, 245, .9); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+  pointer-events: none;
+}
+.tut-hint b { font: 700 20px/1.15 var(--display); color: var(--ink); }
+.tut-hint span { font-size: 13px; color: var(--muted); }
+.link-btn { pointer-events: auto; margin-top: 4px; font: 600 12px/1 var(--body); color: var(--accent); background: none; border: 0; padding: 6px; cursor: pointer; text-decoration: underline; }
+.countdown {
+  position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;
+  font: 700 96px/1 var(--display); color: var(--ink); text-shadow: 0 2px 20px rgba(255, 255, 255, .9);
+}
+
+/* stats panel */
+.stats-card { max-height: 100%; overflow-y: auto; }
+.h2-small { font-size: 30px; }
+.stats-card h3 { margin: 6px 0 0; font: 700 14px/1.2 var(--display); }
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.tiles div { display: grid; gap: 2px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.tiles b { font: 700 18px/1.1 var(--display); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.tiles small { font-size: 11px; color: var(--muted); }
+.bar-row { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 2.5em; gap: 8px; align-items: center; font-size: 12.5px; }
+.bar-label { overflow-wrap: anywhere; }
+.bar { height: 8px; border-radius: 4px; background: #ebe7dd; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--accent); border-radius: 4px; }
+.bar-n { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+.table-wrap { overflow-x: auto; }
+.stats-card table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.stats-card th, .stats-card td { text-align: left; padding: 5px 4px; border-bottom: 1px solid var(--line); }
+.stats-card th { font-weight: 600; color: var(--muted); }
+.stats-card .num { text-align: right; font-variant-numeric: tabular-nums; }
+.chip-btn { white-space: nowrap; }
+.score b.compact { font-size: 18px; white-space: nowrap; }
