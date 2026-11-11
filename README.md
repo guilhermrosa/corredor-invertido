@@ -37,6 +37,7 @@ Sem etapa de build: são arquivos estáticos com módulos JavaScript nativos.
 | `js/main.js` | Loop do jogo, controles, menus, recorde, registro do service worker |
 | `js/sim.js` | Simulação: física, geração de obstáculos, colisões. Não desenha nem toca som |
 | `js/render.js` | Desenho do túnel em Canvas 2D com perspectiva calculada |
+| `js/hero.js` | Personagem (axolote provisório), desenhado de costas |
 | `js/audio.js` | Efeitos e música que reagem ao jogo |
 | `js/lyre.js` | Motor de som da lira (compartilhado com o repositório `lira-de-bolso`) |
 | `js/config.js` | Constantes do mundo e paleta provisória |

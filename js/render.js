@@ -2,6 +2,7 @@
 // Reads the simulation state and draws it; never changes it.
 
 import { HM, HW, PH, PL, OH, PIT, COL, clamp, lerp, mix, rgb } from './config.js';
+import { drawAxolotl } from './hero.js';
 
 const CAM_Z = -4.4, NEAR = 0.3, FAR = 75, BASE = CAM_Z + NEAR;
 
@@ -103,18 +104,27 @@ export function drawTunnel(ctx, S, W, H) {
       path([P(-HW, sy, hz0), P(HW, sy, hz0), P(HW, sy, h.z + h.len), P(-HW, sy, h.z + h.len)]);
       ctx.clip();
     }
+    if (b.player) {
+      // character sprite, standing on whichever surface gravity points to
+      const onCeil = S.grav > 0;
+      const feet = P(0, onCeil ? b.y1 : b.y0, 0.3);
+      const u = P(1, 0, 0.3)[0] - P(0, 0, 0.3)[0]; // pixels per metre at the player's depth
+      ctx.save();
+      ctx.translate(feet[0], feet[1]);
+      ctx.scale(u, onCeil ? -u : u);
+      drawAxolotl(ctx, S.dist * 2.1, !S.grounded);
+      ctx.restore();
+      if (clipFall) ctx.restore();
+      ctx.globalAlpha = 1;
+      continue;
+    }
     const fk = fogK(z0);
     const face = rgb(mix(b.col, COL.bg, fk));
     const lid = rgb(mix(mix(b.col, COL.ink, 0.35), COL.bg, fk));
     if (camY > b.y1) quad(P(b.x0, b.y1, z0), P(b.x1, b.y1, z0), P(b.x1, b.y1, b.z1), P(b.x0, b.y1, b.z1), lid);
     if (camY < b.y0) quad(P(b.x0, b.y0, z0), P(b.x1, b.y0, z0), P(b.x1, b.y0, b.z1), P(b.x0, b.y0, b.z1), lid);
     quad(P(b.x0, b.y0, z0), P(b.x1, b.y0, z0), P(b.x1, b.y1, z0), P(b.x0, b.y1, z0), face);
-    if (b.player) {
-      const onCeil = S.grav > 0;
-      const fy0 = onCeil ? b.y1 - 0.12 : b.y0, fy1 = onCeil ? b.y1 : b.y0 + 0.12;
-      quad(P(b.x0, fy0, z0), P(b.x1, fy0, z0), P(b.x1, fy1, z0), P(b.x0, fy1, z0), rgb(onCeil ? COL.ceil : COL.floor));
-      if (clipFall) ctx.restore();
-    } else if (alpha < 1) {
+    if (alpha < 1) {
       // keep a crisp outline on faded blocks so they still read as solid objects
       ctx.globalAlpha = Math.min(1, alpha + 0.25);
       path([P(b.x0, b.y0, z0), P(b.x1, b.y0, z0), P(b.x1, b.y1, z0), P(b.x0, b.y1, z0)]);
