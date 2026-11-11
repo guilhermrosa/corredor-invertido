@@ -16,10 +16,23 @@ export const SPEED_START = 9;
 export const SPEED_MAX = 22;
 export const SPEED_RAMP = 0.02; // m/s gained per metre run
 
+// Placeholder world: a seaside stoa (covered colonnade) in white marble on a sunny day.
 export const COL = {
-  bg: [17, 20, 28], floor: [242, 165, 65], ceil: [60, 198, 192], wall: [34, 40, 56],
-  haz: [255, 93, 93], low: [200, 110, 255], ink: [238, 241, 246], dark: [11, 13, 19], void: [6, 7, 10],
+  haze: [222, 236, 242],     // distance fog and the horizon
+  skyTop: [86, 160, 212], sea: [52, 128, 178], seaDeep: [24, 78, 128],
+  sun: [255, 246, 222], cloud: [252, 253, 255], island: [150, 170, 160],
+  marble: [240, 236, 226], marble2: [230, 225, 213], joint: [196, 189, 175], stylobate: [212, 205, 190],
+  ceiling: [226, 219, 203], beam: [206, 196, 176],
+  column: [250, 249, 245], columnShade: [192, 186, 174],
+  frieze: [44, 82, 146], friezeAlt: [238, 230, 210],
+  wall: [222, 203, 165],     // low wall (mureta), jump
+  ruin: [201, 168, 120],     // tall ruined wall on the floor, flip
+  lintel: [214, 196, 160],   // fallen beam hanging from the roof, flip
+  edge: [150, 122, 84],      // broken edge around holes
+  haz: [230, 90, 70],        // hit flash
+  ink: [29, 42, 51],
 };
+COL.bg = COL.haze;
 
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export const lerp = (a, b, t) => a + (b - a) * t;

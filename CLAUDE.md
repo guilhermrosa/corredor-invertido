@@ -14,5 +14,5 @@ Browser endless runner (pseudo-3D tunnel), shipped as a PWA on GitHub Pages from
 ## Design state
 
 - Chosen sound: lyre preset "Ruína" (chip 24, bright 30, sustain 80, echo 37), Dorian mode on D. Effects and music react to the game.
-- Main character placeholder: red axolotl with laurel-like gills (`js/hero.js`), drawn from behind; the golem of the ruin is the runner-up. Visuals elsewhere are placeholder solid colours. Art direction (Greek ruin, calm and light palette, main character still being explored) will replace `COL` in `js/config.js` and the renderer's colours.
+- Main character placeholder: red axolotl with laurel-like gills (`js/hero.js`), drawn from behind; the golem of the ruin is the runner-up. World placeholder (v0.8): the tunnel is a seaside stoa of white marble on a sunny day. Floor = marble lane, ceiling = coffered roof with a painted frieze, sides = columns with sky and sea between. Missing surfaces are simply not drawn so the backdrop shows (open sky above, sea below); columns break where the roof is gone. Obstacles: low = low wall or fallen column drum, tall floor = ruined wall, tall ceiling = fallen painted lintel. Palette lives in `COL` (`js/config.js`). The user's own visual prototypes will replace this.
 - Balance notes: the low violet block is less forgiving than holes; platforms on the open side have little reason to be used yet.

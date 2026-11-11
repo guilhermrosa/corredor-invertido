@@ -12,12 +12,15 @@ Endless runner para navegador em túnel pseudo-3D. Um toque pula; um segundo toq
 | Inverter a gravidade | Toque de novo no ar | A mesma tecla de novo no ar |
 | Voltar ao menu | Botão "← Menu" | Esc |
 
-| Obstáculo | Cor provisória | Como passar |
+O mundo provisório é uma stoa (colunata coberta) de mármore branco à beira-mar, num dia de sol.
+
+| Obstáculo | Como aparece | Como passar |
 | --- | --- | --- |
-| Bloco alto | Vermelho | Inverter para o outro lado |
-| Bloco baixo | Roxo | Pular |
-| Buraco | Preto com borda vermelha | Pular ou estar no outro lado |
-| Vazio (céu aberto) | Preto com estrelas | Ficar no lado que sobrou |
+| Bloco baixo | Mureta de pedra ou coluna caída atravessada | Pular |
+| Bloco alto no chão | Muro em ruínas | Inverter para o teto |
+| Bloco alto no teto | Viga caída, com faixa pintada | Inverter para o chão |
+| Buraco | Laje quebrada, com o mar embaixo ou o céu em cima | Pular ou estar no outro lado |
+| Superfície ausente | Telhado desabado (céu aberto) ou chão sumido (mar lá embaixo) | Ficar no lado que sobrou |
 
 ## Instalar como app
 
@@ -36,11 +39,11 @@ Sem etapa de build: são arquivos estáticos com módulos JavaScript nativos.
 | `css/style.css` | Estilo das telas |
 | `js/main.js` | Loop do jogo, controles, menus, recorde, registro do service worker |
 | `js/sim.js` | Simulação: física, geração de obstáculos, colisões. Não desenha nem toca som |
-| `js/render.js` | Desenho do túnel em Canvas 2D com perspectiva calculada |
+| `js/render.js` | Desenho do mundo (stoa, céu, mar) em Canvas 2D com perspectiva calculada |
 | `js/hero.js` | Personagem (axolote provisório), desenhado de costas |
 | `js/audio.js` | Efeitos e música que reagem ao jogo |
 | `js/lyre.js` | Motor de som da lira (compartilhado com o repositório `lira-de-bolso`) |
-| `js/config.js` | Constantes do mundo e paleta provisória |
+| `js/config.js` | Constantes do mundo e paleta |
 | `sw.js` | Service worker (offline) |
 | `manifest.webmanifest` | Dados do app instalável |
 | `tools/make_icons.py` | Gera os ícones provisórios (`python3 tools/make_icons.py`, requer Pillow) |

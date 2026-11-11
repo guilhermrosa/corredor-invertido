@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <title>Corredor Invertido</title>
   <meta name="description" content="Endless runner em túnel: pule e inverta a gravidade para correr no chão ou no teto.">
-  <meta name="theme-color" content="#11141c">
+  <meta name="theme-color" content="#deecf2">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Corredor">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -29,15 +29,14 @@
 
   <div class="overlay" id="menu">
     <div class="card">
-      <p class="eyebrow">Versão 0.7</p>
+      <p class="eyebrow">Versão 0.8</p>
       <h1>Corredor <span class="flip">Invertido</span></h1>
       <p class="lead">Toque uma vez para pular. Toque de novo ainda no ar para inverter a gravidade e trocar entre chão e teto. Pule os buracos e inverta para fugir dos blocos. Em alguns trechos o chão ou o teto some: fique no lado que sobrou.</p>
       <ul class="legend">
-        <li><i style="--c:var(--floor)"></i>Chão</li>
-        <li><i style="--c:var(--ceil)"></i>Teto</li>
-        <li><i style="--c:var(--hazard)"></i>Bloco (inverta)</li>
-        <li><i style="--c:var(--low)"></i>Bloco baixo (pule)</li>
-        <li><i class="hole"></i>Buraco</li>
+        <li><i style="--c:var(--wall)"></i>Mureta ou coluna caída (pule)</li>
+        <li><i style="--c:var(--ruin)"></i>Muro em ruínas ou viga caída (inverta)</li>
+        <li><i class="hole"></i>Laje quebrada (pule)</li>
+        <li><i style="--c:var(--sky)"></i>Sem teto ou sem chão (fique do outro lado)</li>
       </ul>
       <div class="actions">
         <button class="btn primary" id="btnPlay" type="button">Jogar</button>
