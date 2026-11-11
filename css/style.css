@@ -4,6 +4,7 @@
 :root {
   --bg: #deecf2; --panel: rgba(250, 249, 245, .94); --line: #d8d3c6; --ink: #1d2a33; --muted: #5d6b73;
   --accent: #2f6c8c; --marble: #f3f1ea; --sky: #56a0d4; --sea: #2a6fa3;
+  --side: #b9d3df; /* solid bars beside the game on wide screens */
   --wall: #dccba5; --frieze: #2c5292; --ruin: #c9a878; --edge: #96785a;
   --display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
   --body: 'Inter', ui-sans-serif, system-ui, sans-serif;
@@ -13,14 +14,21 @@
 [hidden] { display: none !important; }
 html, body { height: 100%; margin: 0; }
 body {
-  background: var(--bg); color: var(--ink); font: 14px/1.4 var(--body);
+  background: var(--side); color: var(--ink); font: 14px/1.4 var(--body);
   overflow: hidden; touch-action: none; overscroll-behavior: none;
   -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
 }
-#game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; outline: none; }
+/* The game keeps a phone-like portrait frame: on wide screens (computers, tablets in landscape)
+   it stays centred at 9:16 with solid bars on the sides; on phones it fills the screen. */
+#stage {
+  position: fixed; top: 0; bottom: 0; left: 0; right: 0; margin-inline: auto;
+  width: min(100vw, calc(100vh * 9 / 16)); width: min(100vw, calc(100dvh * 9 / 16));
+  overflow: hidden; background: var(--bg); box-shadow: 0 0 48px rgba(29, 42, 51, .18);
+}
+#game { position: absolute; inset: 0; width: 100%; height: 100%; display: block; outline: none; }
 
 .hud {
-  position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+  position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
   padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
   pointer-events: none;
@@ -33,7 +41,7 @@ body {
 .score small { font-size: 12px; color: var(--ink); text-shadow: 0 1px 6px rgba(255,255,255,.9); font-variant-numeric: tabular-nums; }
 
 .overlay {
-  position: fixed; inset: 0; display: grid; grid-template-columns: minmax(0, 1fr); place-items: center; background: rgba(222, 236, 242, .35);
+  position: absolute; inset: 0; display: grid; grid-template-columns: minmax(0, 1fr); place-items: center; background: rgba(222, 236, 242, .35);
   padding-block: calc(env(safe-area-inset-top, 0px) + 16px) calc(env(safe-area-inset-bottom, 0px) + 16px);
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
   overflow-y: auto; touch-action: pan-y;

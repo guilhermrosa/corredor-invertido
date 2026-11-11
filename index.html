@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <div id="stage">
   <canvas id="game" tabindex="0" aria-label="Área do jogo. Toque uma vez para pular; toque de novo no ar para inverter a gravidade."></canvas>
 
   <div class="hud" id="hud" hidden>
@@ -29,7 +30,7 @@
 
   <div class="overlay" id="menu">
     <div class="card">
-      <p class="eyebrow" id="verLabel">Versão 0.15</p>
+      <p class="eyebrow" id="verLabel">Versão 0.16</p>
       <h1>Corredor <span class="flip">Invertido</span></h1>
       <p class="lead">Toque para pular. Toque de novo ainda no ar para inverter a gravidade e trocar entre chão e teto. Arraste para baixo para deslizar por baixo dos pórticos caídos. Em alguns trechos o chão ou o teto some: fique no lado que sobrou.</p>
       <ul class="legend">
@@ -63,6 +64,7 @@
     </div>
   </div>
 
+  </div>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>
