@@ -7,7 +7,7 @@
 
 import {
   HM, HW, PH, PL, OH, LOWH, PIT, G, JG, JV, AIR, HIT, RUIN_DIP,
-  SLIDE_TIME, SLIDE_H, FAST_FALL, PORTAL_GAP, PORTAL_FROM, FLIP_V,
+  SLIDE_TIME, SLIDE_H, FAST_FALL, PORTAL_GAP, PORTAL_FROM, FLIP_V, LIVES, INVULN_TIME,
   SPEED_START, SPEED_MAX, SPEED_RAMP, clamp,
 } from './config.js';
 
@@ -57,9 +57,12 @@ export function obstacleKind(o) {
 }
 
 // opts.scripted: no random obstacles; the caller places them (used by the tutorial)
+// opts.lives: how many hits or falls the run survives (scripted runs default to one)
 export function createSim(opts = {}) {
   const S = {
     scripted: !!opts.scripted,
+    lives: opts.lives ?? (opts.scripted ? 1 : LIVES),
+    invuln: 0, // seconds of protection left after losing a life
     dist: 0, speed: SPEED_START, py: 0, vy: 0, grav: -1, grounded: true, buffer: 0,
     obs: [], nextZ: 24, lastSide: 0, sameRun: 0,
     mode: 'ground', camT: 0, // camT: 0 = camera on the floor side, 1 = rolled to the ceiling side
@@ -255,19 +258,40 @@ export function update(S, dt, emit, opts = {}) {
   // the camera roll follows gravity, not the height of a jump
   S.camT += clamp((S.grav > 0 ? 1 : 0) - S.camT, -dt * 4.5, dt * 4.5); // full roll in about 0.22 s
 
-  if (!opts.live) return;
+  if (S.invuln > 0) S.invuln = Math.max(0, S.invuln - dt);
+  if (!opts.live || S.invuln > 0) return;
   const mid = PL / 2;
   const pb = playerBox(S);
   for (const o of S.obs) {
+    if (o.spent) continue;
     if (o.type === 'block' || o.type === 'portal') {
       const hb = blockHitbox(o);
-      if (hb.z0 < PL - HIT.player && hb.z1 > HIT.player && pb.y0 < hb.y1 && pb.y1 > hb.y0) { die(S, emit, 'block', o); return; }
+      if (hb.z0 < PL - HIT.player && hb.z1 > HIT.player && pb.y0 < hb.y1 && pb.y1 > hb.y0) { hit(S, emit, 'block', o); return; }
     } else if (S.grounded && o.side === S.grav && mid > holeKillZone(o).z0 && mid < holeKillZone(o).z1) {
-      S.fallHole = o; // standing on a hole: fall through
-      die(S, emit, o.open ? 'void' : 'hole', o);
+      hit(S, emit, o.open ? 'void' : 'hole', o);
       return;
     }
   }
+}
+
+// A hit or a fall: costs a life and the run goes on, or ends it on the last life.
+function hit(S, emit, cause, o) {
+  if (S.lives <= 1) {
+    if (cause !== 'block') S.fallHole = o; // standing on a hole: fall through
+    die(S, emit, cause, o);
+    return;
+  }
+  S.lives--;
+  S.invuln = INVULN_TIME;
+  if (cause === 'block') {
+    o.spent = true; // the obstacle that hit you no longer counts
+  } else {
+    // rescued from a fall: the broken stretch under the player is filled in, and anything
+    // right in front is cleared so the run can pick up again
+    S.obs = S.obs.filter(x => !(x.z < 14 && x.z + x.len > -1));
+    S.slide = 0; S.slideQueued = false;
+  }
+  emit('hurt', { cause, kind: obstacleKind(o), lives: S.lives });
 }
 
 function die(S, emit, cause, o) {

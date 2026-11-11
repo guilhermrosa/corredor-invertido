@@ -29,6 +29,8 @@ As áreas de colisão são um pouco menores que o desenho, para que raspar num o
 
 Na primeira partida, um tutorial curto ensina pular, inverter e deslizar; ele pode ser revisto pelo menu. O menu também mostra **Estatísticas** das partidas, salvas só no aparelho, e **Opções**: música, efeitos, vibração (desligada por padrão), espelhar a tela, giro da câmera animado ou instantâneo (para quem fica tonto) e sensibilidade do arrasto.
 
+Cada corrida tem **2 vidas** (corações no topo). Na primeira batida ou queda o personagem perde um coração, fica alguns instantes protegido (piscando) e continua; na segunda, a corrida acaba.
+
 ## Instalar como app
 
 - **Android (Chrome):** menu ⋮ → "Instalar app" ou "Adicionar à tela inicial".

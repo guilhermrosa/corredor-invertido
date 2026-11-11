@@ -275,6 +275,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       const feet = P(0, onCeil ? b.y1 : b.y0, 0.3);
       const u = P(1, 0, 0.3)[0] - P(0, 0, 0.3)[0]; // pixels per metre at the hero's depth
       ctx.save();
+      if (S.invuln > 0 && Math.floor(S.invuln * 10) % 2) ctx.globalAlpha = 0.35; // blink while protected
       ctx.translate(feet[0], feet[1]);
       ctx.scale(u, onCeil ? -u : u);
       drawAxolotl(ctx, S.dist * 2.1, !S.grounded, S.slide > 0);

@@ -32,6 +32,10 @@ export const PORTAL_FROM = 150; // metres before portals start to appear
 // starts slower than this (m/s), so a flip from mid-jump leaves at once.
 export const FLIP_V = 7;
 
+// Lives: a hit or fall costs one and the run goes on, briefly protected; the last one ends it.
+export const LIVES = 2;
+export const INVULN_TIME = 1.6; // seconds of protection after losing a life
+
 export const SPEED_START = 9;
 export const SPEED_MAX = 22;
 export const SPEED_RAMP = 0.02; // m/s gained per metre run

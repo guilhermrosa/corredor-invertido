@@ -9,7 +9,7 @@ import { STEPS, createTutorial, startStep, progress } from './tutorial.js';
 import { fx, onLand, whileSliding, onHit, onInstantFlip, onMilestone, updateFx, clearFx } from './fx.js';
 
 const $ = id => document.getElementById(id);
-const VERSION_LABEL = 'Versão 0.22';
+const VERSION_LABEL = 'Versão 0.23';
 const cvs = $('game');
 const ctx = cvs.getContext('2d');
 let W = 0, H = 0, DPR = 1;
@@ -59,6 +59,7 @@ const emit = (type, data) => {
   if (type === 'die') return onDie(data);
   if (!tut) stats.countAction(type);
   audio.sfx(type, data);
+  if (type === 'hurt') return onHurt(data);
   if (type === 'land') onLand(data.side);
   else if (type === 'milestone') onMilestone(data.metres);
   else if (type === 'flip') {
@@ -69,7 +70,28 @@ const emit = (type, data) => {
 
 const CAUSE_TEXT = { void: 'Caiu no vazio', hole: 'Caiu no buraco', block: 'Bateu' };
 
+// lost a life but the run goes on
+function onHurt({ cause, kind, lives }) {
+  stats.recordHurt(kind); // the hurt sound already played via emit
+  buzz(30);
+  shake = 0.3; flash = 0.7;
+  if (cause === 'block') onHit(S);
+  renderLives(lives, true);
+}
+function renderLives(lives, justLost = false) {
+  const el = $('lives');
+  el.innerHTML = '';
+  for (let i = 0; i < 2; i++) {
+    const h = document.createElement('span');
+    h.className = 'heart' + (i < lives ? '' : ' lost') + (justLost && i === lives ? ' pulse' : '');
+    h.textContent = i < lives ? '♥' : '♡';
+    el.appendChild(h);
+  }
+  el.setAttribute('aria-label', lives === 1 ? '1 vida restante' : `${lives} vidas restantes`);
+}
+
 function onDie({ cause, kind, metres }) {
+  renderLives(0, true);
   state = 'dead';
   deadAt = performance.now();
   audio.stopMusic();
@@ -174,6 +196,7 @@ function startTutorial() {
   S = startStep(tut);
   enterPlay();
   $('bestHud').textContent = 'treino';
+  $('lives').hidden = true;
   $('btnSkipTut').hidden = false;
   showStepHint();
 }
@@ -213,6 +236,8 @@ function start() {
   enterPlay();
   $('dist').classList.remove('compact');
   $('dist').textContent = '0 m';
+  $('lives').hidden = false;
+  renderLives(S.lives);
   $('bestHud').textContent = 'recorde ' + best + ' m';
 }
 function pause() {
@@ -300,6 +325,7 @@ function renderStats() {
       <div><b>${d.actions.jump + d.actions.flip + d.actions.slide}</b><small>ações</small></div>
     </div>
     <h3>O que encerrou as corridas</h3>${bars(deathRows)}
+    <h3>Vidas perdidas (a corrida continuou)</h3>${bars(Object.entries(stats.KIND_LABEL).map(([k, label]) => [label, (d.hurts || {})[k] || 0]).sort((a, b) => b[1] - a[1]))}
     <h3>Até onde as corridas chegaram</h3>${bars(bucketRows)}
     <h3>Ações</h3>${bars([['Pulos', d.actions.jump], ['Inversões', d.actions.flip], ['Deslizes', d.actions.slide]])}
     <h3>Tutorial</h3>

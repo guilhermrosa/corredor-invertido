@@ -51,6 +51,12 @@ export function sfx(type, data = {}) {
     case 'jump':
       lyre.pluck(deg(NOTES.length - 4), 0, 0.42, short);
       break;
+    case 'hurt': {
+      const t = ac.currentTime + 0.01;
+      lyre.pluck(deg(2), t, 0.6, { sustain: 0, bright: 10, dur: 0.25 });
+      lyre.pluck(deg(1), t + 0.09, 0.5, { sustain: 0, bright: 10, dur: 0.3 });
+      break;
+    }
     case 'slide':
       lyre.strum([deg(9), deg(7), deg(5), deg(3)], 0.028, 0.32, { sustain: 15, dur: 0.4 });
       break;

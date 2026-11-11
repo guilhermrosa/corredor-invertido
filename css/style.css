@@ -110,3 +110,9 @@ h2 { font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; }
 }
 @keyframes pop { 0% { opacity: 0; transform: scale(.7); } 15% { opacity: 1; transform: scale(1.08); } 30% { transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
 @media (prefers-reduced-motion: reduce) { .pop { animation: none; } }
+.lives { display: flex; gap: 4px; justify-content: center; margin-top: 2px; }
+.heart { font: 700 18px/1 var(--body); color: #d6544a; text-shadow: 0 1px 6px rgba(255, 255, 255, .9); }
+.heart.lost { color: var(--muted); }
+.heart.pulse { animation: heart-lost .6s ease-out; }
+@keyframes heart-lost { 0% { transform: scale(1.8); color: #d6544a; } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .heart.pulse { animation: none; } }
