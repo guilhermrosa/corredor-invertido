@@ -121,8 +121,11 @@ function drawBackdrop(ctx, W, H, t, Q) {
 export function drawTunnel(ctx, S, W, H, opts = {}) {
   const Q = QUALITY[opts.quality] || QUALITY.high;
   FAR = Q.far;
-  const ease = S.camT * S.camT * (3 - 2 * S.camT);
-  const camY = lerp(2.3, HM - 2.3, ease);
+  // opts.fixedCamera: the screen never turns. The camera stays at mid-height and upright,
+  // so the floor is always at the bottom and the hero runs upside down along the roof.
+  const fixedCam = !!opts.fixedCamera;
+  const ease = fixedCam ? 0 : S.camT * S.camT * (3 - 2 * S.camT);
+  const camY = fixedCam ? HM / 2 : lerp(2.3, HM - 2.3, ease);
   const roll = ease * Math.PI;
   const f = Math.min(H * 1.2, W * 1.4);
   const t = performance.now() / 1000;

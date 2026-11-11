@@ -10,7 +10,7 @@ import { STEPS, createTutorial, startStep, progress } from './tutorial.js';
 import { fx, onLand, onThud, whileSliding, onHit, onInstantFlip, onMilestone, updateFx, clearFx } from './fx.js';
 
 const $ = id => document.getElementById(id);
-const VERSION_LABEL = 'Versão 0.26';
+const VERSION_LABEL = 'Versão 0.27';
 const cvs = $('game');
 const ctx = cvs.getContext('2d');
 let W = 0, H = 0, DPR = 1;
@@ -64,7 +64,9 @@ function watchFrames(rawMs, dt) {
 // comfort options (menu → Opções)
 let vibrate = store.get('vibrate', false);  // off unless the player turns it on
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-let cameraMode = store.get('camera', reduceMotion ? 'instant' : 'animated'); // animated | instant
+let cameraMode = store.get('camera', reduceMotion ? 'instant' : 'animated'); // animated | instant | fixed
+const CAMERA_LABEL = { animated: 'animado', instant: 'instantâneo', fixed: 'sem girar' };
+if (!CAMERA_LABEL[cameraMode]) cameraMode = 'animated';
 const SWIPE = { low: 40, normal: 26, high: 14 };  // pixels a finger must travel down to slide
 const SWIPE_LABEL = { low: 'baixa', normal: 'normal', high: 'alta' };
 let swipeLevel = store.get('swipe', 'normal');
@@ -192,7 +194,7 @@ function frame(now) {
 
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   if (shake > 0) { const a = shake * 18; ctx.translate((Math.random() - 0.5) * a, (Math.random() - 0.5) * a); }
-  drawTunnel(ctx, S, W, H, { debug, fx, quality: quality() });
+  drawTunnel(ctx, S, W, H, { debug, fx, quality: quality(), fixedCamera: cameraMode === 'fixed' });
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   if (flash > 0) { ctx.fillStyle = rgb(COL.haz, flash * 0.45); ctx.fillRect(0, 0, W, H); }
   if (fx.flipFade > 0) { ctx.fillStyle = rgb(COL.cloud, fx.flipFade / 0.16 * 0.55); ctx.fillRect(0, 0, W, H); }
@@ -355,7 +357,7 @@ function refreshMenu() {
   $('btnMirror').setAttribute('aria-pressed', mirrored);
   $('btnVibrate').textContent = 'Vibração: ' + (vibrate ? 'ligada' : 'desligada');
   $('btnVibrate').setAttribute('aria-pressed', vibrate);
-  $('btnCamera').textContent = 'Giro da câmera: ' + (cameraMode === 'instant' ? 'instantâneo' : 'animado');
+  $('btnCamera').textContent = 'Giro da câmera: ' + CAMERA_LABEL[cameraMode];
   $('btnSwipe').textContent = 'Sensibilidade do arrasto: ' + SWIPE_LABEL[swipeLevel];
   $('btnQuality').textContent = 'Qualidade: ' + (qualitySetting === 'auto' ? `automática (${QUALITY_LABEL[autoQuality]})` : QUALITY_LABEL[qualitySetting]);
   cvs.classList.toggle('mirrored', mirrored);
@@ -434,7 +436,12 @@ $('achClose').addEventListener('click', () => { $('achPanel').hidden = true; $('
 $('btnOptions').addEventListener('click', () => { $('menu').hidden = true; $('options').hidden = false; $('optionsClose').focus({ preventScroll: true }); });
 $('optionsClose').addEventListener('click', () => { $('options').hidden = true; $('menu').hidden = false; });
 $('btnVibrate').addEventListener('click', () => { vibrate = !vibrate; store.set('vibrate', vibrate); buzz(30); refreshMenu(); });
-$('btnCamera').addEventListener('click', () => { cameraMode = cameraMode === 'instant' ? 'animated' : 'instant'; store.set('camera', cameraMode); refreshMenu(); });
+$('btnCamera').addEventListener('click', () => {
+  const order = ['animated', 'instant', 'fixed'];
+  cameraMode = order[(order.indexOf(cameraMode) + 1) % order.length];
+  store.set('camera', cameraMode);
+  refreshMenu();
+});
 $('btnQuality').addEventListener('click', () => {
   const order = ['auto', 'high', 'medium', 'low'];
   qualitySetting = order[(order.indexOf(qualitySetting) + 1) % order.length];
