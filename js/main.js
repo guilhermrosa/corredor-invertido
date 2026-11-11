@@ -2,20 +2,25 @@
 
 import { COL, rgb } from './config.js';
 import { createSim, update, press, slide } from './sim.js';
-import { drawTunnel } from './render.js';
+import { drawTunnel, QUALITY } from './render.js';
 import * as audio from './audio.js';
 import * as stats from './stats.js';
 import { STEPS, createTutorial, startStep, progress } from './tutorial.js';
 import { fx, onLand, whileSliding, onHit, onInstantFlip, onMilestone, updateFx, clearFx } from './fx.js';
 
 const $ = id => document.getElementById(id);
-const VERSION_LABEL = 'Versão 0.23';
+const VERSION_LABEL = 'Versão 0.24';
 const cvs = $('game');
 const ctx = cvs.getContext('2d');
 let W = 0, H = 0, DPR = 1;
 
+// Quality: 'auto' (default) starts high and steps down if frames stay slow; or fixed in Opções.
+let qualitySetting = 'auto';
+let autoQuality = 'high';
+const quality = () => (qualitySetting === 'auto' ? autoQuality : qualitySetting);
+
 function resize() {
-  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  DPR = Math.min(window.devicePixelRatio || 1, QUALITY[quality()].dpr);
   W = cvs.clientWidth;
   H = cvs.clientHeight;
   cvs.width = Math.round(W * DPR);
@@ -34,6 +39,27 @@ audio.settings.music = store.get('music', true);
 audio.settings.sfx = store.get('sfx', true);
 let mirrored = store.get('mirror', false);
 let tutorialDone = store.get('tutorial-done', false);
+qualitySetting = store.get('quality', 'auto');
+if (qualitySetting !== 'auto' && !QUALITY[qualitySetting]) qualitySetting = 'auto';
+autoQuality = store.get('quality-auto', 'high');
+if (!QUALITY[autoQuality]) autoQuality = 'high';
+resize();
+const QUALITY_LABEL = { high: 'alta', medium: 'média', low: 'baixa' };
+// frame-time watch for automatic quality: slower than ~40 fps for 2 s steps down one level
+let frameAvg = 16.7, slowFor = 0;
+function watchFrames(rawMs, dt) {
+  if (qualitySetting !== 'auto' || document.hidden || rawMs > 250) return; // ignore tab switches
+  frameAvg += (rawMs - frameAvg) * 0.05;
+  slowFor = frameAvg > 25 ? slowFor + dt : 0;
+  if (slowFor > 2 && autoQuality !== 'low') {
+    autoQuality = autoQuality === 'high' ? 'medium' : 'low';
+    store.set('quality-auto', autoQuality);
+    slowFor = 0;
+    frameAvg = 16.7;
+    resize();
+    refreshMenu();
+  }
+}
 // comfort options (menu → Opções)
 let vibrate = store.get('vibrate', false);  // off unless the player turns it on
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -130,7 +156,9 @@ function onDie({ cause, kind, metres }) {
 // ---- loop ----
 let last = performance.now();
 function frame(now) {
-  const dt = Math.min((now - last) / 1000, 1 / 30);
+  const rawMs = now - last;
+  const dt = Math.min(rawMs / 1000, 1 / 30);
+  if (state === 'play' || state === 'menu') watchFrames(rawMs, dt);
   last = now;
   if (state === 'countdown') {
     countdownLeft -= dt;
@@ -156,7 +184,7 @@ function frame(now) {
 
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   if (shake > 0) { const a = shake * 18; ctx.translate((Math.random() - 0.5) * a, (Math.random() - 0.5) * a); }
-  drawTunnel(ctx, S, W, H, { debug, fx });
+  drawTunnel(ctx, S, W, H, { debug, fx, quality: quality() });
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   if (flash > 0) { ctx.fillStyle = rgb(COL.haz, flash * 0.45); ctx.fillRect(0, 0, W, H); }
   if (fx.flipFade > 0) { ctx.fillStyle = rgb(COL.cloud, fx.flipFade / 0.16 * 0.55); ctx.fillRect(0, 0, W, H); }
@@ -281,6 +309,7 @@ function refreshMenu() {
   $('btnVibrate').setAttribute('aria-pressed', vibrate);
   $('btnCamera').textContent = 'Giro da câmera: ' + (cameraMode === 'instant' ? 'instantâneo' : 'animado');
   $('btnSwipe').textContent = 'Sensibilidade do arrasto: ' + SWIPE_LABEL[swipeLevel];
+  $('btnQuality').textContent = 'Qualidade: ' + (qualitySetting === 'auto' ? `automática (${QUALITY_LABEL[autoQuality]})` : QUALITY_LABEL[qualitySetting]);
   cvs.classList.toggle('mirrored', mirrored);
   const muted = !audio.settings.music && !audio.settings.sfx;
   $('btnSound').textContent = muted ? 'Som: desligado' : 'Som: ligado';
@@ -356,6 +385,14 @@ $('btnOptions').addEventListener('click', () => { $('menu').hidden = true; $('op
 $('optionsClose').addEventListener('click', () => { $('options').hidden = true; $('menu').hidden = false; });
 $('btnVibrate').addEventListener('click', () => { vibrate = !vibrate; store.set('vibrate', vibrate); buzz(30); refreshMenu(); });
 $('btnCamera').addEventListener('click', () => { cameraMode = cameraMode === 'instant' ? 'animated' : 'instant'; store.set('camera', cameraMode); refreshMenu(); });
+$('btnQuality').addEventListener('click', () => {
+  const order = ['auto', 'high', 'medium', 'low'];
+  qualitySetting = order[(order.indexOf(qualitySetting) + 1) % order.length];
+  if (qualitySetting === 'auto') { autoQuality = 'high'; store.set('quality-auto', autoQuality); frameAvg = 16.7; slowFor = 0; }
+  store.set('quality', qualitySetting);
+  resize();
+  refreshMenu();
+});
 $('btnSwipe').addEventListener('click', () => {
   const order = ['low', 'normal', 'high'];
   swipeLevel = order[(order.indexOf(swipeLevel) + 1) % order.length];

@@ -9,7 +9,16 @@ import { HM, HW, PH, PL, OH, HIT, RUIN_DIP, PORTAL_GAP, clamp, lerp, mix, rgb, C
 import { blockHitbox, holeKillZone, playerBox } from './sim.js';
 import { drawAxolotl } from './hero.js';
 
-const CAM_Z = -4.4, NEAR = 0.6, FAR = 75, BASE = CAM_Z + NEAR;
+const CAM_Z = -4.4, NEAR = 0.6, BASE = CAM_Z + NEAR;
+let FAR = 75; // draw distance; set per frame from the quality level
+
+// Quality levels, picked automatically on slow devices (main.js) or in Opções.
+// dpr caps the canvas resolution, the biggest cost on weak phones.
+export const QUALITY = {
+  high:   { dpr: 2,   far: 75, glints: 46, coffers: true,  flutes: true,  lines: 26 },
+  medium: { dpr: 1.5, far: 58, glints: 20, coffers: true,  flutes: false, lines: 16 },
+  low:    { dpr: 1,   far: 42, glints: 0,  coffers: false, flutes: false, lines: 10 },
+};
 // Chase view turned a little to the left (the user preferred this to the stronger
 // three-quarter view of v0.12–0.13: yaw 0.36, pitch 0.28, x 0.6, anchor 0.46 / 0.64).
 export const CAMERA = {
@@ -51,7 +60,7 @@ const CLOUDS = [
   { x: 0.65, y: -0.28, s: 0.9, v: 0.3 },
 ];
 
-function drawBackdrop(ctx, W, H, t) {
+function drawBackdrop(ctx, W, H, t, Q) {
   const R = Math.hypot(W, H);
   // sky down to the horizon (local y = 0 is the horizon at any camera height)
   const sky = ctx.createLinearGradient(0, -R * 0.6, 0, 0);
@@ -97,7 +106,7 @@ function drawBackdrop(ctx, W, H, t) {
   ctx.closePath();
   ctx.fill();
   // sun glints on the water
-  for (let i = 0; i < 46; i++) {
+  for (let i = 0; i < Q.glints; i++) {
     const gx = (hash(i) - 0.5) * W * 1.6;
     const gy = Math.pow(hash(i + 50), 2) * H * 0.55 + 3;
     const a = 0.35 + 0.35 * Math.sin(t * 2.2 + i * 1.7);
@@ -107,8 +116,11 @@ function drawBackdrop(ctx, W, H, t) {
   }
 }
 
-// opts.debug: outline every hitbox on top of the scene; opts.fx: particles from fx.js
+// opts.debug: outline every hitbox on top of the scene; opts.fx: particles from fx.js;
+// opts.quality: a key of QUALITY
 export function drawTunnel(ctx, S, W, H, opts = {}) {
+  const Q = QUALITY[opts.quality] || QUALITY.high;
+  FAR = Q.far;
   const ease = S.camT * S.camT * (3 - 2 * S.camT);
   const camY = lerp(2.3, HM - 2.3, ease);
   const roll = ease * Math.PI;
@@ -153,7 +165,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   ctx.rotate(roll);
   ctx.save();
   ctx.translate(Math.tan(yaw) * f, -Math.tan(pitch) * f / Math.cos(yaw)); // the backdrop is infinitely far: it only pans
-  drawBackdrop(ctx, W, H, t);
+  drawBackdrop(ctx, W, H, t, Q);
   ctx.restore();
 
   // 1. the stoa, slice by slice, far to near: floor, roof, painted band, columns
@@ -175,7 +187,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     }
     for (const [a, b] of solidParts(S.obs, 1, za, zb)) {
       quad(P(-EDGE, HM, a), P(EDGE, HM, a), P(EDGE, HM, b), P(-EDGE, HM, b), fog(COL.ceiling, a));
-      if (b - a > 0.9) { // coffer
+      if (Q.coffers && b - a > 0.9) { // coffer
         const ca = a + 0.3, cb = b - 0.3;
         quad(P(-HW * 0.6, HM, ca), P(HW * 0.6, HM, ca), P(HW * 0.6, HM, cb), P(-HW * 0.6, HM, cb), fog(COL.beam, ca));
       }
@@ -206,7 +218,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
           quad(P(x0 - s * 0.05, h - 0.14, zc), P(x1 + s * 0.05, h - 0.14, zc), P(x1 + s * 0.05, h, zc), P(x0 - s * 0.05, h, zc), fog(COL.columnShade, zc));
         }
         const fc = fog(COL.columnShade, zc);
-        for (const q of [0.35, 0.65]) {
+        for (const q of Q.flutes ? [0.35, 0.65] : []) {
           const fx = lerp(x0, x1, q);
           line(P(fx, 0.05, zc), P(fx, h - (broken ? 0.15 : 0.18), zc), fc, lw(zc) * 0.7);
         }
@@ -315,7 +327,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     ctx.strokeStyle = rgb(COL.ink, 0.22 * rush); // dark enough to read over white marble
     ctx.lineWidth = 1.4;
     ctx.beginPath();
-    for (let i = 0; i < 26; i++) {
+    for (let i = 0; i < Q.lines; i++) {
       const a = hash(i * 3.1) * Math.PI * 2;
       const k = (t * (0.9 + hash(i) * 0.8) + hash(i * 7.7)) % 1;
       const r0 = R * (0.22 + 0.5 * k), r1 = r0 + R * (0.06 + 0.12 * k) * rush;
