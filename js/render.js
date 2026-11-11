@@ -10,7 +10,16 @@ import { blockHitbox, holeKillZone } from './sim.js';
 import { drawAxolotl } from './hero.js';
 
 const CAM_Z = -4.4, NEAR = 0.6, FAR = 75, BASE = CAM_Z + NEAR;
-const CAM_YAW = 0.14; // the camera looks a little to the left (radians, about 8°)
+// Three-quarter chase view, after the user's framing sketch: the camera sits a little to the
+// right of the lane, turns left and looks slightly down, so the corridor runs off diagonally
+// to the upper right and the left colonnade fills the foreground.
+export const CAMERA = {
+  yaw: 0.36,     // radians turned to the left (about 21°)
+  pitch: 0.28,   // radians looking down (about 16°)
+  x: 0.6,        // metres to the right of the lane's centre
+  anchorX: 0.46, // where the camera's optical centre sits on screen (fraction of width / height)
+  anchorY: 0.64,
+};
 const EDGE = HW + 0.5;                          // floor and roof extend under the colonnade
 const COL_X0 = HW + 0.1, COL_X1 = HW + 0.4;     // column box, outside the running lane
 const COL_D = 0.3;
@@ -107,11 +116,16 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   const f = Math.min(H * 1.2, W * 1.4);
   const t = performance.now() / 1000;
   // the yaw mirrors while the camera rolls onto the ceiling, so the screen keeps the same composition
-  const yaw = CAM_YAW * (1 - 2 * ease), cyw = Math.cos(yaw), syw = Math.sin(yaw);
+  const mirror = 1 - 2 * ease;
+  const yaw = CAMERA.yaw * mirror, cyw = Math.cos(yaw), syw = Math.sin(yaw);
+  const pitch = CAMERA.pitch * mirror, cp = Math.cos(pitch), sp = Math.sin(pitch);
+  const camX = CAMERA.x * mirror;
   const P = (x, y, z) => {
-    const dz = z - CAM_Z;
-    const xc = x * cyw + dz * syw, zc = Math.max(0.05, dz * cyw - x * syw);
-    return [xc * f / zc, -(y - camY) * f / zc];
+    const dx = x - camX, dy = y - camY, dz = z - CAM_Z;
+    const x1 = dx * cyw + dz * syw, z1 = dz * cyw - dx * syw;  // turn left
+    const y2 = dy * cp + z1 * sp, z2 = z1 * cp - dy * sp;      // look down
+    const zc = Math.max(0.05, z2);
+    return [x1 * f / zc, -y2 * f / zc];
   };
   const fogK = z => Math.pow(clamp((z - 4) / (FAR - 8), 0, 1), 0.85);
   const fog = (c, z) => rgb(mix(c, COL.haze, fogK(z)));
@@ -136,10 +150,10 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   ctx.fillStyle = rgb(COL.haze);
   ctx.fillRect(0, 0, W, H);
   ctx.save();
-  ctx.translate(W / 2, H * 0.5);
+  ctx.translate(W * CAMERA.anchorX, H * CAMERA.anchorY);
   ctx.rotate(roll);
   ctx.save();
-  ctx.translate(Math.tan(yaw) * f, 0); // the backdrop is infinitely far: it only pans
+  ctx.translate(Math.tan(yaw) * f, -Math.tan(pitch) * f / Math.cos(yaw)); // the backdrop is infinitely far: it only pans
   drawBackdrop(ctx, W, H, t);
   ctx.restore();
 
