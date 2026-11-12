@@ -1,8 +1,13 @@
-// Entry point: game loop, input, menus, tutorial, pause, stats panel and offline support.
+// Entry point: game loop, game flow (runs, tutorial, pause, game over), menus, keys and offline support.
+// Options live in options.js, touch gestures in input.js, the stats and achievements panels in panels.js.
 
 import { COL, rgb } from './config.js';
 import { createSim, update, press, slide } from './sim.js';
 import { drawTunnel, QUALITY } from './render.js';
+import { store } from './store.js';
+import { opt, quality, buzz, watchFrames, renderOptions, bindOptions, SWIPE } from './options.js';
+import { renderStats, renderAchievements, toast } from './panels.js';
+import { bindTouch } from './input.js';
 import * as audio from './audio.js';
 import * as stats from './stats.js';
 import * as ach from './achievements.js';
@@ -15,11 +20,6 @@ const cvs = $('game');
 const ctx = cvs.getContext('2d');
 let W = 0, H = 0, DPR = 1;
 
-// Quality: 'auto' (default) starts high and steps down if frames stay slow; or fixed in Opções.
-let qualitySetting = 'auto';
-let autoQuality = 'high';
-const quality = () => (qualitySetting === 'auto' ? autoQuality : qualitySetting);
-
 function resize() {
   DPR = Math.min(window.devicePixelRatio || 1, QUALITY[quality()].dpr);
   W = cvs.clientWidth;
@@ -30,50 +30,8 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
-// ---- saved preferences (optional; the game works without storage) ----
-const store = {
-  get(k, d) { try { const v = localStorage.getItem('ci-' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
-  set(k, v) { try { localStorage.setItem('ci-' + k, JSON.stringify(v)); } catch (e) { /* ignore */ } },
-};
 let best = store.get('best-tunnel', 0);
-audio.settings.music = store.get('music', true);
-audio.settings.sfx = store.get('sfx', true);
-// Mirrored by default since v0.29 (the corridor runs off to the left, clear of a right thumb);
-// a new key so everyone gets the new default once.
-let mirrored = store.get('mirror-v2', true);
 let tutorialDone = store.get('tutorial-done', false);
-qualitySetting = store.get('quality', 'auto');
-if (qualitySetting !== 'auto' && !QUALITY[qualitySetting]) qualitySetting = 'auto';
-autoQuality = store.get('quality-auto', 'high');
-if (!QUALITY[autoQuality]) autoQuality = 'high';
-resize();
-const QUALITY_LABEL = { high: 'alta', medium: 'média', low: 'baixa' };
-// frame-time watch for automatic quality: slower than ~40 fps for 2 s steps down one level
-let frameAvg = 16.7, slowFor = 0;
-function watchFrames(rawMs, dt) {
-  if (qualitySetting !== 'auto' || document.hidden || rawMs > 250) return; // ignore tab switches
-  frameAvg += (rawMs - frameAvg) * 0.05;
-  slowFor = frameAvg > 25 ? slowFor + dt : 0;
-  if (slowFor > 2 && autoQuality !== 'low') {
-    autoQuality = autoQuality === 'high' ? 'medium' : 'low';
-    store.set('quality-auto', autoQuality);
-    slowFor = 0;
-    frameAvg = 16.7;
-    resize();
-    refreshMenu();
-  }
-}
-// comfort options (menu → Opções)
-let vibrate = store.get('vibrate', false);  // off unless the player turns it on
-const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-let cameraMode = store.get('camera', reduceMotion ? 'instant' : 'animated'); // animated | instant | fixed
-const CAMERA_LABEL = { animated: 'animado', instant: 'instantâneo', fixed: 'sem girar' };
-if (!CAMERA_LABEL[cameraMode]) cameraMode = 'animated';
-const SWIPE = { low: 40, normal: 26, high: 14 };  // pixels a finger must travel down to slide
-const SWIPE_LABEL = { low: 'baixa', normal: 'normal', high: 'alta' };
-let swipeLevel = store.get('swipe', 'normal');
-if (!SWIPE[swipeLevel]) swipeLevel = 'normal';
-function buzz(ms) { if (vibrate) { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) { /* ignore */ } } }
 
 // ---- state ----
 // menu | play | dead | paused | countdown
@@ -108,7 +66,7 @@ const emit = (type, data) => {
   else if (type === 'flip') {
     buzz(12);
     onFlipBlessing(S);
-    if (cameraMode === 'instant') { S.camT = data.toCeiling ? 1 : 0; onInstantFlip(); }
+    if (opt.camera === 'instant') { S.camT = data.toCeiling ? 1 : 0; onInstantFlip(); }
   } else if (type === 'slide') buzz(10);
 };
 
@@ -188,7 +146,7 @@ let last = performance.now();
 function frame(now) {
   const rawMs = now - last;
   const dt = Math.min(rawMs / 1000, 1 / 30);
-  if (state === 'play' || state === 'menu') watchFrames(rawMs, dt);
+  if ((state === 'play' || state === 'menu') && watchFrames(rawMs, dt)) { resize(); refreshMenu(); }
   last = now;
   if (state === 'countdown') {
     countdownLeft -= dt;
@@ -215,7 +173,7 @@ function frame(now) {
 
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   if (shake > 0) { const a = shake * 18; ctx.translate((Math.random() - 0.5) * a, (Math.random() - 0.5) * a); }
-  drawTunnel(ctx, S, W, H, { debug, fx, quality: quality(), fixedCamera: cameraMode === 'fixed' });
+  drawTunnel(ctx, S, W, H, { debug, fx, quality: quality(), fixedCamera: opt.camera === 'fixed' });
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   if (flash > 0) { ctx.fillStyle = rgb(COL.haz, flash * 0.45); ctx.fillRect(0, 0, W, H); }
   if (fx.flipFade > 0) { ctx.fillStyle = rgb(COL.cloud, fx.flipFade / 0.16 * 0.55); ctx.fillRect(0, 0, W, H); }
@@ -270,31 +228,6 @@ function runState(metres) {
 }
 function checkAchievements(metres) {
   for (const a of ach.evaluate(runState(metres), stats.get())) toast(a);
-}
-const toastQueue = [];
-let toastBusy = false;
-function toast(a) {
-  toastQueue.push(a);
-  if (toastBusy) return;
-  const next = () => {
-    const item = toastQueue.shift();
-    if (!item) { toastBusy = false; return; }
-    toastBusy = true;
-    $('toastName').textContent = item.name;
-    $('toastDesc').textContent = item.desc;
-    $('toast').hidden = false;
-    audio.sfx('milestone');
-    setTimeout(() => { $('toast').hidden = true; setTimeout(next, 250); }, 2600);
-  };
-  next();
-}
-function renderAchievements() {
-  $('achCount').textContent = `${ach.count()} de ${ach.ACHIEVEMENTS.length} desbloqueadas`;
-  $('achList').innerHTML = ach.ACHIEVEMENTS.map(a => {
-    const at = ach.unlockedAt(a.id);
-    const when = at ? new Date(at).toLocaleDateString('pt-BR') : '';
-    return `<li class="ach ${at ? 'done' : ''}"><span class="ach-mark" aria-hidden="true">${at ? '★' : '☆'}</span><span><b>${a.name}</b><small>${a.desc}${at ? ' · ' + when : ''}</small></span></li>`;
-  }).join('');
 }
 
 function finishTutorial() {
@@ -370,71 +303,9 @@ function toMenu() {
 function refreshMenu() {
   $('bestMenu').textContent = 'Recorde: ' + (best ? best + ' m' : '—');
   $('verLabel').textContent = VERSION_LABEL + (debug ? ' · colisões visíveis' : '');
-  $('btnMusic').textContent = 'Música: ' + (audio.settings.music ? 'ligada' : 'desligada');
-  $('btnSfx').textContent = 'Efeitos: ' + (audio.settings.sfx ? 'ligados' : 'desligados');
-  $('btnMusic').setAttribute('aria-pressed', audio.settings.music);
-  $('btnSfx').setAttribute('aria-pressed', audio.settings.sfx);
-  $('btnMirror').textContent = 'Espelhar tela: ' + (mirrored ? 'sim' : 'não');
-  $('btnMirror').setAttribute('aria-pressed', mirrored);
-  $('btnVibrate').textContent = 'Vibração: ' + (vibrate ? 'ligada' : 'desligada');
-  $('btnVibrate').setAttribute('aria-pressed', vibrate);
-  $('btnCamera').textContent = 'Giro da câmera: ' + CAMERA_LABEL[cameraMode];
-  $('btnSwipe').textContent = 'Sensibilidade do arrasto: ' + SWIPE_LABEL[swipeLevel];
-  $('btnQuality').textContent = 'Qualidade: ' + (qualitySetting === 'auto' ? `automática (${QUALITY_LABEL[autoQuality]})` : QUALITY_LABEL[qualitySetting]);
-  cvs.classList.toggle('mirrored', mirrored);
-  const muted = !audio.settings.music && !audio.settings.sfx;
-  $('btnSound').textContent = muted ? 'Som: desligado' : 'Som: ligado';
+  renderOptions();
 }
 
-// ---- stats panel ----
-const fmtTime = s => {
-  s = Math.round(s);
-  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60;
-  return h ? `${h} h ${m} min` : m ? `${m} min ${r} s` : `${r} s`;
-};
-const fmtDate = iso => {
-  try { return new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; }
-};
-const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-
-function bars(rows) {
-  const max = Math.max(1, ...rows.map(r => r[1]));
-  return rows.map(([label, n]) =>
-    `<div class="bar-row"><span class="bar-label">${esc(label)}</span><span class="bar"><i style="width:${(n / max) * 100}%"></i></span><span class="bar-n">${n}</span></div>`,
-  ).join('');
-}
-
-function renderStats() {
-  const d = stats.get();
-  const avg = d.runs ? Math.round(d.totalMetres / d.runs) : 0;
-  const deathRows = Object.entries(stats.KIND_LABEL).map(([k, label]) => [label, d.deaths[k] || 0]).sort((a, b) => b[1] - a[1]);
-  const bucketRows = stats.BUCKETS.map((b, i) => [stats.bucketLabel(b), d.buckets[i] || 0]);
-  const tutRows = STEPS.map((st, i) =>
-    `<tr><td>${i + 1}. ${esc(st.name)}</td><td class="num">${d.tutorial.passed[i + 1] || 0}</td><td class="num">${d.tutorial.retries[i + 1] || 0}</td></tr>`).join('');
-  const recent = d.recent.slice(0, 10).map(r =>
-    `<tr><td>${fmtDate(r.at)}</td><td class="num">${r.metres} m</td><td>${esc(stats.KIND_LABEL[r.kind] || '—')}</td></tr>`).join('');
-  $('statsBody').innerHTML = d.runs === 0 && !d.tutorial.completed
-    ? '<p class="hint">Nenhuma corrida registrada ainda. Jogue uma partida e volte aqui.</p>'
-    : `
-    <div class="tiles">
-      <div><b>${d.runs}</b><small>corridas</small></div>
-      <div><b>${d.best} m</b><small>recorde</small></div>
-      <div><b>${avg} m</b><small>média por corrida</small></div>
-      <div><b>${(d.totalMetres / 1000).toFixed(1)} km</b><small>distância total</small></div>
-      <div><b>${fmtTime(d.totalSeconds)}</b><small>tempo jogado</small></div>
-      <div><b>${d.actions.jump + d.actions.flip + d.actions.slide}</b><small>ações</small></div>
-    </div>
-    <h3>O que encerrou as corridas</h3>${bars(deathRows)}
-    <h3>Vidas perdidas (a corrida continuou)</h3>${bars(Object.entries(stats.KIND_LABEL).map(([k, label]) => [label, (d.hurts || {})[k] || 0]).sort((a, b) => b[1] - a[1]))}
-    <h3>Até onde as corridas chegaram</h3>${bars(bucketRows)}
-    <h3>Ações</h3>${bars([['Pulos', d.actions.jump], ['Inversões', d.actions.flip], ['Deslizes', d.actions.slide]])}
-    <h3>Tutorial</h3>
-    <p class="hint">Tutorial inteiro concluído ${d.tutorial.completed} ${d.tutorial.completed === 1 ? 'vez' : 'vezes'} · pulado ${d.tutorial.skipped} ${d.tutorial.skipped === 1 ? 'vez' : 'vezes'}.</p>
-    <div class="table-wrap"><table><thead><tr><th>Passo</th><th class="num">Concluído</th><th class="num">Repetições</th></tr></thead><tbody>${tutRows}</tbody></table></div>
-    <p class="hint">Repetições: quantas vezes o passo teve de ser refeito depois de uma batida ou queda.</p>
-    ${recent ? `<h3>Últimas corridas</h3><div class="table-wrap"><table><thead><tr><th>Quando</th><th class="num">Distância</th><th>Fim</th></tr></thead><tbody>${recent}</tbody></table></div>` : ''}
-    <p class="hint">Registrado desde ${fmtDate(d.since)}.</p>`;
-}
 function openStats() {
   renderStats();
   $('btnReset').textContent = 'Apagar estatísticas';
@@ -456,27 +327,6 @@ $('btnAch').addEventListener('click', () => { renderAchievements(); $('menu').hi
 $('achClose').addEventListener('click', () => { $('achPanel').hidden = true; $('menu').hidden = false; });
 $('btnOptions').addEventListener('click', () => { $('menu').hidden = true; $('options').hidden = false; $('optionsClose').focus({ preventScroll: true }); });
 $('optionsClose').addEventListener('click', () => { $('options').hidden = true; $('menu').hidden = false; });
-$('btnVibrate').addEventListener('click', () => { vibrate = !vibrate; store.set('vibrate', vibrate); buzz(30); refreshMenu(); });
-$('btnCamera').addEventListener('click', () => {
-  const order = ['animated', 'instant', 'fixed'];
-  cameraMode = order[(order.indexOf(cameraMode) + 1) % order.length];
-  store.set('camera', cameraMode);
-  refreshMenu();
-});
-$('btnQuality').addEventListener('click', () => {
-  const order = ['auto', 'high', 'medium', 'low'];
-  qualitySetting = order[(order.indexOf(qualitySetting) + 1) % order.length];
-  if (qualitySetting === 'auto') { autoQuality = 'high'; store.set('quality-auto', autoQuality); frameAvg = 16.7; slowFor = 0; }
-  store.set('quality', qualitySetting);
-  resize();
-  refreshMenu();
-});
-$('btnSwipe').addEventListener('click', () => {
-  const order = ['low', 'normal', 'high'];
-  swipeLevel = order[(order.indexOf(swipeLevel) + 1) % order.length];
-  store.set('swipe', swipeLevel);
-  refreshMenu();
-});
 $('statsClose').addEventListener('click', closeStats);
 $('btnCopyStats').addEventListener('click', () => {
   const text = JSON.stringify(stats.get(), null, 2);
@@ -498,9 +348,6 @@ $('btnPause').addEventListener('click', e => { e.stopPropagation(); pause(); });
 $('btnResume').addEventListener('click', resume);
 $('btnQuit').addEventListener('click', toMenu);
 $('btnSkipTut').addEventListener('click', e => { e.stopPropagation(); skipTutorial(); });
-$('btnMusic').addEventListener('click', () => { audio.settings.music = !audio.settings.music; store.set('music', audio.settings.music); refreshMenu(); });
-$('btnSfx').addEventListener('click', () => { audio.settings.sfx = !audio.settings.sfx; store.set('sfx', audio.settings.sfx); refreshMenu(); });
-$('btnMirror').addEventListener('click', () => { mirrored = !mirrored; store.set('mirror-v2', mirrored); refreshMenu(); });
 $('btnSound').addEventListener('click', e => {
   e.stopPropagation();
   const on = !(audio.settings.music || audio.settings.sfx);
@@ -515,36 +362,15 @@ $('over').addEventListener('pointerdown', e => {
   if (e.target === $('over') && performance.now() - deadAt > 450) start();
 });
 
-// Touch controls: every touch acts at once (jump on a surface, flip in the air).
-// Then the same finger can drag:
-// - toward the surface the hero stands on: slide (in the air: drop fast, slide on landing);
-// - away from it: flip gravity. From a surface that is the touch's jump plus a flip in one
-//   gesture; a touch that already flipped is not flipped back.
-// The hero's surface is at the bottom of the screen, except with the "sem girar" camera on the
-// roof, where it is at the top, so the directions follow the hero.
-let touch = null;
-cvs.addEventListener('pointerdown', e => {
-  e.preventDefault();
-  audio.unlock();
-  if (state !== 'play') return;
-  const did = press(S, emit);
-  touch = { id: e.pointerId, y: e.clientY, t: performance.now(), swiped: false, did };
-  try { cvs.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+bindTouch(cvs, {
+  active: () => state === 'play',
+  onTouch: () => audio.unlock(),
+  press: () => press(S, emit),
+  slide: () => slide(S, emit),
+  heroJumping: () => S.mode === 'jump',
+  surfaceOnTop: () => opt.camera === 'fixed' && S.grav > 0,
+  swipePx: () => SWIPE[opt.swipe],
 });
-cvs.addEventListener('pointermove', e => {
-  if (!touch || touch.swiped || e.pointerId !== touch.id || state !== 'play') return;
-  if (performance.now() - touch.t > 450) return;
-  const surfaceOnTop = cameraMode === 'fixed' && S.grav > 0;
-  const toward = (e.clientY - touch.y) * (surfaceOnTop ? -1 : 1); // + toward the hero's surface
-  if (toward > SWIPE[swipeLevel]) { touch.swiped = true; slide(S, emit); }
-  else if (-toward > SWIPE[swipeLevel]) {
-    touch.swiped = true;
-    if (touch.did === 'jump' && S.mode === 'jump') press(S, emit); // jumped on touch: now flip
-  }
-});
-const endTouch = e => { if (touch && e.pointerId === touch.id) touch = null; };
-cvs.addEventListener('pointerup', endTouch);
-cvs.addEventListener('pointercancel', endTouch);
 addEventListener('keydown', e => {
   const k = e.code;
   if (state === 'play' && ['Space', 'ArrowUp', 'KeyW'].includes(k)) { e.preventDefault(); press(S, emit); }
@@ -573,6 +399,7 @@ $('verLabel').addEventListener('click', () => {
   if (versionTaps >= 5) { versionTaps = 0; toggleDebug(); }
 });
 
+bindOptions(what => { if (what === 'quality') resize(); });
 refreshMenu();
 requestAnimationFrame(frame);
 

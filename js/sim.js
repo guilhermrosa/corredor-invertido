@@ -13,6 +13,7 @@ import {
   HEART_FROM, HEART_CHANCE, HEART_LIFT,
   SPEED_START, SPEED_MAX, SPEED_EASE, clamp,
 } from './config.js';
+import { sequenceChance, pickSequence } from './sequences.js';
 
 // The part of an obstacle that kills: follows its drawn shape, trimmed a little (see HIT).
 // The ruined wall is drawn with a jagged top, so it only counts up to its lowest dip.
@@ -105,6 +106,24 @@ function makeOpen(z, len, side) {
   return { type: 'hole', open: true, z, len, side, stars };
 }
 
+// Lays out an authored stretch from `start` (metres ahead) at speed `sp`; side 'a' becomes `a`.
+export function placeSequence(S, seq, start, sp, a) {
+  for (const it of seq.items) {
+    const side = it.side === 'a' ? a : it.side === 'b' ? -a : it.side === 'floor' ? -1 : 1;
+    const z = start + it.t * sp, len = it.len + (it.lenT || 0) * sp;
+    let o;
+    if (it.type === 'void') o = makeOpen(z, len, side);
+    else if (it.type === 'tall') o = { type: 'block', z, len, side };
+    else if (it.type === 'low') o = { type: 'block', h: LOWH, z, len, side };
+    else if (it.type === 'drop') o = { type: 'block', drop: true, z, len, side: 1 };
+    else o = { type: it.type, z, len, side }; // 'hole', 'portal'
+    S.obs.push(o);
+  }
+  S.lastSide = 0;
+  S.sameRun = 0;
+  S.nextZ = start + seq.end * sp + sp * 0.55 + 1.6;
+}
+
 function jumpables(S, from, to, side, sp, jd, avoid = []) {
   const step = sp * (AIR + 0.3) + 1;
   for (let oz = from; oz < to; oz += step + Math.random() * sp * 0.35) {
@@ -132,6 +151,12 @@ function spawn(S) {
     const jd = S.speed * AIR;
     const roll = Math.random();
     const far = S.dist + S.nextZ;
+
+    if (Math.random() < sequenceChance(far)) {
+      // an authored stretch (sequences.js)
+      const seq = pickSequence(far);
+      if (seq) { placeSequence(S, seq, S.nextZ, sp, Math.random() < 0.5 ? -1 : 1); continue; }
+    }
 
     if (far > 80 && roll < 0.18) {
       // Single-surface zone: one side is open sky; stay on the other and jump what comes.

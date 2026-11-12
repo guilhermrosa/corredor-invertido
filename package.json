@@ -1,0 +1,9 @@
+{
+  "name": "corredor-invertido",
+  "private": true,
+  "type": "module",
+  "description": "No build step and no dependencies: this file only lets Node run the tests (npm test).",
+  "scripts": {
+    "test": "node --test"
+  }
+}
