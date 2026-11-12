@@ -21,8 +21,10 @@ body {
 /* The game keeps a phone-like portrait frame: on wide screens (computers, tablets in landscape)
    it stays centred at 9:16 with solid bars on the sides; on phones it fills the screen. */
 #stage {
-  position: fixed; top: 0; bottom: 0; left: 0; right: 0; margin-inline: auto;
-  width: min(100vw, calc(100vh * 9 / 16)); width: min(100vw, calc(100dvh * 9 / 16));
+  position: fixed; top: 0; left: 0; right: 0; margin-inline: auto;
+  /* --app-h: the screen height, held by main.js through brief shrinks (Android's gesture bar) */
+  height: 100vh; height: var(--app-h, 100dvh);
+  width: min(100vw, calc(100vh * 9 / 16)); width: min(100vw, calc(var(--app-h, 100dvh) * 9 / 16));
   overflow: hidden; background: var(--bg); box-shadow: 0 0 48px rgba(29, 42, 51, .18);
 }
 #game { position: absolute; inset: 0; width: 100%; height: 100%; display: block; outline: none; }

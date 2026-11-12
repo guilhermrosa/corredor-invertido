@@ -20,12 +20,23 @@ const cvs = $('game');
 const ctx = cvs.getContext('2d');
 let W = 0, H = 0, DPR = 1;
 
+// The game frame keeps its height when the screen shrinks a little for a moment, such as when
+// Android's navigation bar slides in during a gesture: the bar then covers the bottom edge instead
+// of the whole game resizing. A rotation (new width), a taller screen or a big change resets it.
+let lockW = 0, lockH = 0;
+function lockStage() {
+  const w = innerWidth, h = innerHeight;
+  if (Math.abs(w - lockW) > 1 || h > lockH || h < lockH * 0.8) { lockW = w; lockH = h; }
+  $('stage').style.setProperty('--app-h', lockH + 'px');
+}
+
 function resize() {
+  lockStage();
   DPR = Math.min(window.devicePixelRatio || 1, QUALITY[quality()].dpr);
   W = cvs.clientWidth;
   H = cvs.clientHeight;
-  cvs.width = Math.round(W * DPR);
-  cvs.height = Math.round(H * DPR);
+  const cw = Math.round(W * DPR), ch = Math.round(H * DPR);
+  if (cvs.width !== cw || cvs.height !== ch) { cvs.width = cw; cvs.height = ch; } // setting them clears the canvas
 }
 addEventListener('resize', resize);
 resize();
