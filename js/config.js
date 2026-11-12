@@ -35,11 +35,10 @@ export const FLIP_V = 7;
 // Lives: a hit or fall costs one and the run goes on, briefly protected; the last one ends it.
 export const LIVES = 2;
 export const INVULN_TIME = 1.6; // seconds of protection after losing a life
-// Getting a life back (never above LIVES): run REGEN_DIST metres without a hit, or take a
-// golden heart (Athena's blessing), which can appear from HEART_FROM m while a life is missing.
-export const REGEN_DIST = 400;
+// Golden heart (Athena's blessing): an extra life on top of the LIVES, at most one at a time.
+// It can appear from HEART_FROM m while the player does not hold one; a hit takes it first.
 export const HEART_FROM = 100;
-export const HEART_CHANCE = 0.14; // per regular obstacle spawned while a life is missing
+export const HEART_CHANCE = 0.09; // per regular obstacle spawned (about one every 600 m)
 export const HEART_LIFT = 0.55;   // height of the heart's centre above its surface
 
 // Falling obstacles (from FALL_FROM m): a column of the left colonnade that topples across

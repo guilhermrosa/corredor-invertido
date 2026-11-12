@@ -10,7 +10,7 @@ import { STEPS, createTutorial, startStep, progress } from './tutorial.js';
 import { fx, onLand, onThud, whileSliding, onHit, onInstantFlip, onFlipBlessing, whileBlessed, onMilestone, onPop, updateFx, clearFx } from './fx.js';
 
 const $ = id => document.getElementById(id);
-const VERSION_LABEL = 'Versão 0.31';
+const VERSION_LABEL = 'Versão 0.32';
 const cvs = $('game');
 const ctx = cvs.getContext('2d');
 let W = 0, H = 0, DPR = 1;
@@ -98,8 +98,8 @@ const emit = (type, data) => {
   if (type === 'heal') {
     renderLives(S.lives, false);
     onFlipBlessing(S);
-    onPop(data.from === 'athena' ? (data.healed ? 'Bênção de Atena' : 'Atena te protege') : 'Vida recuperada');
-    stats.recordHeal(data.from, data.healed !== false);
+    onPop('Bênção de Atena: +1 vida');
+    stats.recordHeal(data.from, true);
     return;
   }
   if (type === 'land') onLand(data.side);
@@ -123,16 +123,24 @@ function onHurt({ cause, kind, lives }) {
   if (cause === 'block') onHit(S);
   renderLives(lives, true);
 }
+// Red hearts for the ordinary lives, plus a gold one while the golden heart is held.
 function renderLives(lives, justLost = false) {
   const el = $('lives');
   el.innerHTML = '';
+  const red = S.gold ? lives - 1 : lives;
   for (let i = 0; i < S.maxLives; i++) {
     const h = document.createElement('span');
-    h.className = 'heart' + (i < lives ? '' : ' lost') + (justLost && i === lives ? ' pulse' : '');
-    h.textContent = i < lives ? '♥' : '♡';
+    h.className = 'heart' + (i < red ? '' : ' lost') + (justLost && !S.gold && i === red ? ' pulse' : '');
+    h.textContent = i < red ? '♥' : '♡';
     el.appendChild(h);
   }
-  el.setAttribute('aria-label', lives === 1 ? '1 vida restante' : `${lives} vidas restantes`);
+  if (S.gold) {
+    const g = document.createElement('span');
+    g.className = 'heart gold pulse';
+    g.textContent = '♥';
+    el.appendChild(g);
+  }
+  el.setAttribute('aria-label', (lives === 1 ? '1 vida restante' : `${lives} vidas restantes`) + (S.gold ? ', uma delas dourada' : ''));
 }
 
 function onDie({ cause, kind, metres }) {

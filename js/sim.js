@@ -9,7 +9,7 @@ import {
   HM, HW, PH, PL, OH, LOWH, PIT, G, JG, JV, AIR, HIT, RUIN_DIP,
   SLIDE_TIME, SLIDE_H, FAST_FALL, PORTAL_GAP, PORTAL_FROM, FLIP_V, LIVES, INVULN_TIME,
   FALL_FROM, FALL_LEAD, TOPPLE_TIME, DROP_TIME, FALL_WOBBLE,
-  REGEN_DIST, HEART_FROM, HEART_CHANCE, HEART_LIFT,
+  HEART_FROM, HEART_CHANCE, HEART_LIFT,
   SPEED_START, SPEED_MAX, SPEED_EASE, clamp,
 } from './config.js';
 
@@ -82,8 +82,8 @@ export function createSim(opts = {}) {
   const S = {
     scripted: !!opts.scripted,
     lives: opts.lives ?? (opts.scripted ? 1 : LIVES),
-    maxLives: opts.lives ?? (opts.scripted ? 1 : LIVES),
-    cleanFrom: 0, // distance of the last hit: a life comes back after REGEN_DIST m without one
+    maxLives: opts.lives ?? (opts.scripted ? 1 : LIVES), // the ordinary lives (red hearts)
+    gold: false, // holding a golden heart: one extra life, taken first by a hit
     invuln: 0, // seconds of protection left after losing a life
     dist: 0, speed: SPEED_START, py: 0, vy: 0, grav: -1, grounded: true, buffer: 0,
     obs: [], nextZ: 24, lastSide: 0, sameRun: 0,
@@ -194,8 +194,8 @@ function spawn(S) {
     if (ob.fixedSide) { S.lastSide = ob.side; S.sameRun = 0; }
     S.obs.push(ob);
     S.nextZ = ob.z + ob.len + sp * 0.55 + 1.6 + Math.random() * sp * 0.6;
-    // a golden heart (Athena's blessing) in the free stretch after it, while a life is missing
-    if (far > HEART_FROM && S.lives < S.maxLives && Math.random() < HEART_CHANCE) {
+    // a golden heart (Athena's blessing) in the free stretch after it, unless one is held or on its way
+    if (far > HEART_FROM && !S.scripted && !S.gold && !S.obs.some(o => o.type === 'heart') && Math.random() < HEART_CHANCE) {
       S.obs.push({ type: 'heart', z: (ob.z + ob.len + S.nextZ) / 2 - 0.25, len: 0.5, side: Math.random() < 0.5 ? -1 : 1 });
     }
   }
@@ -272,11 +272,6 @@ export function update(S, dt, emit, opts = {}) {
     }
   }
   if (opts.live && Math.floor(S.dist / 100) > Math.floor(before / 100)) emit('milestone', { metres: Math.floor(S.dist / 100) * 100 });
-  if (opts.live && S.lives < S.maxLives && S.dist - S.cleanFrom >= REGEN_DIST) {
-    S.lives++;
-    S.cleanFrom = S.dist;
-    emit('heal', { lives: S.lives, from: 'regen' });
-  }
 
   if (opts.autopilot && S.grounded) {
     const pt = S.obs.find(o => o.type === 'portal' && o.z + o.len > 0);
@@ -318,9 +313,11 @@ export function update(S, dt, emit, opts = {}) {
     const cy = o.side < 0 ? HEART_LIFT : HM - HEART_LIFT;
     if (o.z < PL && o.z + o.len > 0 && pb.y0 < cy + 0.25 && pb.y1 > cy - 0.25) {
       o.taken = true;
-      const healed = S.lives < S.maxLives;
-      if (healed) S.lives++;
-      emit('heal', { lives: S.lives, from: 'athena', healed });
+      if (!S.gold) {
+        S.gold = true;
+        S.lives++;
+        emit('heal', { lives: S.lives, from: 'athena' });
+      }
     }
   }
   if (S.invuln > 0) return;
@@ -344,8 +341,8 @@ function hit(S, emit, cause, o) {
     return;
   }
   S.lives--;
+  S.gold = false; // the golden heart goes first
   S.invuln = INVULN_TIME;
-  S.cleanFrom = S.dist;
   if (cause === 'block') {
     o.spent = true; // the obstacle that hit you no longer counts
   } else {
