@@ -10,7 +10,7 @@ import { STEPS, createTutorial, startStep, progress } from './tutorial.js';
 import { fx, onLand, onThud, whileSliding, onHit, onInstantFlip, onFlipBlessing, whileBlessed, onMilestone, onPop, updateFx, clearFx } from './fx.js';
 
 const $ = id => document.getElementById(id);
-const VERSION_LABEL = document.getElementById('verLabel').textContent; // single source: the label in index.html
+const VERSION_LABEL = 'Versão ' + self.APP_VERSION; // from js/version.js
 const cvs = $('game');
 const ctx = cvs.getContext('2d');
 let W = 0, H = 0, DPR = 1;
@@ -585,7 +585,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
     if (hadController && !reloaded && state !== 'play') { reloaded = true; location.reload(); }
   });
   addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').then(reg => {
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
       document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); });
     }).catch(() => {});
   });

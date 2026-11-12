@@ -1,6 +1,8 @@
 // Service worker: makes the game load and play offline.
-// Bump VERSION on every release so installed copies pick up the new files.
-const VERSION = 'ci-v0.34.1';
+// The version lives in js/version.js; changing it there makes installed copies pick up the new files
+// (the browser checks imported scripts for changes too).
+importScripts('js/version.js');
+const VERSION = 'ci-v' + self.APP_VERSION;
 const SHELL = [
   './',
   'index.html',
@@ -16,6 +18,7 @@ const SHELL = [
   'js/tutorial.js',
   'js/fx.js',
   'js/achievements.js',
+  'js/version.js',
   'manifest.webmanifest',
   'icons/icon-192.png',
   'icons/icon-512.png',
