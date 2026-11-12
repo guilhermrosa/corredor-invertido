@@ -12,6 +12,12 @@
 }
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
+/* Reads the device's safe-area insets for main.js, which holds them steady in --safe-* on #stage:
+   Android reports bigger insets while its bars are shown for a moment, which made the HUD and menus jump. */
+#safeProbe {
+  position: fixed; top: 0; left: 0; width: 0; height: 0; visibility: hidden; pointer-events: none;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
 html, body { height: 100%; margin: 0; }
 body {
   background: var(--side); color: var(--ink); font: 14px/1.4 var(--body);
@@ -32,8 +38,8 @@ body {
 
 .hud {
   position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
-  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-top: calc(var(--safe-top, env(safe-area-inset-top, 0px)) + 12px);
+  padding-left: max(16px, var(--safe-left, env(safe-area-inset-left, 0px))); padding-right: max(16px, var(--safe-right, env(safe-area-inset-right, 0px)));
   pointer-events: none;
 }
 .hud button { pointer-events: auto; }
@@ -45,8 +51,8 @@ body {
 
 .overlay {
   position: absolute; inset: 0; display: grid; grid-template-columns: minmax(0, 1fr); place-items: center; background: rgba(222, 236, 242, .35);
-  padding-block: calc(env(safe-area-inset-top, 0px) + 16px) calc(env(safe-area-inset-bottom, 0px) + 16px);
-  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: calc(var(--safe-top, env(safe-area-inset-top, 0px)) + 16px) calc(var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 16px);
+  padding-left: max(16px, var(--safe-left, env(safe-area-inset-left, 0px))); padding-right: max(16px, var(--safe-right, env(safe-area-inset-right, 0px)));
   overflow-y: auto; touch-action: pan-y;
 }
 .card { width: 100%; max-width: 420px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; display: grid; gap: 16px; }
@@ -69,7 +75,7 @@ h2 { font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; }
 
 /* tutorial hint, under the HUD */
 .tut-hint {
-  position: absolute; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top, 0px) + 72px);
+  position: absolute; left: 50%; transform: translateX(-50%); top: calc(var(--safe-top, env(safe-area-inset-top, 0px)) + 72px);
   width: min(88%, 360px); display: grid; justify-items: center; gap: 4px; text-align: center;
   background: rgba(250, 249, 245, .9); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
   pointer-events: none;
@@ -128,7 +134,7 @@ h2 { font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; }
 .ach-mark { font-size: 20px; color: var(--muted); }
 .ach.done .ach-mark { color: #c79a2e; }
 .toast {
-  position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+  position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 24px);
   width: min(88%, 340px); display: grid; gap: 2px; text-align: center; pointer-events: none;
   background: rgba(250, 249, 245, .96); border: 1px solid #c79a2e; border-radius: 12px; padding: 10px 14px;
   box-shadow: 0 6px 24px rgba(29, 42, 51, .18); animation: toast-in .3s ease-out;

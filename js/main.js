@@ -20,14 +20,21 @@ const cvs = $('game');
 const ctx = cvs.getContext('2d');
 let W = 0, H = 0, DPR = 1;
 
-// The game frame keeps its height when the screen shrinks a little for a moment, such as when
-// Android's navigation bar slides in during a gesture: the bar then covers the bottom edge instead
-// of the whole game resizing. A rotation (new width), a taller screen or a big change resets it.
-let lockW = 0, lockH = 0;
+// The game frame holds still when Android shows its bars for a moment (a gesture at the screen's
+// edge): its height is kept through small shrinks, and the safe-area insets (the margins the HUD and
+// menus keep from the edges, which grow while the bars are shown) keep their smallest value.
+// A rotation (new width), a taller screen or a big change starts over.
+let lockW = 0, lockH = 0, safe = null;
 function lockStage() {
   const w = innerWidth, h = innerHeight;
-  if (Math.abs(w - lockW) > 1 || h > lockH || h < lockH * 0.8) { lockW = w; lockH = h; }
-  $('stage').style.setProperty('--app-h', lockH + 'px');
+  const ps = getComputedStyle($('safeProbe'));
+  const now = { top: ps.paddingTop, right: ps.paddingRight, bottom: ps.paddingBottom, left: ps.paddingLeft };
+  if (Math.abs(w - lockW) > 1 || h > lockH || h < lockH * 0.8) { lockW = w; lockH = h; safe = null; }
+  if (!safe) safe = now;
+  else for (const k in safe) if (parseFloat(now[k]) < parseFloat(safe[k])) safe[k] = now[k];
+  const st = $('stage').style;
+  st.setProperty('--app-h', lockH + 'px');
+  for (const k in safe) st.setProperty('--safe-' + k, safe[k]);
 }
 
 function resize() {
