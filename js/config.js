@@ -34,6 +34,12 @@ export const FLIP_V = 7;
 
 // Lives: a hit or fall costs one and the run goes on, briefly protected; the last one ends it.
 export const LIVES = 2;
+// Slipping into a hole (v0.33): the hero sinks a little before the fall counts, so a late flip
+// still saves him. He never sinks below SINK_DEPTH, so he stays on screen the whole time.
+export const SINK_TIME = 0.25;  // seconds of grace before the fall costs a life
+export const SINK_DEPTH = 0.5;  // deepest he sinks during the grace (m; he is PH = 0.9 tall)
+export const SINK_G = 0.5;      // gravity while sinking, as a share of G
+export const SINK_SLOW = 0.35;  // the run slows to this share of its speed while he stumbles
 export const INVULN_TIME = 1.6; // seconds of protection after losing a life
 // Golden heart (Athena's blessing): an extra life on top of the LIVES, at most one at a time.
 // It can appear from HEART_FROM m while the player does not hold one; a hit takes it first.

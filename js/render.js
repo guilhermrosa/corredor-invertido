@@ -294,12 +294,20 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   for (const b of items) {
     const z0 = Math.max(b.z0, BASE);
     if (b.z1 <= z0) continue;
-    const clipFall = b.player && S.falling && S.fallHole;
-    if (clipFall) { // show the falling hero only through the hole
+    const clipFall = b.player && (S.falling || S.sink > 0) && S.fallHole;
+    if (clipFall) {
       const h = S.fallHole, sy = h.side < 0 ? 0 : HM, hz0 = Math.max(h.z, BASE), w = h.open ? EDGE : HW;
       ctx.save();
-      path([P(-w, sy, hz0), P(w, sy, hz0), P(w, sy, h.z + h.len), P(-w, sy, h.z + h.len)]);
-      ctx.clip();
+      if (S.falling) { // the run is over: show the falling hero only through the hole
+        path([P(-w, sy, hz0), P(w, sy, hz0), P(w, sy, h.z + h.len), P(-w, sy, h.z + h.len)]);
+        ctx.clip();
+      } else if (h.z > BASE) { // slipping in: the slab in front of the hole hides his legs
+        ctx.beginPath();
+        ctx.rect(-4 * W, -4 * H, 9 * W, 9 * H);
+        const q = [P(-HW, sy, BASE), P(HW, sy, BASE), P(HW, sy, h.z), P(-HW, sy, h.z)];
+        ctx.moveTo(q[0][0], q[0][1]); for (const p of q.slice(1)) ctx.lineTo(p[0], p[1]); ctx.closePath();
+        ctx.clip('evenodd');
+      }
     }
     if (b.player) {
       const onCeil = S.grav > 0;

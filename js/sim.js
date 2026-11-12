@@ -8,6 +8,7 @@
 import {
   HM, HW, PH, PL, OH, LOWH, PIT, G, JG, JV, AIR, HIT, RUIN_DIP,
   SLIDE_TIME, SLIDE_H, FAST_FALL, PORTAL_GAP, PORTAL_FROM, FLIP_V, LIVES, INVULN_TIME,
+  SINK_TIME, SINK_DEPTH, SINK_G, SINK_SLOW,
   FALL_FROM, FALL_LEAD, TOPPLE_TIME, DROP_TIME, FALL_WOBBLE,
   HEART_FROM, HEART_CHANCE, HEART_LIFT,
   SPEED_START, SPEED_MAX, SPEED_EASE, clamp,
@@ -89,6 +90,7 @@ export function createSim(opts = {}) {
     obs: [], nextZ: 24, lastSide: 0, sameRun: 0,
     mode: 'ground', camT: 0, // camT: 0 = camera on the floor side, 1 = rolled to the ceiling side
     dead: false, falling: false, fallT: 0, fallHole: null,
+    sink: 0, // seconds of grace left while slipping into a hole (see SINK_TIME)
     slide: 0, slideQueued: false, // slide: seconds left lying flat; queued: slide on landing
   };
   spawn(S);
@@ -224,6 +226,7 @@ export function slide(S, emit) {
 
 function flip(S, emit) {
   S.grav *= -1; S.grounded = false; S.mode = 'flip'; S.buffer = 0;
+  S.sink = 0; // flipping out of a hole saves him
   S.vy = S.grav * Math.max(FLIP_V, S.vy * S.grav); // keep momentum toward the new surface
   emit('flip', { toCeiling: S.grav > 0 });
 }
@@ -233,7 +236,7 @@ function flip(S, emit) {
 export function press(S, emit) {
   if (S.dead) return null;
   if (S.grounded) { jump(S, emit); return 'jump'; }
-  if (S.mode === 'jump') { flip(S, emit); return 'flip'; }
+  if (S.mode === 'jump' || S.sink > 0) { flip(S, emit); return 'flip'; }
   S.buffer = 0.12; // tapped during a flip: jump as soon as we land
   return 'buffer';
 }
@@ -250,7 +253,7 @@ export function update(S, dt, emit, opts = {}) {
   }
 
   S.speed = SPEED_START + (SPEED_MAX - SPEED_START) * (1 - Math.exp(-S.dist / SPEED_EASE));
-  const v = S.speed * dt;
+  const v = S.speed * (S.sink > 0 ? SINK_SLOW : 1) * dt;
   const before = S.dist;
   S.dist += v;
   S.nextZ -= v;
@@ -286,17 +289,32 @@ export function update(S, dt, emit, opts = {}) {
   }
 
   const wasGrounded = S.grounded;
-  S.vy += S.grav * (S.mode === 'jump' ? JG : G) * dt;
-  S.py += S.vy * dt;
   const top = HM - PH;
-  if (S.grav < 0 && S.py <= 0) { S.py = 0; S.vy = 0; S.grounded = true; }
-  else if (S.grav > 0 && S.py >= top) { S.py = top; S.vy = 0; S.grounded = true; }
-  else S.grounded = false;
-  if (S.grounded && !wasGrounded) emit('land', { side: S.grav });
-  if (S.grounded) {
-    S.mode = 'ground';
-    if (S.buffer > 0) jump(S, emit);
-    else if (S.slideQueued) startSlide(S, emit);
+  if (S.sink > 0) {
+    // slipping into a hole: sink slowly, never deeper than SINK_DEPTH (he stays on screen)
+    S.vy += S.grav * G * SINK_G * dt;
+    S.py += S.vy * dt;
+    const deep = S.grav < 0 ? -S.py : S.py - top;
+    if (deep >= SINK_DEPTH) { S.py = S.grav < 0 ? -SINK_DEPTH : top + SINK_DEPTH; S.vy = 0; }
+    S.grounded = false;
+  } else {
+    S.vy += S.grav * (S.mode === 'jump' ? JG : G) * dt;
+    S.py += S.vy * dt;
+    if (S.grav < 0 && S.py <= 0) { S.py = 0; S.vy = 0; S.grounded = true; }
+    else if (S.grav > 0 && S.py >= top) { S.py = top; S.vy = 0; S.grounded = true; }
+    else S.grounded = false;
+    if (S.grounded) {
+      if (S.buffer > 0) jump(S, emit); // a buffered tap still jumps the hole
+      else {
+        const h = opts.live && S.invuln <= 0 && holeUnder(S);
+        if (h) { startSink(S, h); emit('slip', { side: S.grav }); }
+      }
+    }
+    if (S.grounded && !wasGrounded) emit('land', { side: S.grav });
+    if (S.grounded) {
+      S.mode = 'ground';
+      if (S.slideQueued) startSlide(S, emit);
+    }
   }
   if (S.buffer > 0) S.buffer -= dt;
   if (S.slide > 0) S.slide = Math.max(0, S.slide - dt);
@@ -320,17 +338,32 @@ export function update(S, dt, emit, opts = {}) {
       }
     }
   }
+  if (S.sink > 0) {
+    // the grace runs out, or the far edge of the hole reaches him: the fall counts
+    const h = S.fallHole;
+    S.sink -= dt;
+    if (S.sink <= 0 || h.z + h.len < mid) { S.sink = 0; hit(S, emit, h.open ? 'void' : 'hole', h); return; }
+  }
   if (S.invuln > 0) return;
   for (const o of S.obs) {
     if (o.spent) continue;
     if (o.type === 'block' || o.type === 'portal') {
       const hb = blockHitbox(o);
       if (hb && hb.z0 < PL - HIT.player && hb.z1 > HIT.player && pb.y0 < hb.y1 && pb.y1 > hb.y0) { hit(S, emit, 'block', o); return; }
-    } else if (o.type === 'hole' && S.grounded && o.side === S.grav && mid > holeKillZone(o).z0 && mid < holeKillZone(o).z1) {
-      hit(S, emit, o.open ? 'void' : 'hole', o);
-      return;
     }
   }
+}
+
+// The hole under a grounded player's middle, on the surface he runs on, if any.
+function holeUnder(S) {
+  const mid = PL / 2;
+  return S.obs.find(o => o.type === 'hole' && o.side === S.grav && mid > holeKillZone(o).z0 && mid < holeKillZone(o).z1);
+}
+
+// Standing over a hole: he slips in and sinks for SINK_TIME before the fall counts.
+function startSink(S, h) {
+  S.grounded = false; S.mode = 'sink'; S.sink = SINK_TIME; S.fallHole = h;
+  S.vy = S.grav * 1; S.slide = 0; S.slideQueued = false; S.buffer = 0;
 }
 
 // A hit or a fall: costs a life and the run goes on, or ends it on the last life.
@@ -350,6 +383,9 @@ function hit(S, emit, cause, o) {
     // right in front is cleared so the run can pick up again
     S.obs = S.obs.filter(x => !(x.z < 14 && x.z + x.len > -1));
     S.slide = 0; S.slideQueued = false;
+  }
+  if (cause !== 'block' || S.sink > 0) { // back up on the surface he slipped from
+    S.sink = 0; S.py = S.grav < 0 ? 0 : HM - PH; S.vy = 0; S.grounded = true; S.mode = 'ground';
   }
   emit('hurt', { cause, kind: obstacleKind(o), lives: S.lives });
 }

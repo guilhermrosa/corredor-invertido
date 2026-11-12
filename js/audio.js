@@ -61,6 +61,12 @@ export function sfx(type, data = {}) {
       lyre.pluck(deg(NOTES.length - 2), 0, 0.3, { sustain: 0, bright: 90, dur: 0.12 });
       lyre.pluck(deg(NOTES.length - 3), ac.currentTime + 0.05, 0.25, { sustain: 0, bright: 90, dur: 0.12 });
       break;
+    case 'slip': { // slipping into a hole: a quick falling pair, a cue to flip now
+      const t = ac.currentTime + 0.01;
+      lyre.pluck(deg(5), t, 0.4, { sustain: 0, bright: 40, dur: 0.15 });
+      lyre.pluck(deg(3), t + 0.06, 0.35, { sustain: 0, bright: 40, dur: 0.15 });
+      break;
+    }
     case 'thud':
       lyre.pluck(deg(0), 0, 0.7, { sustain: 5, bright: 5, dur: 0.35 });
       break;
