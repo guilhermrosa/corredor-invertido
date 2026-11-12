@@ -360,6 +360,20 @@ $('btnReset').addEventListener('click', () => {
   b.textContent = 'Apagado';
   renderStats();
 });
+// Playtest feedback: opens the Google Form with the game version and the stats already filled in.
+const FEEDBACK_FORM = 'https://docs.google.com/forms/d/e/1FAIpQLSdNJNIt4SyNeSdWVbpb788UTRqVTEPeqFZvSC0IajTQcnjlzg/viewform';
+const FEEDBACK_FIELDS = { version: 'entry.591515427', stats: 'entry.1006251637' };
+function feedbackUrl() {
+  stats.flush();
+  const d = structuredClone(stats.get());
+  const build = () => FEEDBACK_FORM + '?usp=pp_url&' + new URLSearchParams({
+    [FEEDBACK_FIELDS.version]: self.APP_VERSION, [FEEDBACK_FIELDS.stats]: JSON.stringify(d),
+  });
+  let url = build();
+  while (url.length > 7000 && d.recent && d.recent.length) { d.recent = d.recent.slice(0, -5); url = build(); } // keep the link short enough
+  return url;
+}
+$('btnFeedback').addEventListener('click', () => { window.open(feedbackUrl(), '_blank', 'noopener'); });
 $('btnAgain').addEventListener('click', start);
 $('btnBack').addEventListener('click', toMenu);
 $('btnPause').addEventListener('click', e => { e.stopPropagation(); pause(); });
