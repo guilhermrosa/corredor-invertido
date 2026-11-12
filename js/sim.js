@@ -339,10 +339,12 @@ export function update(S, dt, emit, opts = {}) {
     }
   }
   if (S.sink > 0) {
-    // the grace runs out, or the far edge of the hole reaches him: the fall counts
+    // the grace runs out: the fall counts (always the full SINK_TIME, even if the hole
+    // scrolls past him meanwhile, so short holes at top speed stay fair)
     const h = S.fallHole;
+    h.len = Math.max(h.len, PL + 0.4 - h.z); // the slab ahead keeps crumbling, so he never sinks into solid floor
     S.sink -= dt;
-    if (S.sink <= 0 || h.z + h.len < mid) { S.sink = 0; hit(S, emit, h.open ? 'void' : 'hole', h); return; }
+    if (S.sink <= 0) { S.sink = 0; hit(S, emit, h.open ? 'void' : 'hole', h); return; }
   }
   if (S.invuln > 0) return;
   for (const o of S.obs) {
