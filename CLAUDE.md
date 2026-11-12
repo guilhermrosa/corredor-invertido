@@ -15,6 +15,7 @@ Browser endless runner (pseudo-3D tunnel), shipped as a PWA on GitHub Pages from
 
 - The world is ruins of ancient Greece. The gods bless the axolotl from time to time, helping him find something or reach somewhere (the story is still open). The inverted gravity is itself such a blessing: the gravity is his, not the world's.
 - Gold is the sign of anything divine. v0.30: while inverted, his gills turn gold with a soft halo behind the head, gold sparks burst on every flip, and gold motes drift off him toward the roof; falling through the roof reads "Caiu no céu". Future boosters are meant to be gifts of the gods (Hermes' sandals, something of Zeus…) and should reuse this gold language.
+- Open ideas (not decided, recorded in the project plan doc): Zeus is against him (toppling columns and dropping blocks as his wrath, electric white-blue as his colour, opposite the allies' gold); boosters from Hermes (winged sandals: speed or double jump), Athena (aegis: absorbs one hit), Apollo (golden lyre: short slow motion), Poseidon (rescue from a fall), Hera or Iris (rainbow: shows obstacles ahead). Story told only through a line in the menu or at the end of a run, and the god's name when a booster is taken.
 
 ## Design state
 
