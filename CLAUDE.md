@@ -7,7 +7,7 @@ Browser endless runner (pseudo-3D tunnel), shipped as a PWA on GitHub Pages from
 - Keep `js/sim.js` free of drawing and audio. It reports events through `emit(type, data)`; `main.js` routes them to `audio.js`. The renderer (`js/render.js`) only reads state.
 - `js/lyre.js` is shared with the `guilhermrosa/lira-de-bolso` repository. Keep both copies identical; change one, copy to the other.
 - When adding or renaming a file the game loads, add it to `SHELL` in `sw.js`.
-- On every release, bump `VERSION` in `sw.js` and the version label in `index.html`.
+- On every release, bump `VERSION` in `sw.js` and the version label in `index.html` (main.js reads that label; it has no copy of its own).
 - UI text is in Brazilian Portuguese.
 - Test with a local server (`python3 -m http.server`); modules do not load from `file://`.
 
