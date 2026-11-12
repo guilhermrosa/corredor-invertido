@@ -7,10 +7,10 @@ import * as audio from './audio.js';
 import * as stats from './stats.js';
 import * as ach from './achievements.js';
 import { STEPS, createTutorial, startStep, progress } from './tutorial.js';
-import { fx, onLand, onThud, whileSliding, onHit, onInstantFlip, onMilestone, updateFx, clearFx } from './fx.js';
+import { fx, onLand, onThud, whileSliding, onHit, onInstantFlip, onFlipBlessing, whileBlessed, onMilestone, updateFx, clearFx } from './fx.js';
 
 const $ = id => document.getElementById(id);
-const VERSION_LABEL = 'Versão 0.29';
+const VERSION_LABEL = 'Versão 0.30';
 const cvs = $('game');
 const ctx = cvs.getContext('2d');
 let W = 0, H = 0, DPR = 1;
@@ -100,6 +100,7 @@ const emit = (type, data) => {
   else if (type === 'milestone') onMilestone(data.metres);
   else if (type === 'flip') {
     buzz(12);
+    onFlipBlessing(S);
     if (cameraMode === 'instant') { S.camT = data.toCeiling ? 1 : 0; onInstantFlip(); }
   } else if (type === 'slide') buzz(10);
 };
@@ -157,7 +158,9 @@ function onDie({ cause, kind, metres }) {
   if (isRecord) { best = metres; store.set('best-tunnel', best); }
   setTimeout(() => {
     if (state !== 'dead') return;
-    $('overCause').textContent = CAUSE_TEXT[cause] + (cause === 'block' ? ': ' + stats.KIND_LABEL[kind].toLowerCase() : '');
+    // falling through the roof is falling into the sky
+    const intoSky = cause !== 'block' && S.fallHole && S.fallHole.side > 0;
+    $('overCause').textContent = intoSky ? 'Caiu no céu' : CAUSE_TEXT[cause] + (cause === 'block' ? ': ' + stats.KIND_LABEL[kind].toLowerCase() : '');
     $('overDist').textContent = metres + ' m';
     $('overBest').textContent = isRecord ? 'Novo recorde!' : `Recorde: ${best} m`;
     $('over').hidden = false;
@@ -184,6 +187,7 @@ function frame(now) {
     update(S, dt, emit, { live: state === 'play', autopilot: state === 'menu' });
     if (state === 'play') runSeconds += dt;
     if (state === 'play' && S.slide > 0 && S.grounded) whileSliding(dt, S.grav);
+    if (state === 'play' && S.grav > 0) whileBlessed(dt, S);
     updateFx(dt, state === 'dead' ? 0 : S.speed);
   }
   if (tut && state === 'play') {

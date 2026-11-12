@@ -62,6 +62,25 @@ export function onHit(S) {
 // instant camera mode: a quick light fade hides the cut
 export function onInstantFlip() { fx.flipFade = 0.16; }
 
+// Divine gold (the gods' blessing): a burst when gravity turns, and while the hero runs on
+// the roof, small motes that drift off the body and settle toward the roof, showing that the
+// gravity is his.
+const GOLD = [244, 196, 92];
+function mote(S, spread, speed, life) {
+  const y = S.py + PH * (0.3 + Math.random() * 0.6);
+  add({
+    x: (Math.random() - 0.5) * 0.7, y, z: 0.3 + Math.random() * 0.5,
+    vx: (Math.random() - 0.5) * spread, vy: (Math.random() - 0.5) * spread, vz: -0.5 - Math.random(),
+    g: S.grav * 0.25, life, age: 0, size: 0.012 + Math.random() * 0.016, col: GOLD,
+  });
+}
+export function onFlipBlessing(S) { for (let i = 0; i < 18; i++) mote(S, 3.2, 0, 0.5 + Math.random() * 0.3); }
+let moteAcc = 0;
+export function whileBlessed(dt, S) {
+  moteAcc += dt * 9;
+  while (moteAcc >= 1) { moteAcc--; mote(S, 0.6, 0, 0.7 + Math.random() * 0.4); }
+}
+
 // a short "+100 m" pop in the middle of the screen
 export function onMilestone(metres) { fx.popText = `${metres} m`; fx.popT = 1.1; }
 

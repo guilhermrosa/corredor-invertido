@@ -13,6 +13,27 @@ const C = {
 };
 const LINE = 0.022;
 
+// Divine blessing (0..1): while the hero's gravity is turned toward the roof, the gods' gift
+// shows as gold. Gold is the game's sign for anything divine (future boosters too).
+const GOLD = [244, 196, 92];
+let bless = 0;
+const rgbOf = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+const tint = (hex, t, to = GOLD) => {
+  const c = rgbOf(hex);
+  return `rgb(${c.map((v, i) => Math.round(v + (to[i] - v) * t)).join(',')})`;
+};
+// a soft gold halo behind the head
+function halo(ctx, x, y, r) {
+  if (bless < 0.02) return;
+  const g = ctx.createRadialGradient(x, y, r * 0.15, x, y, r);
+  g.addColorStop(0, `rgba(${GOLD.join(',')},${0.55 * bless})`);
+  g.addColorStop(1, `rgba(${GOLD.join(',')},0)`);
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fill();
+}
+
 const lerp = (a, b, t) => a + (b - a) * t;
 
 function blob(ctx, x, y, rx, ry, fill, rot = 0) {
@@ -77,10 +98,10 @@ function gill(ctx, bx, by, ang, len, side, wig) {
   for (const p of left) ctx.lineTo(p[0], p[1]);
   for (const p of right.reverse()) ctx.lineTo(p[0], p[1]);
   ctx.closePath();
-  ctx.fillStyle = C.gill;
+  ctx.fillStyle = tint(C.gill, bless * 0.85);
   ctx.fill();
   // fringe filaments on both sides of the outer two thirds
-  ctx.strokeStyle = C.fringe;
+  ctx.strokeStyle = tint(C.fringe, bless * 0.7, [255, 236, 170]);
   ctx.lineWidth = 0.009;
   ctx.lineCap = 'round';
   for (let i = 3; i <= 9; i++) {
@@ -99,6 +120,7 @@ function gill(ctx, bx, by, ang, len, side, wig) {
 // Belly slide, seen from behind: soles nearest the camera, flat body, head further ahead,
 // arms stretched forward on both sides of the head.
 function drawSlide(ctx, phase) {
+  halo(ctx, 0, -0.45, 0.5);
   ctx.fillStyle = 'rgba(0,0,0,.22)';
   ctx.beginPath();
   ctx.ellipse(0, 0.0, 0.46, 0.07, 0, 0, Math.PI * 2);
@@ -143,9 +165,12 @@ function drawSlide(ctx, phase) {
   }
 }
 
-// phase: running cycle in radians; air: true while jumping or flipping; sliding: belly slide
-export function drawAxolotl(ctx, phase, air, sliding = false) {
+// phase: running cycle in radians; air: true while jumping or flipping; sliding: belly slide;
+// blessing: 0..1, how much of the divine gold shows (the hero's inverted gravity)
+export function drawAxolotl(ctx, phase, air, sliding = false, blessing = 0) {
+  bless = Math.max(0, Math.min(1, blessing));
   if (sliding) { drawSlide(ctx, phase); return; }
+  halo(ctx, 0, -0.82, 0.78); // behind everything else
   const s = air ? 0 : Math.sin(phase);
   const k = (s + 1) / 2;            // 1: left leg kicked back / right arm raised; 0: the mirror pose
   const bob = air ? 0 : -Math.abs(Math.cos(phase)) * 0.025;

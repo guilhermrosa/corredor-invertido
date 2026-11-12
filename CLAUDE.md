@@ -11,6 +11,11 @@ Browser endless runner (pseudo-3D tunnel), shipped as a PWA on GitHub Pages from
 - UI text is in Brazilian Portuguese.
 - Test with a local server (`python3 -m http.server`); modules do not load from `file://`.
 
+## Story and the divine
+
+- The world is ruins of ancient Greece. The gods bless the axolotl from time to time, helping him find something or reach somewhere (the story is still open). The inverted gravity is itself such a blessing: the gravity is his, not the world's.
+- Gold is the sign of anything divine. v0.30: while inverted, his gills turn gold with a soft halo behind the head, gold sparks burst on every flip, and gold motes drift off him toward the roof; falling through the roof reads "Caiu no céu". Future boosters are meant to be gifts of the gods (Hermes' sandals, something of Zeus…) and should reuse this gold language.
+
 ## Design state
 
 - Chosen sound: lyre preset "Ruína" (chip 24, bright 30, sustain 80, echo 37), Dorian mode on D. Effects and music react to the game.

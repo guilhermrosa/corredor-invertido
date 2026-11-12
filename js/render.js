@@ -305,7 +305,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       if (S.invuln > 0 && Math.floor(S.invuln * 10) % 2) ctx.globalAlpha = 0.35; // blink while protected
       ctx.translate(feet[0], feet[1]);
       ctx.scale(u, onCeil ? -u : u);
-      drawAxolotl(ctx, S.dist * 2.1, !S.grounded, S.slide > 0);
+      drawAxolotl(ctx, S.dist * 2.1, !S.grounded, S.slide > 0, S.camT); // gold follows the inverted gravity
       ctx.restore();
       if (clipFall) ctx.restore();
       continue;
