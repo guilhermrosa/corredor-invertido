@@ -125,7 +125,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   // so the floor is always at the bottom and the hero runs upside down along the roof.
   const fixedCam = !!opts.fixedCamera;
   const ease = fixedCam ? 0 : S.camT * S.camT * (3 - 2 * S.camT);
-  const camY = fixedCam ? HM / 2 : lerp(2.3, HM - 2.3, ease);
+  const camY = fixedCam ? HM / 2 : lerp(2.45, HM - 2.45, ease);
   const roll = ease * Math.PI;
   const f = Math.min(H * 1.2, W * 1.4);
   const t = performance.now() / 1000;
@@ -336,7 +336,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   }
 
   // 5. speed lines streaming from the far end once the run gets fast
-  const rush = clamp((S.speed - 13) / 7, 0, 1);
+  const rush = clamp((S.speed - 14) / 6, 0, 1);
   if (rush > 0) {
     const R = Math.hypot(W, H), vx = Math.tan(yaw) * f;
     ctx.strokeStyle = rgb(COL.ink, 0.22 * rush); // dark enough to read over white marble

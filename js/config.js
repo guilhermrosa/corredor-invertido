@@ -1,15 +1,15 @@
 // World constants (metres / seconds) and the placeholder palette.
 
-export const HM = 3.0;    // corridor height
+export const HM = 3.6;    // corridor height (raised from 3.0 in v0.29: less roof on screen, more air)
 export const HW = 1.45;   // half width of the tunnel
 export const PH = 0.9;    // player height
 export const PL = 0.8;    // player length
-export const OH = 1.3;    // tall block height (flip to dodge)
-export const LOWH = 0.5;  // low block height (jump to clear)
+export const OH = 1.55;   // tall block height (flip to dodge)
+export const LOWH = 0.6;  // low block height (jump to clear)
 export const PIT = 2.2;   // visual depth of holes
 export const G = 42;      // gravity during a flip / fall
 export const JG = 30;     // gravity while jumping (floatier)
-export const JV = Math.sqrt(2 * JG * 0.85); // jump speed for a 0.85 m hop
+export const JV = Math.sqrt(2 * JG * 1.05); // jump speed for a 1.05 m hop
 export const AIR = 2 * JV / JG;             // airtime of a jump, seconds
 
 // Hitboxes are a little smaller than what is drawn, so grazing an obstacle feels fair.
@@ -45,9 +45,12 @@ export const TOPPLE_TIME = 0.6;  // seconds, wobble included
 export const DROP_TIME = 0.55;
 export const FALL_WOBBLE = 0.27; // share of that time spent wobbling before the fall
 
-export const SPEED_START = 9;
-export const SPEED_MAX = 22;
-export const SPEED_RAMP = 0.02; // m/s gained per metre run
+// Speed eases in: quick gains early, then it levels off toward SPEED_MAX (no late rush).
+// speed = START + (MAX - START) * (1 - e^(-metres / SPEED_EASE)): about 13 m/s at 100 m,
+// 16 at 300 m, 18.5 at 600 m, 20 at 1000 m.
+export const SPEED_START = 11;
+export const SPEED_MAX = 21;
+export const SPEED_EASE = 450; // metres
 
 // Placeholder world: a seaside stoa (covered colonnade) in white marble on a sunny day.
 export const COL = {

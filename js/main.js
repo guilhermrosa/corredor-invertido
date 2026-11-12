@@ -10,7 +10,7 @@ import { STEPS, createTutorial, startStep, progress } from './tutorial.js';
 import { fx, onLand, onThud, whileSliding, onHit, onInstantFlip, onMilestone, updateFx, clearFx } from './fx.js';
 
 const $ = id => document.getElementById(id);
-const VERSION_LABEL = 'Versão 0.28';
+const VERSION_LABEL = 'Versão 0.29';
 const cvs = $('game');
 const ctx = cvs.getContext('2d');
 let W = 0, H = 0, DPR = 1;
@@ -38,7 +38,9 @@ const store = {
 let best = store.get('best-tunnel', 0);
 audio.settings.music = store.get('music', true);
 audio.settings.sfx = store.get('sfx', true);
-let mirrored = store.get('mirror', false);
+// Mirrored by default since v0.29 (the corridor runs off to the left, clear of a right thumb);
+// a new key so everyone gets the new default once.
+let mirrored = store.get('mirror-v2', true);
 let tutorialDone = store.get('tutorial-done', false);
 qualitySetting = store.get('quality', 'auto');
 if (qualitySetting !== 'auto' && !QUALITY[qualitySetting]) qualitySetting = 'auto';
@@ -218,7 +220,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 // music speeds up with the run: 64 bpm at the start, about 95 at top speed
-const tempo = () => 64 + (S.speed - 9) * 2.4;
+const tempo = () => 64 + (S.speed - 11) * 3.1;
 
 // ---- tutorial ----
 function showHint(title, sub) {
@@ -479,7 +481,7 @@ $('btnQuit').addEventListener('click', toMenu);
 $('btnSkipTut').addEventListener('click', e => { e.stopPropagation(); skipTutorial(); });
 $('btnMusic').addEventListener('click', () => { audio.settings.music = !audio.settings.music; store.set('music', audio.settings.music); refreshMenu(); });
 $('btnSfx').addEventListener('click', () => { audio.settings.sfx = !audio.settings.sfx; store.set('sfx', audio.settings.sfx); refreshMenu(); });
-$('btnMirror').addEventListener('click', () => { mirrored = !mirrored; store.set('mirror', mirrored); refreshMenu(); });
+$('btnMirror').addEventListener('click', () => { mirrored = !mirrored; store.set('mirror-v2', mirrored); refreshMenu(); });
 $('btnSound').addEventListener('click', e => {
   e.stopPropagation();
   const on = !(audio.settings.music || audio.settings.sfx);

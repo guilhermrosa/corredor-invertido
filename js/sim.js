@@ -9,7 +9,7 @@ import {
   HM, HW, PH, PL, OH, LOWH, PIT, G, JG, JV, AIR, HIT, RUIN_DIP,
   SLIDE_TIME, SLIDE_H, FAST_FALL, PORTAL_GAP, PORTAL_FROM, FLIP_V, LIVES, INVULN_TIME,
   FALL_FROM, FALL_LEAD, TOPPLE_TIME, DROP_TIME, FALL_WOBBLE,
-  SPEED_START, SPEED_MAX, SPEED_RAMP, clamp,
+  SPEED_START, SPEED_MAX, SPEED_EASE, clamp,
 } from './config.js';
 
 // The part of an obstacle that kills: follows its drawn shape, trimmed a little (see HIT).
@@ -242,7 +242,7 @@ export function update(S, dt, emit, opts = {}) {
     return;
   }
 
-  S.speed = Math.min(SPEED_MAX, SPEED_START + S.dist * SPEED_RAMP);
+  S.speed = SPEED_START + (SPEED_MAX - SPEED_START) * (1 - Math.exp(-S.dist / SPEED_EASE));
   const v = S.speed * dt;
   const before = S.dist;
   S.dist += v;
