@@ -1,0 +1,19 @@
+[
+  { "v": "0.5", "date": "2026-11-10", "title": "Protótipo em blocos", "text": "Antes do repositório, uma página de teste: túnel escuro, chão âmbar, teto verde-água, blocos vermelhos (inverta) e roxos (pule). O jogador era um bloco branco. Pular, inverter a gravidade e os trechos sem chão ou sem teto já existiam." },
+  { "v": "0.6", "date": "2026-11-11", "title": "Vira um app", "text": "Instalável como app (PWA), código dividido em módulos e o som da lira sintetizada (preset Ruína, modo dórico). O visual ainda é o do protótipo." },
+  { "v": "0.7", "date": "2026-11-11", "title": "Chega o axolote", "text": "Primeiro axolote provisório como personagem, visto de costas." },
+  { "v": "0.8", "date": "2026-11-11", "title": "Ruínas gregas à beira-mar", "text": "O túnel vira uma colunata de mármore branco num dia de sol: teto com caixotões e friso pintado, céu e mar entre as colunas. Onde falta chão ou teto, aparece o mar ou o céu." },
+  { "v": "0.9", "date": "2026-11-11", "title": "Axolote do esboço", "text": "Personagem redesenhado a partir do esboço de silhueta: cabeça oval grande, três guelras de cada lado, mão erguida e perna chutando para trás." },
+  { "v": "0.12", "date": "2026-11-11", "title": "Câmera de três quartos", "text": "Câmera girada segundo o esboço de enquadramento. Ficou lateral demais e foi desfeita na 0.14, voltando a um giro leve de uns 8°." },
+  { "v": "0.13", "date": "2026-11-11", "title": "Deslizar", "text": "Arrastar para baixo faz o axolote deslizar, e surgem os pórticos caídos, que só se passam deslizando." },
+  { "v": "0.16", "date": "2026-11-11", "title": "Moldura de celular", "text": "No computador, o jogo fica numa moldura em pé, com faixas nas laterais. Na 0.15, as atualizações passaram a chegar ao app instalado." },
+  { "v": "0.20", "date": "2026-11-11", "title": "Tutorial, pausa e estatísticas", "text": "Tutorial em cinco passos no primeiro jogo, pausa com contagem regressiva e um painel de estatísticas guardado só no aparelho." },
+  { "v": "0.22", "date": "2026-11-11", "title": "Conforto e sensação", "text": "Opções de conforto (vibração desligada por padrão, sensibilidade do arrasto) e efeitos: poeira ao pousar, lascas de pedra ao bater, linhas de velocidade, marcos a cada 100 m." },
+  { "v": "0.23", "date": "2026-11-11", "title": "Duas vidas", "text": "Duas vidas por corrida, mostradas como corações. Na 0.24 veio a qualidade automática para celulares mais fracos; na 0.25, as conquistas." },
+  { "v": "0.26", "date": "2026-11-11", "title": "A ruína desaba", "text": "Colunas que tombam no caminho e blocos que despencam do teto, com aviso antes de cair. Na 0.27, a opção de câmera que nunca gira a tela." },
+  { "v": "0.29", "date": "2026-11-12", "title": "Mais espaço e velocidade suave", "text": "Tela espelhada por padrão (corredor saindo para a esquerda, longe do polegar direito), corredor mais alto, pulo maior, velocidade que cresce suave e novo ícone. Na 0.28, arrastar para cima também inverte." },
+  { "v": "0.30", "date": "2026-11-12", "title": "A bênção dourada", "text": "A gravidade invertida vira uma bênção dos deuses: no teto, as guelras ficam douradas, com um halo atrás da cabeça e faíscas a cada inversão." },
+  { "v": "0.32", "date": "2026-11-12", "title": "Bênção de Atena", "text": "Coração dourado no caminho: uma vida extra, no máximo uma de cada vez." },
+  { "v": "0.35", "date": "2026-11-12", "title": "Trechos montados", "text": "Sete trechos desenhados à mão misturados aos sorteados, incluindo as pontes, que pedem inverter e voltar. Testes automáticos provam que tudo tem passagem. Na 0.33, a tolerância ao cair num buraco." },
+  { "v": "0.37", "date": "2026-11-12", "title": "Feedback dos testadores", "text": "Botão \"Enviar feedback\" abre o formulário já com a versão e as estatísticas. Nas 0.35.1 a 0.36.2, ajustes para as barras do Android." }
+]

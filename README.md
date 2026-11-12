@@ -2,7 +2,9 @@
 
 Endless runner para navegador em túnel pseudo-3D. Um toque pula; um segundo toque, ainda no ar, inverte a gravidade e leva o personagem para o teto (ou de volta ao chão). A pontuação é a distância percorrida.
 
-**Jogar:** https://guilhermrosa.github.io/corredor-invertido/ (depois de ativar o GitHub Pages, veja abaixo)
+**Jogar:** https://guilhermrosa.github.io/corredor-invertido/
+
+**Evolução do jogo em prints:** https://guilhermrosa.github.io/corredor-invertido/docs/evolucao/
 
 ## Como jogar
 

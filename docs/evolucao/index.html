@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Evolução do Corredor Invertido</title>
+  <meta name="description" content="Como o Corredor Invertido mudou de versão em versão, em prints.">
+  <link rel="icon" href="../../icons/icon-192.png" type="image/png">
+  <style>
+    :root { --bg: #deecf2; --card: #faf9f5; --line: #d8d3c6; --ink: #1d2a33; --muted: #5d6b73; --accent: #2f6c8c; --gold: #c79a2e; color-scheme: light; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif; }
+    main { max-width: 880px; margin: 0 auto; padding: 32px 16px 64px; }
+    h1 { font-size: 30px; line-height: 1.1; margin: 0 0 8px; letter-spacing: -.02em; }
+    h1 span { display: inline-block; transform: scaleY(-1); color: var(--accent); }
+    .lead { margin: 0 0 28px; color: var(--muted); max-width: 60ch; }
+    .lead a { color: var(--accent); }
+    ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; }
+    li { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+    .head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-bottom: 6px; }
+    .ver { font-weight: 700; font-size: 13px; color: #fff; background: var(--accent); border-radius: 999px; padding: 2px 10px; font-variant-numeric: tabular-nums; }
+    h2 { font-size: 19px; margin: 0; }
+    time { color: var(--muted); font-size: 13px; }
+    p.text { margin: 0 0 12px; max-width: 70ch; }
+    .shots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; }
+    figure { margin: 0; }
+    figure img { width: 100%; height: auto; aspect-ratio: 1 / 2; object-fit: cover; display: block; border-radius: 8px; border: 1px solid var(--line); background: #ccc; }
+    figcaption { font-size: 12px; color: var(--muted); text-align: center; margin-top: 4px; }
+    footer { margin-top: 28px; color: var(--muted); font-size: 13px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Evolução do Corredor <span>Invertido</span></h1>
+  <p class="lead">Como o jogo mudou de versão em versão. Cada versão foi aberta direto do histórico do projeto e jogada do mesmo jeito, com os mesmos obstáculos: o menu, um instante no chão e um instante depois de inverter para o teto. <a href="../../">Jogar a versão atual</a>.</p>
+  <ol id="list"></ol>
+  <footer>Prints gerados por <code>tools/capture-versions.cjs</code>. As versões entre as mostradas tiveram ajustes de controle, som ou correções sem mudança visual grande.</footer>
+</main>
+<script>
+  const fmt = d => new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  fetch('versions.json').then(r => r.json()).then(list => {
+    document.getElementById('list').innerHTML = list.slice().reverse().map(e => `
+      <li>
+        <div class="head"><span class="ver">${esc(e.v)}</span><h2>${esc(e.title)}</h2><time datetime="${e.date}">${fmt(e.date)}</time></div>
+        <p class="text">${esc(e.text)}</p>
+        <div class="shots">
+          ${[['menu', 'Menu'], ['chao', 'No chão'], ['teto', 'No teto']].map(([k, label]) =>
+            `<figure><img src="img/${e.v}-${k}.jpg" alt="Versão ${esc(e.v)}: ${label.toLowerCase()}" loading="lazy" width="390" height="780"><figcaption>${label}</figcaption></figure>`).join('')}
+        </div>
+      </li>`).join('');
+  });
+</script>
+</body>
+</html>
