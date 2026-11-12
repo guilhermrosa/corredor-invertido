@@ -24,6 +24,7 @@ const SHELL = [
   'js/panels.js',
   'js/input.js',
   'js/sequences.js',
+  'js/backup.js',
   'manifest.webmanifest',
   'icons/icon-192.png',
   'icons/icon-512.png',

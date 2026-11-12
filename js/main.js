@@ -8,6 +8,7 @@ import { store } from './store.js';
 import { opt, quality, buzz, watchFrames, renderOptions, bindOptions, SWIPE } from './options.js';
 import { renderStats, renderAchievements, toast } from './panels.js';
 import { bindTouch } from './input.js';
+import { makeBackup, restoreBackup } from './backup.js';
 import * as audio from './audio.js';
 import * as stats from './stats.js';
 import * as ach from './achievements.js';
@@ -360,6 +361,30 @@ $('btnReset').addEventListener('click', () => {
   b.textContent = 'Apagado';
   renderStats();
 });
+$('btnBackup').addEventListener('click', () => {
+  stats.flush();
+  const code = makeBackup();
+  const b = $('btnBackup');
+  const shown = () => { // no clipboard: show the code to copy by hand
+    $('restoreBox').hidden = false; $('restoreText').value = code; $('restoreText').select();
+    $('restoreMsg').textContent = 'Não deu para copiar sozinho: selecione o código acima e copie.';
+  };
+  try { navigator.clipboard.writeText(code).then(() => { b.textContent = 'Backup copiado'; setTimeout(() => { b.textContent = 'Copiar backup'; }, 2000); }, shown); } catch (e) { shown(); }
+});
+$('btnRestore').addEventListener('click', () => {
+  $('restoreBox').hidden = !$('restoreBox').hidden;
+  $('restoreMsg').textContent = '';
+  if (!$('restoreBox').hidden) $('restoreText').focus({ preventScroll: true });
+});
+$('btnRestoreGo').addEventListener('click', () => {
+  try {
+    restoreBackup($('restoreText').value);
+    $('restoreMsg').textContent = 'Backup restaurado. Recarregando…';
+    setTimeout(() => location.reload(), 900);
+  } catch (e) {
+    $('restoreMsg').textContent = 'Código inválido. Confira se copiou o código inteiro, começando com CI1:.';
+  }
+});
 $('btnAgain').addEventListener('click', start);
 $('btnBack').addEventListener('click', toMenu);
 $('btnPause').addEventListener('click', e => { e.stopPropagation(); pause(); });
@@ -390,6 +415,7 @@ bindTouch(cvs, {
   swipePx: () => SWIPE[opt.swipe],
 });
 addEventListener('keydown', e => {
+  if (e.target instanceof HTMLTextAreaElement) return; // typing a backup code
   const k = e.code;
   if (state === 'play' && ['Space', 'ArrowUp', 'KeyW'].includes(k)) { e.preventDefault(); press(S, emit); }
   else if (state === 'play' && ['ArrowDown', 'KeyS'].includes(k)) { e.preventDefault(); slide(S, emit); }
