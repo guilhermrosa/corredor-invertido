@@ -1,3 +1,7 @@
+/* Fonts are served with the app (latin subset, SIL Open Font License, see fonts/OFL-*.txt), so no
+   request ever goes to Google and the first visit already works offline. */
+@font-face { font-family: 'Space Grotesk'; font-style: normal; font-weight: 500 700; font-display: swap; src: url('../fonts/space-grotesk-latin.woff2') format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 400 600; font-display: swap; src: url('../fonts/inter-latin.woff2') format('woff2'); }
 /* Layout: one full-screen canvas; HUD pinned to the safe-area edges; menu and game-over cards
    centered over the running game. Placeholder world: a white marble stoa by the sea on a sunny day,
    so the UI is light marble with Aegean blue. */
@@ -145,3 +149,4 @@ h2 { font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; }
 @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
 @media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
 .heart.gold { color: #d9a43c; text-shadow: 0 0 8px rgba(244, 196, 92, .9), 0 1px 6px rgba(255, 255, 255, .9); }
+.menu-link { color: var(--accent); }

@@ -25,6 +25,9 @@ const SHELL = [
   'js/input.js',
   'js/sequences.js',
   'manifest.webmanifest',
+  'fonts/space-grotesk-latin.woff2',
+  'fonts/inter-latin.woff2',
+  'privacidade.html',
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/icon-maskable-512.png',
@@ -50,24 +53,16 @@ self.addEventListener('activate', event => {
 
 // Same-origin files: network first (revalidated, so updates show on the next open),
 // falling back to the cached copy when offline or when the network takes over 3 s.
-// Google Fonts: cached copy first, refreshed in the background.
 self.addEventListener('fetch', event => {
   const req = event.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   const sameOrigin = url.origin === self.location.origin;
-  const isFont = url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com';
-  if (!sameOrigin && !isFont) return;
+  if (!sameOrigin) return; // the app talks to no other site
 
   event.respondWith(caches.open(VERSION).then(async cache => {
-    const fromCache = () => cache.match(req, { ignoreSearch: sameOrigin })
+    const fromCache = () => cache.match(req, { ignoreSearch: true })
       .then(r => r || (req.mode === 'navigate' ? cache.match('index.html') : null));
-    if (isFont) {
-      const cached = await cache.match(req);
-      const network = fetch(req).then(res => { cache.put(req, res.clone()); return res; }).catch(() => null);
-      if (cached) { event.waitUntil(network); return cached; }
-      return (await network) || new Response('', { status: 504 });
-    }
     const network = fetch(req, { cache: 'no-cache' }).then(res => {
       if (res.ok) cache.put(req, res.clone());
       return res;
