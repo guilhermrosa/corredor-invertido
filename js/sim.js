@@ -222,11 +222,13 @@ function flip(S, emit) {
 }
 
 // 1st tap: jump. 2nd tap while still in the air from that jump: flip gravity.
+// Returns what the press did: 'jump', 'flip' or 'buffer' (nothing when the run is over).
 export function press(S, emit) {
-  if (S.dead) return;
-  if (S.grounded) jump(S, emit);
-  else if (S.mode === 'jump') flip(S, emit);
-  else S.buffer = 0.12; // tapped during a flip: jump as soon as we land
+  if (S.dead) return null;
+  if (S.grounded) { jump(S, emit); return 'jump'; }
+  if (S.mode === 'jump') { flip(S, emit); return 'flip'; }
+  S.buffer = 0.12; // tapped during a flip: jump as soon as we land
+  return 'buffer';
 }
 
 // opts.live: collisions on. opts.autopilot: attract-mode player for the menu.

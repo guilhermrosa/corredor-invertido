@@ -10,7 +10,7 @@ import { STEPS, createTutorial, startStep, progress } from './tutorial.js';
 import { fx, onLand, onThud, whileSliding, onHit, onInstantFlip, onMilestone, updateFx, clearFx } from './fx.js';
 
 const $ = id => document.getElementById(id);
-const VERSION_LABEL = 'Versão 0.27';
+const VERSION_LABEL = 'Versão 0.28';
 const cvs = $('game');
 const ctx = cvs.getContext('2d');
 let W = 0, H = 0, DPR = 1;
@@ -495,22 +495,31 @@ $('over').addEventListener('pointerdown', e => {
 });
 
 // Touch controls: every touch acts at once (jump on a surface, flip in the air).
-// Dragging that same touch down then slides: on a surface right away; in the air it drops
-// fast toward the surface gravity points to and slides on landing (after a flip, that is the
-// new surface, so tap + tap-and-drag gets you sliding on the other side).
+// Then the same finger can drag:
+// - toward the surface the hero stands on: slide (in the air: drop fast, slide on landing);
+// - away from it: flip gravity. From a surface that is the touch's jump plus a flip in one
+//   gesture; a touch that already flipped is not flipped back.
+// The hero's surface is at the bottom of the screen, except with the "sem girar" camera on the
+// roof, where it is at the top, so the directions follow the hero.
 let touch = null;
 cvs.addEventListener('pointerdown', e => {
   e.preventDefault();
   audio.unlock();
   if (state !== 'play') return;
-  press(S, emit);
-  touch = { id: e.pointerId, y: e.clientY, t: performance.now(), swiped: false };
+  const did = press(S, emit);
+  touch = { id: e.pointerId, y: e.clientY, t: performance.now(), swiped: false, did };
   try { cvs.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
 });
 cvs.addEventListener('pointermove', e => {
   if (!touch || touch.swiped || e.pointerId !== touch.id || state !== 'play') return;
   if (performance.now() - touch.t > 450) return;
-  if (e.clientY - touch.y > SWIPE[swipeLevel]) { touch.swiped = true; slide(S, emit); }
+  const surfaceOnTop = cameraMode === 'fixed' && S.grav > 0;
+  const toward = (e.clientY - touch.y) * (surfaceOnTop ? -1 : 1); // + toward the hero's surface
+  if (toward > SWIPE[swipeLevel]) { touch.swiped = true; slide(S, emit); }
+  else if (-toward > SWIPE[swipeLevel]) {
+    touch.swiped = true;
+    if (touch.did === 'jump' && S.mode === 'jump') press(S, emit); // jumped on touch: now flip
+  }
 });
 const endTouch = e => { if (touch && e.pointerId === touch.id) touch = null; };
 cvs.addEventListener('pointerup', endTouch);

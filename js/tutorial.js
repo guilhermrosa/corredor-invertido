@@ -8,7 +8,7 @@ import { HM, PH, LOWH } from './config.js';
 export const STEPS = [
   { name: 'Pular a mureta', hint: 'Toque para pular', sub: 'Pule a mureta.', ob: { type: 'block', h: LOWH, len: 0.9 } },
   { name: 'Pular a laje quebrada', hint: 'Toque para pular', sub: 'Pule a laje quebrada.', ob: { type: 'hole', len: 2.4 } },
-  { name: 'Inverter a gravidade', hint: 'Toque e toque de novo', sub: 'No ar, o segundo toque inverte a gravidade. Fuja do muro.', ob: { type: 'block', len: 1.2 } },
+  { name: 'Inverter a gravidade', hint: 'Toque duas vezes', sub: 'O segundo toque, no ar, inverte a gravidade (ou arraste para cima). Fuja do muro.', ob: { type: 'block', len: 1.2 } },
   { name: 'Inverter de volta', hint: 'Inverta de novo', sub: 'Funciona nos dois sentidos: volte para o outro lado.', ob: { type: 'block', len: 1.2 } },
   { name: 'Deslizar', hint: 'Arraste para baixo', sub: 'Deslize pelo vão do pórtico caído.', ob: { type: 'portal', len: 0.8 } },
 ];
