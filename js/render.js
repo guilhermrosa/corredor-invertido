@@ -5,7 +5,7 @@
 // Where a surface is missing (an "open" stretch in the simulation) nothing is drawn,
 // so the backdrop shows through: open sky above, the sea far below.
 
-import { HM, HW, PH, PL, OH, HIT, RUIN_DIP, PORTAL_GAP, clamp, lerp, mix, rgb, COL } from './config.js';
+import { HM, HW, PH, PL, OH, HIT, RUIN_DIP, PORTAL_GAP, HEART_LIFT, clamp, lerp, mix, rgb, COL } from './config.js';
 import { blockHitbox, holeKillZone, playerBox, fallAmount } from './sim.js';
 import { drawAxolotl } from './hero.js';
 
@@ -268,6 +268,10 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       });
       continue;
     }
+    if (o.type === 'heart') {
+      if (!o.taken) items.push({ kind: 'heart', z0: o.z, z1: o.z + o.len, side: o.side, x0: 0, x1: 0, y0: 0, y1: 0 });
+      continue;
+    }
     if (o.type !== 'block') continue;
     if (o.topple) {
       items.push({ kind: 'pillar', z0: o.z, z1: o.z + o.len, x0: -HW, x1: HW, y0: 0, y1: OH, col: COL.column, ang: fallAmount(o) * Math.PI / 2, wobble: o.p && o.p < 0.27 });
@@ -310,6 +314,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       if (clipFall) ctx.restore();
       continue;
     }
+    if (b.kind === 'heart') { drawHeart(b); continue; }
     // obstacles fade out once they pass the hero, so they never cover the camera
     const alpha = clamp(0.12 + 0.88 * (b.z0 + 1.0) / 1.2, 0.12, 1);
     ctx.globalAlpha = alpha;
@@ -374,7 +379,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       if (o.type === 'block' || o.type === 'portal') {
         const hb = blockHitbox(o);
         if (hb) box(-HW, HW, hb.y0, hb.y1, hb.z0, hb.z1, 'rgba(220,40,40,1)');
-      } else {
+      } else if (o.type === 'hole') {
         const kz = holeKillZone(o), sy = o.side < 0 ? 0 : HM;
         box(-HW, HW, sy, sy, kz.z0, kz.z1, 'rgba(240,140,20,1)');
       }
@@ -405,6 +410,38 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     ctx.strokeStyle = fog(COL.edge, z0);
     ctx.lineWidth = lw(z0) * 1.6;
     ctx.stroke();
+  }
+
+  // Golden heart (Athena's blessing): floats and turns over its surface, with a gold glow.
+  function drawHeart(b) {
+    const zc = (b.z0 + b.z1) / 2;
+    if (zc <= BASE + 0.3) return;
+    const bob = Math.sin(t * 3 + b.z0) * 0.06;
+    const y = b.side < 0 ? HEART_LIFT + bob : HM - HEART_LIFT - bob;
+    const [x, yy] = P(0, y, zc);
+    const r = 0.34 * f / (zc - CAM_Z);
+    const fk = fogK(zc);
+    const glow = ctx.createRadialGradient(x, yy, r * 0.2, x, yy, r * 2.2);
+    glow.addColorStop(0, `rgba(244,196,92,${0.55 * (1 - fk)})`);
+    glow.addColorStop(1, 'rgba(244,196,92,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath(); ctx.arc(x, yy, r * 2.2, 0, Math.PI * 2); ctx.fill();
+    ctx.save();
+    ctx.translate(x, yy);
+    // upright for the hero on either surface; it slowly turns like a coin
+    ctx.scale(Math.max(0.25, Math.abs(Math.cos(t * 2.2 + b.z0))) * r, (b.side < 0 ? 1 : -1) * r);
+    ctx.beginPath();
+    ctx.moveTo(0, 0.95);
+    ctx.bezierCurveTo(-1.1, 0.2, -1.1, -0.85, -0.5, -0.85);
+    ctx.bezierCurveTo(-0.2, -0.85, 0, -0.6, 0, -0.4);
+    ctx.bezierCurveTo(0, -0.6, 0.2, -0.85, 0.5, -0.85);
+    ctx.bezierCurveTo(1.1, -0.85, 1.1, 0.2, 0, 0.95);
+    ctx.fillStyle = rgb(mix([244, 196, 92], COL.haze, fk));
+    ctx.fill();
+    ctx.lineWidth = 0.12;
+    ctx.strokeStyle = rgb(mix([150, 104, 30], COL.haze, fk));
+    ctx.stroke();
+    ctx.restore();
   }
 
   function drawObstacle(b, z0) {

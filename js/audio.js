@@ -64,6 +64,9 @@ export function sfx(type, data = {}) {
     case 'thud':
       lyre.pluck(deg(0), 0, 0.7, { sustain: 5, bright: 5, dur: 0.35 });
       break;
+    case 'heal': // a life comes back: a bright rising arpeggio
+      lyre.strum([deg(7), deg(9), deg(11), deg(NOTES.length - 1)], 0.05, 0.42, { sustain: 50 });
+      break;
     case 'slide':
       lyre.strum([deg(9), deg(7), deg(5), deg(3)], 0.028, 0.32, { sustain: 15, dur: 0.4 });
       break;

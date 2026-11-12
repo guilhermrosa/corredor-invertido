@@ -83,6 +83,7 @@ export function whileBlessed(dt, S) {
 
 // a short "+100 m" pop in the middle of the screen
 export function onMilestone(metres) { fx.popText = `${metres} m`; fx.popT = 1.1; }
+export function onPop(text) { fx.popText = text; fx.popT = 1.4; }
 
 export function updateFx(dt, speed) {
   fx.flipFade = Math.max(0, fx.flipFade - dt);

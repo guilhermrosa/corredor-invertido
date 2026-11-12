@@ -7,10 +7,10 @@ import * as audio from './audio.js';
 import * as stats from './stats.js';
 import * as ach from './achievements.js';
 import { STEPS, createTutorial, startStep, progress } from './tutorial.js';
-import { fx, onLand, onThud, whileSliding, onHit, onInstantFlip, onFlipBlessing, whileBlessed, onMilestone, updateFx, clearFx } from './fx.js';
+import { fx, onLand, onThud, whileSliding, onHit, onInstantFlip, onFlipBlessing, whileBlessed, onMilestone, onPop, updateFx, clearFx } from './fx.js';
 
 const $ = id => document.getElementById(id);
-const VERSION_LABEL = 'Versão 0.30';
+const VERSION_LABEL = 'Versão 0.31';
 const cvs = $('game');
 const ctx = cvs.getContext('2d');
 let W = 0, H = 0, DPR = 1;
@@ -95,6 +95,13 @@ const emit = (type, data) => {
   if (!tut && type === 'slide') run.slides++;
   audio.sfx(type, data);
   if (type === 'hurt') return onHurt(data);
+  if (type === 'heal') {
+    renderLives(S.lives, false);
+    onFlipBlessing(S);
+    onPop(data.from === 'athena' ? (data.healed ? 'Bênção de Atena' : 'Atena te protege') : 'Vida recuperada');
+    stats.recordHeal(data.from, data.healed !== false);
+    return;
+  }
   if (type === 'land') onLand(data.side);
   else if (type === 'thud') { onThud(data.z); shake = Math.max(shake, 0.12); }
   else if (type === 'milestone') onMilestone(data.metres);
@@ -119,7 +126,7 @@ function onHurt({ cause, kind, lives }) {
 function renderLives(lives, justLost = false) {
   const el = $('lives');
   el.innerHTML = '';
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < S.maxLives; i++) {
     const h = document.createElement('span');
     h.className = 'heart' + (i < lives ? '' : ' lost') + (justLost && i === lives ? ' pulse' : '');
     h.textContent = i < lives ? '♥' : '♡';

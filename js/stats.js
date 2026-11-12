@@ -27,6 +27,7 @@ function empty() {
     best: 0,
     deaths: {},                       // kind -> count (what ended runs)
     hurts: {},                        // kind -> count (lives lost, run went on)
+    heals: { regen: 0, athena: 0 },   // lives won back: after 400 m clean, or a golden heart
     buckets: BUCKETS.map(() => 0),    // runs ending in each distance range
     actions: { jump: 0, flip: 0, slide: 0 },
     recent: [],                       // last runs, newest first: { at, metres, seconds, kind }
@@ -69,6 +70,13 @@ export function recordRun({ metres, seconds, kind }) {
   if (i >= 0) data.buckets[i]++;
   data.recent.unshift({ at: new Date().toISOString(), metres, seconds: Math.round(seconds), kind });
   data.recent.length = Math.min(data.recent.length, 20);
+  save();
+}
+
+export function recordHeal(from, healed) {
+  if (!healed) return;
+  data.heals = data.heals || { regen: 0, athena: 0 };
+  data.heals[from] = (data.heals[from] || 0) + 1;
   save();
 }
 
