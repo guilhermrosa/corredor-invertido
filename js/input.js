@@ -10,6 +10,9 @@
 // `game` supplies: active() (a run is being played), press() → 'jump' | 'flip' | 'buffer' | null,
 // flip() (swipe away), slide(), surfaceOnTop(), swipePx(), onTouch().
 
+const SWIPE_TIME = 300;  // ms after the touch within which a drag counts as a swipe
+const SWIPE_SLOPE = 1.4; // the vertical travel must be at least this many times the sideways one
+
 export function bindTouch(cvs, game) {
   let touch = null;
   cvs.addEventListener('pointerdown', e => {
@@ -17,13 +20,18 @@ export function bindTouch(cvs, game) {
     game.onTouch();
     if (!game.active()) return;
     const did = game.press();
-    touch = { id: e.pointerId, y: e.clientY, t: performance.now(), swiped: false, did };
+    touch = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), swiped: false, did };
     try { cvs.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
   });
   cvs.addEventListener('pointermove', e => {
     if (!touch || touch.swiped || e.pointerId !== touch.id || !game.active()) return;
-    if (performance.now() - touch.t > 450) return;
-    const toward = (e.clientY - touch.y) * (game.surfaceOnTop() ? -1 : 1); // + toward the hero's surface
+    // v0.48.8 (accidental flips "sometimes" in the user's playtest): a swipe must be quick (within
+    // SWIPE_TIME of the touch, it was 450 ms) and mostly vertical (a thumb rolling sideways while it taps
+    // used to count), so a tap whose finger drifts a little no longer flips or slides
+    if (performance.now() - touch.t > SWIPE_TIME) return;
+    const dy = e.clientY - touch.y, dx = e.clientX - touch.x;
+    if (Math.abs(dy) < Math.abs(dx) * SWIPE_SLOPE) return;
+    const toward = dy * (game.surfaceOnTop() ? -1 : 1); // + toward the hero's surface
     if (toward > game.swipePx()) { touch.swiped = true; game.slide(); }
     else if (-toward > game.swipePx()) {
       touch.swiped = true;

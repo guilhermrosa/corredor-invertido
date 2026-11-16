@@ -9,7 +9,7 @@ const $ = id => document.getElementById(id);
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 export const CAMERA_LABEL = { animated: 'animado', instant: 'instantâneo', fixed: 'sem girar' };
-export const SWIPE = { low: 40, normal: 26, high: 14 };  // pixels a finger must travel to slide or flip
+export const SWIPE = { low: 42, normal: 30, high: 18 };  // pixels a finger must travel to slide or flip (v0.48.8; 40 / 26 / 14 before)
 const SWIPE_LABEL = { low: 'baixa', normal: 'normal', high: 'alta' };
 const QUALITY_LABEL = { high: 'alta', medium: 'média', low: 'baixa' };
 
