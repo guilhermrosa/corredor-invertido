@@ -82,7 +82,7 @@ function checkGiftIntro(dt) {
   giftIntroT = 3.6;
 }
 let hermesLeft = 0;          // last frame's S.hermes, for the countdown ticks
-let shake = 0, flash = 0, deadAt = 0;
+let shake = 0, flash = 0, deadAt = 0, zeusFlash = 0;
 let countdownLeft = 0;
 let debug = store.get('debug', false); // hitbox view: H key, or tap the version label 5 times
 
@@ -111,6 +111,7 @@ const emit = (type, data) => {
   }
   if (type === 'hermesHold') { if (!tut) stats.recordHermesHold(); return; }
   if (type === 'smash') { onSmash(S); shake = Math.max(shake, 0.25); buzz(25); renderLives(S.lives, false); if (!tut) stats.recordSmash(data.kind); return; }
+  if (type === 'crack') zeusFlash = 1; // Zeus's wrath: a white-blue flash as the lightning strikes
   if (type === 'land') onLand(data.side);
   else if (type === 'thud') { onThud(data.z); shake = Math.max(shake, 0.12); }
   else if (type === 'milestone') onMilestone(data.metres);
@@ -196,7 +197,9 @@ function onDie({ cause, kind, metres }) {
     if (state !== 'dead') return;
     // falling through the roof is falling into the sky
     const intoSky = cause !== 'block' && S.fallHole && S.fallHole.side > 0;
-    $('overCause').textContent = intoSky ? 'Caiu no céu' : CAUSE_TEXT[cause] + (cause === 'block' ? ': ' + stats.KIND_LABEL[kind].toLowerCase() : '');
+    $('overCause').textContent = intoSky ? 'Caiu no céu'
+      : kind === 'pillar' || kind === 'drop' ? 'A ira de Zeus: ' + stats.KIND_LABEL[kind].toLowerCase() // the falling ones are his wrath
+      : CAUSE_TEXT[cause] + (cause === 'block' ? ': ' + stats.KIND_LABEL[kind].toLowerCase() : '');
     $('overDist').textContent = metres + ' m';
     $('overBest').textContent = isRecord ? 'Novo recorde!' : `Recorde: ${best} m`;
     $('over').hidden = false;
@@ -232,12 +235,13 @@ function frame(now) {
     if (p === 'next') { showHint('Muito bem!', ''); setTimeout(() => { if (tut) showStepHint(); }, 700); }
     else if (p === 'done') finishTutorial();
   }
-  if (!frozen) { shake = Math.max(0, shake - dt); flash = Math.max(0, flash - dt * 3); }
+  if (!frozen) { shake = Math.max(0, shake - dt); flash = Math.max(0, flash - dt * 3); zeusFlash = Math.max(0, zeusFlash - dt * 6); }
 
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   if (shake > 0) { const a = shake * 18; ctx.translate((Math.random() - 0.5) * a, (Math.random() - 0.5) * a); }
   drawTunnel(ctx, S, W, H, { debug, fx, quality: quality(), fixedCamera: opt.camera === 'fixed' });
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (zeusFlash > 0 && state !== 'menu') { ctx.fillStyle = `rgba(215,232,255,${(zeusFlash * zeusFlash * 0.35).toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
   if (flash > 0) { ctx.fillStyle = rgb(COL.haz, flash * 0.45); ctx.fillRect(0, 0, W, H); }
   if (fx.flipFade > 0) { ctx.fillStyle = rgb(COL.cloud, fx.flipFade / 0.16 * 0.55); ctx.fillRect(0, 0, W, H); }
   if (state === 'menu') { ctx.fillStyle = rgb(COL.bg, 0.25); ctx.fillRect(0, 0, W, H); }

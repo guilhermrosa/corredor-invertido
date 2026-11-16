@@ -80,6 +80,9 @@ const CLOUDS = [
 // v0.47.7: the browser may drop a canvas's pixels (Android under memory pressure, or the app sent to
 // the background): the cache then drew as empty and only the haze showed ("the background was just
 // fog"). It is repainted when its context is lost or restored and whenever the page comes back.
+// how strongly Zeus's lightning shows on a falling obstacle: from its `crack` (o.p > 0) to a little into the fall
+const zeusOf = o => (o.p > 0 && o.p < 0.5 ? 1 - o.p / 0.5 * 0.6 : 0);
+
 let backCache = null;
 export function invalidateBackdrop() { backCache = null; }
 if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (!document.hidden) backCache = null; });
@@ -564,13 +567,13 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     }
     if (o.type !== 'block') continue;
     if (o.topple) {
-      items.push({ kind: 'pillar', z0: o.z, z1: o.z + o.len, x0: -HW, x1: HW, y0: 0, y1: OH, col: COL.column, ang: fallAmount(o) * Math.PI / 2, wobble: o.p && o.p < 0.27 });
+      items.push({ kind: 'pillar', z0: o.z, z1: o.z + o.len, x0: -HW, x1: HW, y0: 0, y1: OH, col: COL.column, ang: fallAmount(o) * Math.PI / 2, wobble: o.p && o.p < 0.27, zeus: zeusOf(o) });
       continue;
     }
     if (o.drop) {
       // hangs from the roof, wobbles, then drops to the floor
       const d = fallAmount(o) * (HM - OH) + (o.p && o.p < 0.27 ? 0.03 * Math.sin(t * 70) : 0);
-      items.push({ x0: -HW, x1: HW, y0: HM - OH - d, y1: HM - d, z0: o.z, z1: o.z + o.len, col: COL.lintel, kind: 'lintel', seed: o.len });
+      items.push({ x0: -HW, x1: HW, y0: HM - OH - d, y1: HM - d, z0: o.z, z1: o.z + o.len, col: COL.lintel, kind: 'lintel', seed: o.len, zeus: zeusOf(o) });
       continue;
     }
     const bh = o.h || OH;
@@ -639,6 +642,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     const alpha = clamp(0.12 + 0.88 * (b.z0 + 1.0) / 1.2, 0.12, 1);
     ctx.globalAlpha = alpha;
     drawObstacle(b, z0);
+    if (b.zeus && b.kind !== 'pillar') zeusArcs([P(b.x0, b.y0, z0), P(b.x1, b.y0, z0), P(b.x1, b.y1, z0), P(b.x0, b.y1, z0)], b.zeus);
     if (alpha < 1) { // keep an outline on faded obstacles so they still read as solid
       ctx.globalAlpha = Math.min(1, alpha + 0.3);
       path([P(b.x0, b.y0, z0), P(b.x1, b.y0, z0), P(b.x1, b.y1, z0), P(b.x0, b.y1, z0)]);
@@ -733,6 +737,35 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     quad(p3(at(shaft, taper), z0), p3(at(eTop, -wide), z0), p3(at(eTop, Wd + wide), z0), p3(at(shaft, Wd - taper), z0), fog(COL.columnShade, z0)); // echinus
     quad(p3(at(eTop, -wide - 0.02), z0), p3(at(L, -wide - 0.02), z0), p3(at(L, Wd + wide + 0.02), z0), p3(at(eTop, Wd + wide + 0.02), z0), fog(COL.column, z0)); // abacus
     line(p3(at(eTop, -wide - 0.02), z0), p3(at(eTop, Wd + wide + 0.02), z0), fog(COL.columnDark, z0), lw(z0) * 0.6);
+    if (b.zeus) zeusArcs([p3(at(0, -wide), z0), p3(at(L, -wide), z0), p3(at(L, Wd + wide), z0), p3(at(0, Wd + wide), z0)], b.zeus);
+  }
+
+  // Zeus's wrath (v0.48): white-blue lightning crackling around a column or a roof block as it
+  // gives way (from the `crack` until a little into the fall); a new random shape every frame
+  function zeusArcs(pts, k) {
+    const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length, cy = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+    const size = Math.max(...pts.map(p => Math.hypot(p[0] - cx, p[1] - cy)));
+    const on = (u) => { // a point on the outline, u in 0..1, pushed a little outward
+      const n = pts.length, s = u * n, i = Math.floor(s) % n, f2 = s - Math.floor(s), a = pts[i], b2 = pts[(i + 1) % n];
+      const x = a[0] + (b2[0] - a[0]) * f2, y = a[1] + (b2[1] - a[1]) * f2;
+      return [x + (x - cx) * 0.12, y + (y - cy) * 0.12];
+    };
+    ctx.save();
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    for (let j = 0; j < 4; j++) {
+      const a = on(Math.random()), b2 = on(Math.random());
+      const seg = [a];
+      for (let s = 1; s < 6; s++) {
+        const f2 = s / 6, x = a[0] + (b2[0] - a[0]) * f2, y = a[1] + (b2[1] - a[1]) * f2;
+        seg.push([x + (x - cx) * 0.25 + (Math.random() - 0.5) * size * 0.25, y + (y - cy) * 0.25 + (Math.random() - 0.5) * size * 0.25]);
+      }
+      seg.push(b2);
+      ctx.beginPath(); seg.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])));
+      ctx.strokeStyle = `rgba(120,170,255,${0.35 * k})`; ctx.lineWidth = Math.max(9, size * 0.16); ctx.stroke(); // glow
+      ctx.strokeStyle = `rgba(52,104,220,${0.9 * k})`; ctx.lineWidth = Math.max(4, size * 0.06); ctx.stroke();  // electric blue
+      ctx.strokeStyle = `rgba(255,255,255,${k})`; ctx.lineWidth = Math.max(1.6, size * 0.022); ctx.stroke();    // white-hot core
+    }
+    ctx.restore();
   }
 
 
