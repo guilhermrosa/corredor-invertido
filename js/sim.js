@@ -517,7 +517,8 @@ function hit(S, emit, cause, o) {
   } else {
     // rescued from a fall: the broken stretch under the player is filled in, and anything
     // right in front is cleared so the run can pick up again
-    S.obs = S.obs.filter(x => !(x.z < 14 && x.z + x.len > -1));
+    // (v0.50.2: not the markers of a storm or of Zeus's arena, or the sky turned back to normal mid-fight)
+    S.obs = S.obs.filter(x => x.type === 'boss' || x.type === 'storm' || !(x.z < 14 && x.z + x.len > -1));
     S.slide = 0; S.slideQueued = false;
   }
   if (cause !== 'block' || S.sink > 0) { // back up on the surface he slipped from

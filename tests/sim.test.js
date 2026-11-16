@@ -146,6 +146,14 @@ test("Athena's shield breaks the next two walls; it does not help with low walls
   assert.ok(r.events.includes('slip') && !r.events.includes('smash'));
 });
 
+test("a fall in Zeus's arena keeps the storm and the arena (v0.50.2)", () => {
+  const S = createSim({ scripted: true, lives: 2 });
+  S.obs.push({ type: 'boss', z: -5, len: 120 }, { type: 'storm', z: -5, len: 120 }, { type: 'hole', side: -1, z: 4, len: 4 });
+  for (let i = 0; i < 120 * 2; i++) update(S, DT, () => {}, { live: true });
+  assert.equal(S.lives, 1, 'lost a life in the fall');
+  assert.ok(S.obs.some(o => o.type === 'boss') && S.obs.some(o => o.type === 'storm'));
+});
+
 test('random play never throws', () => {
   for (let r = 0; r < 50; r++) {
     const S = createSim({ lives: 3 });

@@ -146,7 +146,7 @@ function drawBackdrop(ctx, W, H, t, Q, storm = 0, zeus = 0) {
 // Zeus in the storm (v0.50): a huge figure of dark cloud rising behind the sea on the left, with a
 // beard of cloud, eyes of white light and a thunderbolt raised in his right hand; `k` 0..1 fades him in
 function drawZeus(ctx, W, H, t, k) {
-  const x = -W * 0.36, base = H * 0.03, r = W * 0.075, bob = Math.sin(t * 0.8) * r * 0.05;
+  const x = -W * 0.36, base = H * 0.06, r = W * 0.07, bob = Math.sin(t * 0.8) * r * 0.05;
   const body = `rgba(36,44,62,${(0.85 * k).toFixed(3)})`, rim = `rgba(150,180,230,${(0.35 * k).toFixed(3)})`;
   ctx.save();
   ctx.translate(x, base + bob);
@@ -872,12 +872,12 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   // the lane and lightning flickering inside now and then
   function stormRoof(a, b, idx) {
     const dark = mix([52, 60, 80], COL.haze, fogK(a) * 0.6), mid = mix([74, 84, 106], COL.haze, fogK(a) * 0.6);
-    quad(P(-EDGE - 0.4, HM, a), P(EDGE + 0.4, HM, a), P(EDGE + 0.4, HM, b), P(-EDGE - 0.4, HM, b), rgb(dark));
+    quad(P(-EDGE, HM, a), P(EDGE, HM, a), P(EDGE, HM, b), P(-EDGE, HM, b), rgb(dark));
     for (let k = 0; k < 5; k++) { // puffs hanging below the layer, and wider ones at its ragged edges
       const hx = hash(idx * 31 + k * 7), edge = k >= 3, side = k === 3 ? -1 : 1;
-      const x = edge ? side * (EDGE + 0.2) : (hx - 0.5) * 2 * HW, z = lerp(a, b, hash(idx * 17 + k * 3));
+      const x = edge ? side * (EDGE - 0.25) : (hx - 0.5) * 2 * HW, z = lerp(a, b, hash(idx * 17 + k * 3)); // v0.50.2: kept inside the roof's width, clear of the sky where Zeus shows
       if (z <= BASE + 0.3) continue;
-      const [cx, cy] = P(x, HM - (edge ? 0.25 : 0.08), z), rr = (edge ? 0.9 : 0.6 + 0.4 * hx) * f / (z - CAM_Z);
+      const [cx, cy] = P(x, HM - (edge ? 0.12 : 0.08), z), rr = (edge ? 0.55 : 0.6 + 0.4 * hx) * f / (z - CAM_Z);
       ctx.fillStyle = rgb(k % 2 ? mid : dark);
       ctx.beginPath(); ctx.ellipse(cx, cy, rr, rr * 0.45, 0, 0, Math.PI * 2); ctx.fill();
     }
