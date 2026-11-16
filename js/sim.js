@@ -10,7 +10,7 @@ import {
   SLIDE_TIME, SLIDE_H, FAST_FALL, PORTAL_GAP, PORTAL_FROM, FLIP_V, LIVES, INVULN_TIME,
   SINK_TIME, SINK_DEPTH, SINK_G, SINK_SLOW,
   FALL_FROM, FALL_LEAD, TOPPLE_TIME, DROP_TIME, FALL_WOBBLE,
-  HEART_FROM, HEART_CHANCE, HEART_LIFT, HERMES_FROM, HERMES_CHANCE, HERMES_TIME, AEGIS_FROM, AEGIS_CHANCE,
+  HEART_FROM, HEART_CHANCE, HEART_LIFT, HERMES_FROM, HERMES_CHANCE, HERMES_TIME, AEGIS_FROM, AEGIS_CHANCE, AEGIS_HITS,
   SPEED_START, speedAt, clamp,
 } from './config.js';
 import { sequenceChance, pickSequence, giftSequence } from './sequences.js';
@@ -87,7 +87,7 @@ export function createSim(opts = {}) {
     maxLives: opts.lives ?? (opts.scripted ? 1 : LIVES), // the ordinary lives (red hearts)
     gold: false, // holding a golden heart: one extra life, taken first by a hit
     hermes: 0, // seconds left of Hermes' sandals: holes and missing surfaces hold the hero
-    aegis: false, // carrying Athena's shield: the next wall he runs into is smashed instead
+    aegis: 0, // hits left on Athena's shield (AEGIS_HITS when taken): the next walls he runs into are smashed instead
     invuln: 0, // seconds of protection left after losing a life
     dist: 0, speed: SPEED_START, py: 0, vy: 0, grav: -1, grounded: true, buffer: 0,
     obs: [], nextZ: 24, lastSide: 0, sameRun: 0,
@@ -401,7 +401,7 @@ export function update(S, dt, emit, opts = {}) {
     if (o.z < PL && o.z + o.len > 0 && pb.y0 < cy + 0.25 && pb.y1 > cy - 0.25) {
       o.taken = true;
       if (o.type === 'sandals') { S.hermes = HERMES_TIME; emit('boost', { god: 'hermes', seconds: HERMES_TIME }); continue; }
-      if (o.type === 'aegis') { S.aegis = true; emit('boost', { god: 'athena' }); continue; }
+      if (o.type === 'aegis') { S.aegis = AEGIS_HITS; emit('boost', { god: 'athena' }); continue; }
       if (!S.gold) {
         S.gold = true;
         S.lives++;
@@ -423,9 +423,9 @@ export function update(S, dt, emit, opts = {}) {
     if (o.type === 'block' || o.type === 'portal') {
       const hb = blockHitbox(o);
       if (hb && hb.z0 < PL - HIT.player && hb.z1 > HIT.player && pb.y0 < hb.y1 && pb.y1 > hb.y0) {
-        if (S.aegis && smashable(o)) { // Athena's shield breaks the wall, and is spent
-          S.aegis = false; o.spent = true; o.smashed = true;
-          emit('smash', { kind: obstacleKind(o) });
+        if (S.aegis > 0 && smashable(o)) { // Athena's shield breaks the wall and takes a crack; spent after AEGIS_HITS
+          S.aegis--; o.spent = true; o.smashed = true;
+          emit('smash', { kind: obstacleKind(o), left: S.aegis });
           continue;
         }
         hit(S, emit, 'block', o); return;

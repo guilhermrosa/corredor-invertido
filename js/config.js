@@ -64,6 +64,7 @@ export const HERMES_TIME = 6;      // seconds
 // about one every 800 m, only while none is held or on its way.
 export const AEGIS_FROM = 300;
 export const AEGIS_CHANCE = 0.06;  // per regular obstacle spawned
+export const AEGIS_HITS = 2;       // walls it breaks before it is gone (v0.47.8, user: "it could take 2 hits"; 1 before)
 
 // Falling obstacles (from FALL_FROM m): a column of the left colonnade that topples across
 // the path (then jump it, or flip away), and a roof block that drops to the floor (flip up).

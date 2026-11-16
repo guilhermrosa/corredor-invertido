@@ -166,7 +166,7 @@ function drawSlide(ctx, phase, aegis = false) {
     }
   }
   if (aegis) { // Athena's shield strapped on his back, lying flat with him, over everything
-    ctx.save(); ctx.translate(0, -0.21); ctx.scale(0.15, 0.1); drawAegisFace(ctx); ctx.restore();
+    ctx.save(); ctx.translate(0, -0.21); ctx.scale(0.15, 0.1); drawAegisFace(ctx, 0, aegis === 1); ctx.restore();
   }
 }
 
@@ -194,12 +194,12 @@ function wing(ctx, x, y, side, alpha, phase) {
 // phase: running cycle in radians; air: true while jumping or flipping; sliding: belly slide;
 // blessing: 0..1, how much of the divine gold shows (the hero's inverted gravity)
 // the shield on his left arm, turned a little toward the camera
-function shield(ctx, x, y) {
+function shield(ctx, x, y, cracked) {
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(-0.15);
   ctx.scale(0.13, 0.2);
-  drawAegisFace(ctx);
+  drawAegisFace(ctx, 0, cracked);
   ctx.restore();
 }
 
@@ -330,6 +330,6 @@ export function drawAxolotl(ctx, phase, air, sliding = false, blessing = 0, sand
     }
   }
   if (sandals > 0) for (const L of legs.filter(l => l.kick >= 0.5)) wing(ctx, L.foot[0], L.foot[1] - 0.03, L.side, sandals, phase);
-  if (aegis) shield(ctx, arms[0].hd[0] - 0.05, arms[0].hd[1]);
+  if (aegis) shield(ctx, arms[0].hd[0] - 0.05, arms[0].hd[1], aegis === 1);
   ctx.restore();
 }

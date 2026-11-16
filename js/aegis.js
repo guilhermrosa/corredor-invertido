@@ -16,11 +16,13 @@ const P = {
   feet: 'M-1.6 6.1v.7M-1 6.1v.7M1 6.1v.7M1.6 6.1v.7',
 };
 const EYES = [-1.6, 1.6];
+// the crack after the first wall: from the rim at the top right down through the field
+const CRACK = 'M6.4-7.6 4.6-4.9 5.6-3.3 3.2-0.6 4.1 1.2 1.6 4.4M4.6-4.9 7.4-3.6M3.2-0.6 0.9-1.4';
 const DOTS = Array.from({ length: 16 }, (_, i) => [9.05 * Math.cos(i / 8 * Math.PI), 9.05 * Math.sin(i / 8 * Math.PI)]);
 const LEAVES = [[-5.3, 2.2, -50], [-4.5, 4.2, -25], [5.3, 2.2, 50], [4.5, 4.2, 25]];
 
 // the HUD icon
-export function aegisSvg() {
+export function aegisSvg(cracked = false) {
   const f = n => +n.toFixed(2);
   return `<svg viewBox="-10.5 -10.5 21 21" aria-hidden="true"><circle r="10" fill="${C.rim}" stroke="${C.rimLine}" stroke-width=".9"/><circle r="8.1" fill="${C.field}" stroke="${C.ring}" stroke-width=".7"/>`
     + DOTS.map(([x, y]) => `<circle cx="${f(x)}" cy="${f(y)}" r=".45" fill="${C.dot}"/>`).join('')
@@ -28,12 +30,13 @@ export function aegisSvg() {
     + EYES.map(x => `<circle cx="${x}" cy="-.9" r="1.75" fill="${OWL.eye}" stroke="${OWL.line}" stroke-width=".35"/><circle cx="${x}" cy="-.9" r=".8" fill="${OWL.pupil}"/>`).join('')
     + `<path d="${P.beak}" fill="${OWL.pupil}"/><path d="${P.chest}" stroke="${OWL.line}" stroke-width=".4" fill="none"/><path d="${P.feet}" stroke="${OWL.line}" stroke-width=".45"/>`
     + LEAVES.map(([x, y, r]) => `<ellipse cx="${x}" cy="${y}" rx="1.3" ry=".55" transform="rotate(${r} ${x} ${y})" fill="${C.olive}"/>`).join('')
+    + (cracked ? `<path d="${CRACK}" stroke="#3b2d1a" stroke-width=".9" fill="none" stroke-linejoin="round"/>` : '')
     + '</svg>';
 }
 
 // the canvas drawing, face on in a unit circle; fog (0..1) fades it toward the haze for the far pickup
-let paths = null;
-export function drawAegisFace(ctx, fog = 0) {
+let paths = null, crack = null;
+export function drawAegisFace(ctx, fog = 0, cracked = false) {
   paths = paths || Object.fromEntries(Object.entries(P).map(([k, d]) => [k, new Path2D(d)]));
   const hz = [214, 228, 234];
   const m = hex => {
@@ -62,6 +65,10 @@ export function drawAegisFace(ctx, fog = 0) {
   ctx.lineWidth = 0.45; ctx.stroke(paths.feet);
   ctx.fillStyle = m(C.olive);
   for (const [x, y, r] of LEAVES) { ctx.beginPath(); ctx.ellipse(x, y, 1.3, 0.55, r * Math.PI / 180, 0, Math.PI * 2); ctx.fill(); }
+  if (cracked) { // one hit left: a dark crack across the face (v0.47.8)
+    crack = crack || new Path2D(CRACK);
+    ctx.strokeStyle = 'rgba(59,45,26,.9)'; ctx.lineWidth = 0.9; ctx.stroke(crack);
+  }
   ctx.beginPath(); ctx.ellipse(-4.5, -5, 2.2, 1.2, -0.7, 0, Math.PI * 2);
   ctx.fillStyle = `rgba(255,255,255,${0.35 * (1 - fog)})`; ctx.fill();
   ctx.restore();

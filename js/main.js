@@ -64,7 +64,7 @@ let achCheckIn = 0;
 const GIFT_INTRO = {
   heart: ['Romã dourada de Perséfone', 'Pegue para ganhar uma vida extra. Se ela estiver do outro lado, inverta.'],
   sandals: ['Sandálias de Hermes', 'Pegue para andar sobre os buracos por 6 s. Logo depois vem um trecho cheio deles.'],
-  aegis: ['Escudo de Atena', 'Pegue: ele quebra o próximo muro ou pórtico em que você bater. Logo depois vem uma muralha.'],
+  aegis: ['Escudo de Atena', 'Pegue: ele quebra os próximos dois muros ou pórticos em que você bater. Logo depois vem uma muralha.'],
 };
 let giftsSeen = store.get('gifts-seen', {});
 let giftIntroT = 0;
@@ -96,7 +96,7 @@ const emit = (type, data) => {
   if (type === 'hurt') return onHurt(data);
   if (type === 'boost') { // a gift of the gods: Hermes' sandals or Athena's shield
     onFlipBlessing(S);
-    if (data.god === 'athena') { onBlessing('Atena', 'Escudo', 'quebra o próximo muro'); renderLives(S.lives, false); }
+    if (data.god === 'athena') { onBlessing('Atena', 'Escudo', 'quebra os próximos dois muros'); renderLives(S.lives, false); }
     else onBlessing('Hermes', 'Sandálias aladas', 'ande sobre os buracos');
     if (!tut) { stats.recordBoost(data.god); run.gods.add(data.god); }
     return;
@@ -154,7 +154,8 @@ function renderLives(lives, justLost = false) {
   if (S.aegis) { // Athena's shield, while carried
     const a = document.createElement('span');
     a.className = 'aegis-icon';
-    a.innerHTML = aegisSvg();
+    a.innerHTML = aegisSvg(S.aegis === 1);
+    a.title = S.aegis === 1 ? 'Escudo de Atena (rachado: aguenta mais uma batida)' : 'Escudo de Atena (aguenta duas batidas)';
     a.title = 'Escudo de Atena';
     el.appendChild(a);
   }
