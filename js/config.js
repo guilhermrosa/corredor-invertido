@@ -93,6 +93,9 @@ export const COL = {
   flowers: [[244, 204, 62], [238, 132, 56], [214, 74, 62], [156, 116, 204], [250, 248, 240]],
   cypress: [52, 92, 64], hills: [138, 156, 150], hillsFar: [176, 192, 196], rock: [196, 186, 168],
   shallows: [78, 184, 190],
+  // rare details (v0.43): floor mosaics, black-figure vases, loose stones
+  mosaic: [236, 230, 214], tessera: [52, 78, 124], tessera2: [190, 92, 60],
+  clay: [200, 108, 64], clayDark: [158, 78, 44], glaze: [32, 26, 22], rubble: [214, 206, 188],
   edge: [150, 122, 84],      // broken edge around holes
   haz: [230, 90, 70],        // hit flash
   ink: [29, 42, 51],

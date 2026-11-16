@@ -267,6 +267,19 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       }
     }
 
+    // rare details (v0.43), near only and never in the hero's way:
+    if (Q.nature && z0 + 2 > BASE && z0 < Q.nature + 6) {
+      // a floor mosaic: an 8 m "carpet" of light tesserae with a blue Greek-key border and a star
+      const blk = Math.floor(idx / 4), first = blk * 4;
+      if (hash(blk * 13 + 5) < 0.05) mosaic(z0, za, zb, idx - first, S);
+      // a black-figure vase between two columns (some knocked over and broken), and loose stones
+      if (idx & 1) for (const s of [-1, 1]) {
+        const h = hash(idx * 23 + s * 3);
+        if (h < 0.05 && !missingAt(S.obs, -1, z0 + 1)) vase(s * (HW + 0.27), z0 + 1, idx * 3 + s, h < 0.015);
+        else if (h > 0.9 && !missingAt(S.obs, -1, z0 + 0.6)) rubble(s * (HW + 0.2), z0 + 0.6, idx * 5 + s);
+      }
+    }
+
     // columns: missing where the floor is gone, broken where the roof is gone
     const zc = z0 + 0.8;
     if (!(idx & 1) && zc > BASE && !missingAt(S.obs, -1, zc + COL_D / 2)) {
@@ -275,6 +288,70 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       // a toppling column takes the place of the left column near it
       const replaced = S.obs.some(o => o.topple && Math.abs(o.z - zc) < 2.2);
       for (const s of replaced ? [1] : [-1, 1]) drawDoric(s, zc, h, broken, idx);
+    }
+  }
+
+  // Floor mosaic, drawn one slice (2 m) at a time; `part` is the slice's place in the 4-slice carpet.
+  function mosaic(z0, za, zb, part, S) {
+    if (S.obs.some(o => o.type === 'hole' && o.side < 0 && o.z < z0 + 2 && o.z + o.len > z0)) return; // no carpet over a gap
+    const X = HW * 0.86, B = 0.16; // half width and border width
+    const a = Math.max(za, z0 + (part === 0 ? 0.3 : 0)), b = Math.min(zb, z0 + 2 - (part === 3 ? 0.3 : 0));
+    if (b <= a) return;
+    quad(P(-X, 0, a), P(X, 0, a), P(X, 0, b), P(-X, 0, b), fog(COL.mosaic, a));
+    const keyCol = fog(COL.tessera, a);
+    for (const s of [-1, 1]) { // long borders with a simple key pattern
+      quad(P(s * X, 0, a), P(s * (X - B), 0, a), P(s * (X - B), 0, b), P(s * X, 0, b), keyCol);
+      for (let k = 0; k < 4; k++) {
+        const ka = z0 + k * 0.5 + 0.12, kb = ka + 0.22;
+        if (ka < a || kb > b) continue;
+        quad(P(s * (X - 0.04), 0, ka), P(s * (X - B + 0.04), 0, ka), P(s * (X - B + 0.04), 0, kb), P(s * (X - 0.04), 0, kb), fog(COL.mosaic, ka));
+        quad(P(s * (X - 0.04), 0, ka + 0.06), P(s * (X - 0.1), 0, ka + 0.06), P(s * (X - 0.1), 0, kb), P(s * (X - 0.04), 0, kb), keyCol);
+      }
+    }
+    for (const [edge, on] of [[z0 + 0.3, part === 0], [z0 + 1.7, part === 3]]) { // the carpet's ends
+      if (!on || edge - 0.01 < a - 0.2) continue;
+      const e0 = part === 0 ? edge : edge - B, e1 = e0 + B;
+      quad(P(-X, 0, e0), P(X, 0, e0), P(X, 0, e1), P(-X, 0, e1), keyCol);
+    }
+    if (part === 2 && z0 > a - 0.1) { // a star at the centre
+      const cz = z0, pts = [];
+      for (let i = 0; i < 16; i++) { const r = i % 2 ? 0.42 : 0.95, ang = i / 16 * Math.PI * 2; pts.push(P(Math.cos(ang) * r, 0, cz + Math.sin(ang) * r)); }
+      poly(pts, fog(COL.tessera2, cz));
+      const inner = [];
+      for (let i = 0; i < 12; i++) { const ang = i / 12 * Math.PI * 2; inner.push(P(Math.cos(ang) * 0.3, 0, cz + Math.sin(ang) * 0.3)); }
+      poly(inner, fog(COL.tessera, cz));
+    }
+  }
+  // A black-figure vase (amphora): terracotta body, black neck and foot, a black band with figures.
+  function vase(x, z, seed, fallen) {
+    const s = Math.sign(x), u = f / (z - CAM_Z); // pixels per metre here
+    const base = P(x, 0, z);
+    ctx.save();
+    ctx.translate(base[0], base[1]);
+    ctx.scale(u * 1.35, u * 1.35); // about 0.85 m tall
+    if (fallen) ctx.rotate(s * 1.35); // lying on its side, mouth toward the lane
+    const H = 0.62;
+    ctx.fillStyle = fog(COL.glaze, z);
+    ctx.fillRect(-0.09, -0.06, 0.18, 0.06);                         // foot
+    ctx.beginPath(); ctx.ellipse(0, -0.3, 0.17, 0.24, 0, 0, Math.PI * 2);
+    ctx.fillStyle = fog(COL.clay, z); ctx.fill();                   // body
+    ctx.fillStyle = fog(COL.glaze, z);
+    ctx.fillRect(-0.165, -0.36, 0.33, 0.1);                         // the band of black figures
+    ctx.fillStyle = fog(COL.clay, z);
+    for (let i = 0; i < 3; i++) ctx.fillRect(-0.13 + i * 0.1 + 0.03 * hash(seed + i), -0.34, 0.025, 0.06);
+    ctx.fillStyle = fog(COL.glaze, z);
+    ctx.fillRect(-0.06, -H + 0.04, 0.12, 0.14);                     // neck
+    ctx.fillRect(-0.09, -H, 0.18, 0.04);                            // lip
+    ctx.strokeStyle = fog(COL.glaze, z); ctx.lineWidth = 0.025;     // handles
+    for (const k of [-1, 1]) { ctx.beginPath(); ctx.arc(k * 0.12, -0.5, 0.07, k < 0 ? Math.PI * 0.5 : -Math.PI * 0.5, k < 0 ? Math.PI * 1.5 : Math.PI * 0.5, k > 0); ctx.stroke(); }
+    if (fallen) { ctx.fillStyle = fog(COL.clayDark, z); ctx.beginPath(); ctx.moveTo(-0.17, -0.2); ctx.lineTo(-0.05, -0.12); ctx.lineTo(-0.12, -0.02); ctx.closePath(); ctx.fill(); } // a broken piece
+    ctx.restore();
+  }
+  // A few loose stones at the foot of the colonnade.
+  function rubble(x, z, seed) {
+    for (let i = 0; i < 3; i++) {
+      const bx = x + (hash(seed + i) - 0.5) * 0.3, bz = z + (hash(seed * 2 + i) - 0.5) * 0.6, w = 0.08 + 0.1 * hash(seed * 3 + i), h = 0.06 + 0.08 * hash(seed * 5 + i);
+      quad(P(bx - w, 0, bz), P(bx + w, 0, bz), P(bx + w * 0.8, h, bz), P(bx - w * 0.9, h, bz), fog(i % 2 ? COL.rubble : COL.columnShade, bz));
     }
   }
 
