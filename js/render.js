@@ -355,8 +355,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
         poly(loz(0.95, 1.5), cdark); poly(loz(0.8, 1.26), cground); poly(loz(0.6, 0.95), cacc); poly(loz(0.3, 0.48), cdark);
         return;
       }
-      poly(ring(0.98), cdark);
-      poly(ring(0.86), cground);
+      if (centre === 0) { poly(ring(0.98), cdark); poly(ring(0.86), cground); } // only the flower has a ring (v0.45.5)
       if (centre === 0) { // eight petals
         for (let k = 0; k < 8; k++) {
           const g = k / 8 * Math.PI * 2, c = Math.cos(g), sn = Math.sin(g), pts = [];
