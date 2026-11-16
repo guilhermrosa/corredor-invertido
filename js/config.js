@@ -88,7 +88,12 @@ export const COL = {
   wall: [216, 202, 172],     // low wall (mureta), jump: warm sandstone blocks
   ruin: [206, 190, 158],     // tall ruined wall on the floor, flip
   lintel: [224, 212, 184],   // fallen beam hanging from the roof, flip, with blue triglyphs
-  outline: [92, 82, 70],     // dark outline around obstacles, so light stone reads on light stone
+  outline: [92, 82, 70],
+  // nature (v0.42): grass and weeds in the joints, vines from the roof, wild flowers, cypresses
+  grass: [126, 166, 88], grassDark: [86, 128, 64], grassLight: [168, 198, 110], vine: [88, 138, 70],
+  flowers: [[244, 204, 62], [238, 132, 56], [214, 74, 62], [156, 116, 204], [250, 248, 240]],
+  cypress: [52, 92, 64], hills: [138, 156, 150], hillsFar: [176, 192, 196], rock: [196, 186, 168],
+  shallows: [78, 184, 190],     // dark outline around obstacles, so light stone reads on light stone
   edge: [150, 122, 84],      // broken edge around holes
   haz: [230, 90, 70],        // hit flash
   ink: [29, 42, 51],

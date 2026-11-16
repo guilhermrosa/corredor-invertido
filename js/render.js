@@ -72,7 +72,8 @@ function drawBackdrop(ctx, W, H, t, Q) {
   const sea = ctx.createLinearGradient(0, 0, 0, R * 0.6);
   sea.addColorStop(0, rgb(mix(COL.sea, COL.haze, 0.55)));
   sea.addColorStop(0.12, rgb(COL.sea));
-  sea.addColorStop(1, rgb(COL.seaDeep));
+  sea.addColorStop(0.55, rgb(COL.seaDeep));
+  sea.addColorStop(1, rgb(COL.shallows)); // clear turquoise water right below the colonnade
   ctx.fillStyle = sea;
   ctx.fillRect(-R, 0, 2 * R, R);
   // sun with a soft glow
@@ -96,15 +97,34 @@ function drawBackdrop(ctx, W, H, t, Q) {
     ctx.ellipse(x + r * 0.9, y - r * 0.35, r * 1.2, r * 0.75, 0, 0, Math.PI * 2);
     ctx.fill();
   }
-  // a distant island on the horizon
-  ctx.fillStyle = rgb(mix(COL.island, COL.haze, 0.45));
+  // distant mountains along the horizon, two layers (v0.42, after the user's references)
+  const ridge = (col, amp, seed, x0, x1) => {
+    ctx.fillStyle = rgb(col);
+    ctx.beginPath(); ctx.moveTo(x0, 1);
+    for (let i = 0; i <= 24; i++) {
+      const x = lerp(x0, x1, i / 24), e = Math.sin(i / 24 * Math.PI);
+      ctx.lineTo(x, -H * amp * e * (0.55 + 0.45 * hash(seed + i)));
+    }
+    ctx.lineTo(x1, 1); ctx.closePath(); ctx.fill();
+  };
+  ridge(mix(COL.hillsFar, COL.haze, 0.35), 0.05, 3, -W * 1.1, -W * 0.05);
+  ridge(mix(COL.hillsFar, COL.haze, 0.45), 0.035, 9, W * 0.35, W * 1.2);
+  ridge(mix(COL.hills, COL.haze, 0.3), 0.03, 17, -W * 0.85, -W * 0.3);
+  // a rocky headland with cypresses (the old distant island)
+  ctx.fillStyle = rgb(mix(mix(COL.rock, COL.grassDark, 0.35), COL.haze, 0.2)); // rock with scrub
   ctx.beginPath();
-  ctx.moveTo(W * 0.16, 0);
-  ctx.quadraticCurveTo(W * 0.24, -H * 0.03, W * 0.3, -H * 0.042);
-  ctx.quadraticCurveTo(W * 0.38, -H * 0.05, W * 0.44, -H * 0.02);
-  ctx.lineTo(W * 0.52, 0);
-  ctx.closePath();
-  ctx.fill();
+  ctx.moveTo(W * 0.14, 1);
+  ctx.quadraticCurveTo(W * 0.2, -H * 0.03, W * 0.28, -H * 0.036);
+  ctx.quadraticCurveTo(W * 0.4, -H * 0.044, W * 0.47, -H * 0.012);
+  ctx.lineTo(W * 0.52, 1);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = rgb(mix(COL.cypress, COL.haze, 0.3));
+  for (let i = 0; i < 7; i++) {
+    const cx = W * (0.22 + i * 0.033 + hash(i + 40) * 0.01), ch = H * (0.028 + hash(i + 60) * 0.022), cb = -H * (0.03 + 0.008 * Math.sin(i));
+    ctx.beginPath();
+    ctx.ellipse(cx, cb - ch / 2, ch * 0.13, ch / 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
   // sun glints on the water
   for (let i = 0; i < Q.glints; i++) {
     const gx = (hash(i) - 0.5) * W * 1.6;
@@ -210,6 +230,21 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
         line(P(x, HM - FRIEZE, a), P(x, HM - FRIEZE, b), fog(COL.columnDark, a), lw(a) * 0.6); // architrave line
       }
     }
+    // nature: tufts of grass (some with flowers) in the slab joints near the lane edges and at the
+    // feet of the columns; never in the middle of the lane, so they never look like an obstacle
+    if (z0 + 1 > BASE && z0 < FAR * 0.75) {
+      for (const s of [-1, 1]) {
+        const spots = [[s * (COL_X0 - 0.06), z0 + 0.75, 0.75], [s * HW * (0.62 + 0.3 * hash(idx * 5 + s)), z0 + 2 * hash(idx * 9 + s), 0.35]];
+        for (const [tx, tz, chance] of spots) {
+          if (tz < BASE + 0.3 || hash(idx * 13 + s * 7 + tx) > chance || missingAt(S.obs, -1, tz)) continue;
+          tuft(tx, tz, 0.16 + 0.16 * hash(idx * 3 + tx), idx * 31 + s, t);
+        }
+        // a vine hanging from the roof edge, swaying a little
+        const vz = z0 + 0.4 + hash(idx * 17 + s) * 1.2;
+        if (hash(idx * 11 + s * 5) < 0.3 && vz > BASE + 0.5 && !missingAt(S.obs, 1, vz)) vine(s * (HW + 0.02), vz, 0.5 + 0.9 * hash(idx * 19 + s), idx * 7 + s, t);
+      }
+    }
+
     // columns: missing where the floor is gone, broken where the roof is gone
     const zc = z0 + 0.8;
     if (!(idx & 1) && zc > BASE && !missingAt(S.obs, -1, zc + COL_D / 2)) {
@@ -218,6 +253,37 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       // a toppling column takes the place of the left column near it
       const replaced = S.obs.some(o => o.topple && Math.abs(o.z - zc) < 2.2);
       for (const s of replaced ? [1] : [-1, 1]) drawDoric(s, zc, h, broken, idx);
+    }
+  }
+
+  // A tuft of grass: thin blades leaning out of a joint; some carry a wild flower.
+  function tuft(x, z, h, seed, t) {
+    const n = Q.flutes ? 5 : 3, sway = Math.sin(t * 2 + seed) * 0.03;
+    for (let i = 0; i < n; i++) {
+      const bx = x + (i - (n - 1) / 2) * 0.05, lean = (hash(seed + i) - 0.5) * 0.18 + sway;
+      const bh = h * (0.6 + 0.5 * hash(seed * 3 + i));
+      const col = i % 3 === 0 ? COL.grassDark : i % 3 === 1 ? COL.grass : COL.grassLight;
+      poly([P(bx - 0.025, 0, z), P(bx + 0.025, 0, z), P(bx + lean, bh, z)], fog(col, z));
+    }
+    if (hash(seed * 7) < 0.45) {
+      const fc = COL.flowers[Math.floor(hash(seed * 11) * COL.flowers.length)];
+      const p = P(x + sway, h * 0.95, z), r = Math.max(1.2, 0.045 * f / (z - CAM_Z));
+      ctx.fillStyle = fog(fc, z);
+      ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  // A vine hanging from the roof edge: a curved stem with small leaves along it.
+  function vine(x, z, len, seed, t) {
+    const top = HM - FRIEZE, sway = Math.sin(t * 1.3 + seed) * 0.05;
+    const pts = [];
+    for (let i = 0; i <= 6; i++) { const k = i / 6; pts.push(P(x - Math.sign(x) * 0.04 * k + sway * k * k, top - len * k, z + 0.05 * Math.sin(k * 4 + seed))); }
+    ctx.strokeStyle = fog(COL.grassDark, z); ctx.lineWidth = lw(z) * 0.7;
+    ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.stroke();
+    const r = Math.max(1, 0.05 * f / (z - CAM_Z));
+    for (let i = 1; i <= 6; i++) {
+      ctx.fillStyle = fog(i % 2 ? COL.vine : COL.grass, z);
+      const p = pts[i], o = (i % 2 ? 1 : -1) * r * 0.9;
+      ctx.beginPath(); ctx.ellipse(p[0] + o, p[1], r * 1.1, r * 0.7, 0.5 * (i % 2 ? 1 : -1), 0, Math.PI * 2); ctx.fill();
     }
   }
 
