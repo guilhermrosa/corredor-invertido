@@ -146,8 +146,11 @@ function drawBackdrop(ctx, W, H, t, Q, storm = 0, zeus = 0) {
 // Zeus in the storm (v0.50): a huge figure of dark cloud rising behind the sea on the left, with a
 // beard of cloud, eyes of white light and a thunderbolt raised in his right hand; `k` 0..1 fades him in
 function drawZeus(ctx, W, H, t, k) {
-  const x = -W * 0.36, base = H * 0.06, r = W * 0.07, bob = Math.sin(t * 0.8) * r * 0.05;
-  const body = `rgba(36,44,62,${(0.85 * k).toFixed(3)})`, rim = `rgba(150,180,230,${(0.35 * k).toFixed(3)})`;
+  // v0.50.3: high in the storm, seen through the cloud roof
+  const x = -W * 0.2, base = -H * 0.06, r = W * 0.1, bob = Math.sin(t * 0.8) * r * 0.05;
+  // v0.50.3: a little lighter than the storm, with a lightning-lit rim, so he reads against it
+  const flashK = Math.sin(t * 2.3) > 0.93 ? 1 : 0; // now and then the lightning lights him up
+  const body = `rgba(${70 + flashK * 40},${82 + flashK * 40},${110 + flashK * 40},${(0.92 * k).toFixed(3)})`, rim = `rgba(190,215,255,${(0.75 * k).toFixed(3)})`;
   ctx.save();
   ctx.translate(x, base + bob);
   ctx.fillStyle = body;
@@ -163,14 +166,15 @@ function drawZeus(ctx, W, H, t, k) {
   ctx.beginPath(); // the raised arm, out to the right
   ctx.moveTo(r * 1.6, -r * 1.4); ctx.quadraticCurveTo(r * 2.8, -r * 2.2, r * 2.7, -r * 3.6);
   ctx.lineTo(r * 2.2, -r * 3.6); ctx.quadraticCurveTo(r * 2.2, -r * 2.4, r * 1.2, -r * 1.7); ctx.closePath(); ctx.fill();
-  ctx.strokeStyle = rim; ctx.lineWidth = Math.max(1, r * 0.06);
-  ctx.beginPath(); ctx.arc(0, -r * 2.4, r, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
+  ctx.strokeStyle = rim; ctx.lineWidth = Math.max(1.5, r * 0.07);
+  ctx.beginPath(); ctx.arc(0, -r * 2.4, r, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke(); // head
+  ctx.beginPath(); ctx.ellipse(0, -r * 0.4, r * 2.6, r * 1.6, 0, Math.PI * 1.08, Math.PI * 1.92); ctx.stroke(); // shoulders
   // the eyes
   const glow = 0.75 + 0.25 * Math.sin(t * 5);
   for (const ex of [-0.35, 0.35]) {
-    const g = ctx.createRadialGradient(ex * r, -r * 2.45, 0, ex * r, -r * 2.45, r * 0.35);
+    const g = ctx.createRadialGradient(ex * r, -r * 2.45, 0, ex * r, -r * 2.45, r * 0.55);
     g.addColorStop(0, `rgba(255,255,255,${(k * glow).toFixed(3)})`); g.addColorStop(1, 'rgba(150,200,255,0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(ex * r, -r * 2.45, r * 0.35, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(ex * r, -r * 2.45, r * 0.55, 0, Math.PI * 2); ctx.fill();
   }
   // the thunderbolt in his hand
   const bx = r * 2.45, by = -r * 3.7;
@@ -574,6 +578,18 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     for (const q of flutes) line(P(lerp(x0, x1, q), 0.04, zc), P(lerp(lerp(x0, x1, q), lerp(t0, t1, q), fTop / shaftTop), fTop, zc), fc, lw(zc) * 0.55);
   }
 
+  // v0.50.3: Zeus seen through the translucent cloud roof of his arena: drawn again over it, softer,
+  // only above the horizon (the backdrop's frame), so he looms in the storm instead of vanishing behind it
+  // (not while he runs on the clouds: from up there they lie under his feet)
+  if (zeus > 0 && S.camT < 0.99 && arenas.some(o => o.z < 40)) {
+    ctx.save();
+    ctx.translate(Math.tan(yaw) * f, -Math.tan(pitch) * f / Math.cos(yaw));
+    ctx.beginPath(); ctx.rect(-4 * W, -4 * H, 8 * W, 4 * H); ctx.clip();
+    ctx.globalAlpha = 0.6 * (1 - S.camT);
+    drawZeus(ctx, W, H, t, zeus);
+    ctx.restore();
+  }
+
   // 2. holes and the broken slab edges of open stretches
   for (const o of S.obs) {
     if (o.type !== 'hole' || o.z > FAR) continue;
@@ -872,13 +888,15 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   // the lane and lightning flickering inside now and then
   function stormRoof(a, b, idx) {
     const dark = mix([52, 60, 80], COL.haze, fogK(a) * 0.6), mid = mix([74, 84, 106], COL.haze, fogK(a) * 0.6);
-    quad(P(-EDGE, HM, a), P(EDGE, HM, a), P(EDGE, HM, b), P(-EDGE, HM, b), rgb(dark));
+    // v0.50.3 (user): a little translucent, so it carries on into the storm in the sky (and Zeus shows through)
+    ctx.fillStyle = rgb(dark, 0.72);
+    path([P(-EDGE, HM, a), P(EDGE, HM, a), P(EDGE, HM, b), P(-EDGE, HM, b)]); ctx.fill();
     for (let k = 0; k < 5; k++) { // puffs hanging below the layer, and wider ones at its ragged edges
       const hx = hash(idx * 31 + k * 7), edge = k >= 3, side = k === 3 ? -1 : 1;
       const x = edge ? side * (EDGE - 0.25) : (hx - 0.5) * 2 * HW, z = lerp(a, b, hash(idx * 17 + k * 3)); // v0.50.2: kept inside the roof's width, clear of the sky where Zeus shows
       if (z <= BASE + 0.3) continue;
       const [cx, cy] = P(x, HM - (edge ? 0.12 : 0.08), z), rr = (edge ? 0.55 : 0.6 + 0.4 * hx) * f / (z - CAM_Z);
-      ctx.fillStyle = rgb(k % 2 ? mid : dark);
+      ctx.fillStyle = rgb(k % 2 ? mid : dark, 0.6);
       ctx.beginPath(); ctx.ellipse(cx, cy, rr, rr * 0.45, 0, 0, Math.PI * 2); ctx.fill();
     }
     // lightning inside the cloud: a slice lights up briefly, at random
