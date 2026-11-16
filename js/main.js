@@ -60,6 +60,27 @@ let tut = null;            // tutorial in progress, or null for a normal run
 let runSeconds = 0;        // time actually played in this run (pauses excluded)
 let run = { flips: 0, slides: 0, cleanMetres: 0, hurt: false, gods: new Set() }; // for achievements
 let achCheckIn = 0;
+// the first time each gift of the gods shows up on the path, a card says what it does (once per device)
+const GIFT_INTRO = {
+  heart: ['Romã dourada de Perséfone', 'Pegue para ganhar uma vida extra. Se ela estiver do outro lado, inverta.'],
+  sandals: ['Sandálias de Hermes', 'Pegue para andar sobre os buracos por 6 s. Logo depois vem um trecho cheio deles.'],
+  aegis: ['Escudo de Atena', 'Pegue: ele quebra o próximo muro ou pórtico em que você bater. Logo depois vem uma muralha.'],
+};
+let giftsSeen = store.get('gifts-seen', {});
+let giftIntroT = 0;
+function checkGiftIntro(dt) {
+  if (giftIntroT > 0 && (giftIntroT -= dt) <= 0) $('giftIntro').hidden = true;
+  if (giftIntroT > 0) return;
+  const g = S.obs.find(o => GIFT_INTRO[o.type] && !giftsSeen[o.type] && !o.taken && o.z < 75);
+  if (!g) return;
+  giftsSeen = { ...giftsSeen, [g.type]: true };
+  store.set('gifts-seen', giftsSeen);
+  $('giftTitle').textContent = GIFT_INTRO[g.type][0];
+  $('giftSub').textContent = GIFT_INTRO[g.type][1];
+  $('giftIntro').classList.toggle('low', S.hermes > 0); // under the Hermes timer when it shows
+  $('giftIntro').hidden = false;
+  giftIntroT = 3.6;
+}
 let hermesLeft = 0;          // last frame's S.hermes, for the countdown ticks
 let shake = 0, flash = 0, deadAt = 0;
 let countdownLeft = 0;
@@ -143,6 +164,7 @@ function renderLives(lives, justLost = false) {
 function onDie({ cause, kind, metres }) {
   renderLives(0, true);
   $('boost').hidden = true; // a gift of the gods ends with the run
+  $('giftIntro').hidden = true; giftIntroT = 0;
   state = 'dead';
   deadAt = performance.now();
   audio.stopMusic();
@@ -242,6 +264,7 @@ function frame(now) {
     // and a soft tick on each of the last three seconds, so the end can be heard coming
     if (S.hermes > 0 && Math.ceil(S.hermes) < Math.ceil(hermesLeft) && Math.ceil(S.hermes) <= 3) audio.sfx('boostTick', { left: Math.ceil(S.hermes) });
     hermesLeft = S.hermes;
+    if (!frozen) checkGiftIntro(dt);
     achCheckIn -= dt;
     if (achCheckIn <= 0) { achCheckIn = 0.5; checkAchievements(Math.floor(S.dist)); }
   }
@@ -354,7 +377,7 @@ function toMenu() {
   audio.stopMusic();
   S = createSim();
   clearFx();
-  for (const id of ['over', 'hud', 'pause', 'stats', 'options', 'achPanel', 'countdown', 'tutHint', 'pop', 'blessing', 'boost']) $(id).hidden = true;
+  for (const id of ['over', 'hud', 'pause', 'stats', 'options', 'achPanel', 'countdown', 'tutHint', 'pop', 'blessing', 'boost', 'giftIntro']) $(id).hidden = true;
   $('menu').hidden = false;
   refreshMenu();
 }
