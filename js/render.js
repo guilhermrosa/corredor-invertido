@@ -5,7 +5,7 @@
 // Where a surface is missing (an "open" stretch in the simulation) nothing is drawn,
 // so the backdrop shows through: open sky above, the sea far below.
 
-import { HM, HW, PH, PL, OH, HIT, RUIN_DIP, PORTAL_GAP, HEART_LIFT, HERMES_TIME, clamp, lerp, mix, rgb, COL } from './config.js';
+import { HM, HW, PH, PL, OH, HIT, RUIN_DIP, PORTAL_GAP, HEART_LIFT, HERMES_TIME, TOPPLE_TIME, clamp, lerp, mix, rgb, COL } from './config.js';
 import { blockHitbox, holeKillZone, playerBox, fallAmount } from './sim.js';
 import { drawAxolotl } from './hero.js';
 import { drawAegisFace } from './aegis.js';
@@ -81,6 +81,9 @@ const CLOUDS = [
 // the background): the cache then drew as empty and only the haze showed ("the background was just
 // fog"). It is repainted when its context is lost or restored and whenever the page comes back.
 // how strongly Zeus's lightning shows on a falling obstacle: from its `crack` (o.p > 0) to a little into the fall
+const UPRIGHT = 0.35;     // a toppling column is drawn among the colonnade until it has fallen this much
+const BOLT_TIME = 0.32;   // seconds the bolt shows after the crack (three flashes)
+const pillarItem = o => ({ kind: 'pillar', z0: o.z, z1: o.z + o.len, x0: -HW, x1: HW, y0: 0, y1: OH, col: COL.column, ang: fallAmount(o) * Math.PI / 2, wobble: o.p && o.p < 0.27, zeus: zeusOf(o) });
 const zeusOf = o => (o.p > 0 && o.p < 0.5 ? 1 - o.p / 0.5 * 0.6 : 0);
 
 let backCache = null;
@@ -315,6 +318,13 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       // a toppling column takes the place of the left column near it
       const replaced = S.obs.some(o => o.topple && Math.abs(o.z - zc) < 2.2);
       for (const s of replaced ? [1] : [-1, 1]) drawDoric(s, zc, h, broken, idx);
+    }
+    // v0.48.2: a toppling column that is still mostly upright, and Zeus's bolt striking it, are drawn
+    // here, at their own depth among the colonnade, so the nearer columns pass in front of them
+    for (const o of S.obs) {
+      if (!o.topple || o.z + o.len / 2 < za || o.z + o.len / 2 >= zb) continue;
+      if (fallAmount(o) < UPRIGHT) drawPillar(pillarItem(o), Math.max(BASE, o.z));
+      if (o.p > 0 && o.p * TOPPLE_TIME < BOLT_TIME) zeusBolt(o);
     }
   }
 
@@ -567,7 +577,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     }
     if (o.type !== 'block') continue;
     if (o.topple) {
-      items.push({ kind: 'pillar', z0: o.z, z1: o.z + o.len, x0: -HW, x1: HW, y0: 0, y1: OH, col: COL.column, ang: fallAmount(o) * Math.PI / 2, wobble: o.p && o.p < 0.27, zeus: zeusOf(o) });
+      if (fallAmount(o) >= UPRIGHT) items.push(pillarItem(o)); // upright, it is drawn among the columns (above)
       continue;
     }
     if (o.drop) {
@@ -737,6 +747,63 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     quad(p3(at(eTop, -wide - 0.02), z0), p3(at(L, -wide - 0.02), z0), p3(at(L, Wd + wide + 0.02), z0), p3(at(eTop, Wd + wide + 0.02), z0), fog(COL.column, z0)); // abacus
     line(p3(at(eTop, -wide - 0.02), z0), p3(at(eTop, Wd + wide + 0.02), z0), fog(COL.columnDark, z0), lw(z0) * 0.6);
     if (b.zeus) zeusArcs([p3(at(0, -wide), z0), p3(at(L, -wide), z0), p3(at(L, Wd + wide), z0), p3(at(0, Wd + wide), z0)], b.zeus);
+  }
+
+  // Zeus's bolt (v0.48.2, user: "the lightning should come from outside, not just appear on the column,
+  // and pass behind the column in front"): it falls from the open sky beyond the left colonnade onto
+  // the capital, in three flashes of a fixed shape each (seeded, so it does not jitter), with two
+  // branches, a blue glow, an electric blue body and a white-hot core, and a burst where it lands.
+  function zeusBolt(o) {
+    const el = o.p * TOPPLE_TIME;
+    const flash = el < 0.07 ? 0 : el < 0.1 ? -1 : el < 0.18 ? 1 : el < 0.21 ? -1 : el < BOLT_TIME ? 2 : -1;
+    if (flash < 0) return;
+    const fade = flash === 2 ? 1 - (el - 0.21) / (BOLT_TIME - 0.21) * 0.7 : 1;
+    const zc = o.z + o.len / 2;
+    const a = fallAmount(o) * Math.PI / 2, L = HM - FRIEZE;
+    const tx = -(HW + 0.05) + Math.sin(a) * L + Math.cos(a) * 0.25, ty = Math.cos(a) * L - Math.sin(a) * 0.25;
+    const end = P(tx, ty + 0.12, zc);
+    const start = P(-14, HM + 6, zc + 1.5); // out in the open sky, nearly at the column's own depth
+    const seed = Math.floor(o.len * 9973) + flash * 131;
+    const s = Math.max(0.6, W / 390); // line widths follow the screen
+    const bolt = (p, q, sd, rough, depth) => {
+      let pts = [p, q];
+      for (let it = 0; it < depth; it++) {
+        const np = [pts[0]];
+        for (let i = 0; i < pts.length - 1; i++) {
+          const [x0, y0] = pts[i], [x1, y1] = pts[i + 1];
+          const len = Math.hypot(x1 - x0, y1 - y0) || 1, off = (hash(sd + it * 97 + i * 13) - 0.5) * len * rough;
+          np.push([(x0 + x1) / 2 - (y1 - y0) / len * off, (y0 + y1) / 2 + (x1 - x0) / len * off], pts[i + 1]);
+        }
+        pts = np;
+      }
+      return pts;
+    };
+    const stroke = (pts, w) => {
+      ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])));
+      ctx.strokeStyle = `rgba(130,180,255,${0.28 * fade})`; ctx.lineWidth = 16 * w * s; ctx.stroke();
+      ctx.strokeStyle = `rgba(60,115,235,${0.9 * fade})`; ctx.lineWidth = 5 * w * s; ctx.stroke();
+      ctx.strokeStyle = `rgba(255,255,255,${fade})`; ctx.lineWidth = 2 * w * s; ctx.stroke();
+    };
+    ctx.save();
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    const main = bolt(start, end, seed, 0.45, 6);
+    for (const [k, len] of [[0.3, 0.32], [0.55, 0.22]]) { // branches, thinner, forking off and fading out
+      const i = Math.floor(main.length * k), p = main[i];
+      const dx = end[0] - start[0], dy = end[1] - start[1];
+      const side = hash(seed + k * 7) < 0.5 ? -1 : 1;
+      const q = [p[0] + dx * len + dy * side * len * 0.6, p[1] + dy * len - dx * side * len * 0.6];
+      stroke(bolt(p, q, seed + k * 1000, 0.5, 4), 0.45);
+    }
+    stroke(main, 1);
+    // the burst where it lands
+    const r = 46 * s;
+    const g = ctx.createRadialGradient(end[0], end[1], 0, end[0], end[1], r);
+    g.addColorStop(0, `rgba(255,255,255,${0.95 * fade})`);
+    g.addColorStop(0.35, `rgba(150,195,255,${0.6 * fade})`);
+    g.addColorStop(1, 'rgba(120,170,255,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(end[0], end[1], r, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
   }
 
   // Zeus's wrath (v0.48; only the toppling column since v0.48.1): lightning crackling around it as it
