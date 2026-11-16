@@ -367,9 +367,9 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       } else { // an eight-pointed star
         const pts = [];
         for (let k = 0; k < 16; k++) { const g = k / 16 * Math.PI * 2, r = k % 2 ? 0.34 : 0.74; pts.push(P(Math.cos(g) * r, 0, cz + Math.sin(g) * r * S1)); }
-        poly(pts, cacc);
+        poly(pts, cdark); // v0.45.4: a blue star with no centre dot (user)
       }
-      poly(ring(0.14), cdark);
+      if (centre === 0) poly(ring(0.14), cdark); // the flower keeps its blue heart
     }
   }
   // A black-figure vase (amphora): terracotta body, black neck and foot, a black band with figures.
