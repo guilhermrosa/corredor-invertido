@@ -1,7 +1,7 @@
 // Entry point: game loop, game flow (runs, tutorial, pause, game over), menus, keys and offline support.
 // Options live in options.js, touch gestures in input.js, the stats and achievements panels in panels.js.
 
-import { COL, rgb, HERMES_TIME } from './config.js';
+import { COL, rgb, HERMES_TIME, HW } from './config.js';
 import { createSim, update, press, flipUp, slide } from './sim.js';
 import { drawTunnel, QUALITY } from './render.js';
 import { store } from './store.js';
@@ -13,7 +13,7 @@ import * as stats from './stats.js';
 import * as ach from './achievements.js';
 import { STEPS, createTutorial, startStep, progress } from './tutorial.js';
 import { aegisSvg } from './aegis.js';
-import { fx, onLand, onThud, whileSliding, onHit, onInstantFlip, onFlipBlessing, whileBlessed, onMilestone, onPop, onBlessing, onSmash, updateFx, clearFx } from './fx.js';
+import { fx, onLand, onThud, whileSliding, onHit, onInstantFlip, onFlipBlessing, whileBlessed, onMilestone, onPop, onBlessing, onSmash, onColumnBreak, updateFx, clearFx } from './fx.js';
 
 const $ = id => document.getElementById(id);
 const VERSION_LABEL = 'Versão ' + self.APP_VERSION; // from js/version.js
@@ -111,7 +111,8 @@ const emit = (type, data) => {
   }
   if (type === 'hermesHold') { if (!tut) stats.recordHermesHold(); return; }
   if (type === 'smash') { onSmash(S); shake = Math.max(shake, 0.25); buzz(25); renderLives(S.lives, false); if (!tut) stats.recordSmash(data.kind); return; }
-  if (type === 'crack' && data.kind === 'pillar') zeusFlash = 1; // Zeus's wrath: a white-blue flash as the lightning strikes
+  if (type === 'crack' && data.kind === 'pillar') zeusFlash = 1;
+  if (type === 'break') { onColumnBreak(data.z, HW); shake = Math.max(shake, 0.1); } // Zeus's wrath: a white-blue flash as the lightning strikes
   if (type === 'land') onLand(data.side);
   else if (type === 'thud') { onThud(data.z); shake = Math.max(shake, 0.12); }
   else if (type === 'milestone') onMilestone(data.metres);

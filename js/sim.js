@@ -329,6 +329,8 @@ export function update(S, dt, emit, opts = {}) {
     if (!o.p && o.z < S.speed * FALL_LEAD + 3) { o.p = 1e-6; emit('crack', { kind: obstacleKind(o) }); }
     if (o.p) {
       o.p = Math.min(1, o.p + dt / (o.topple ? TOPPLE_TIME : DROP_TIME));
+      // the struck column breaks at its foot as the wobble ends and it starts to fall (v0.48.3)
+      if (o.topple && !o.broke && o.p >= FALL_WOBBLE) { o.broke = true; emit('break', { z: o.z + o.len / 2, kind: obstacleKind(o) }); }
       if (o.p >= 1) {
         o.landed = true;
         if (o.drop) o.side = -1; // now it sits on the floor

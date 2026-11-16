@@ -94,6 +94,12 @@ export function sfx(type, data = {}) {
       lyre.pluck(deg(NOTES.length - 1), t + 0.08, 0.35, { sustain: 40, bright: 80, dur: 0.4 });
       break;
     }
+    case 'break': { // the struck column breaks at its foot: a short crunch of stone (v0.48.3)
+      const t = ac.currentTime + 0.01;
+      lyre.pluck(deg(1), t, 0.55, { sustain: 0, bright: 15, dur: 0.18 });
+      lyre.pluck(deg(0), t + 0.05, 0.5, { sustain: 0, bright: 5, dur: 0.25 });
+      break;
+    }
     case 'boostEnd': // the gift fades: two soft falling notes
       lyre.pluck(deg(9), 0, 0.3, { sustain: 10, dur: 0.3 });
       lyre.pluck(deg(7), ac.currentTime + 0.09, 0.26, { sustain: 10, dur: 0.3 });

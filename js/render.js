@@ -326,6 +326,8 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       if (fallAmount(o) < UPRIGHT) drawPillar(pillarItem(o), Math.max(BASE, o.z));
       if (o.p > 0 && o.p * TOPPLE_TIME < BOLT_TIME) zeusBolt(o);
     }
+    // the burst at the foot of a column Zeus broke, at its own depth too (v0.48.3)
+    if (opts.fx) for (const p of opts.fx.particles) if (p.deep && p.z >= za && p.z < zb && p.z > BASE + 0.2) particle(p);
   }
 
   // Floor mosaic, drawn one slice (2 m) at a time; `part` is the slice's place in the 4-slice carpet.
@@ -665,11 +667,8 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   // 4. particles (dust, stone chips), projected with the scene
   if (opts.fx) {
     for (const p of opts.fx.particles) {
-      if (p.z <= BASE + 0.2) continue;
-      const q = P(p.x, p.y, p.z);
-      const r = Math.max(0.8, p.size * f / (p.z - CAM_Z));
-      ctx.fillStyle = rgb(p.col, 0.85 * (1 - p.age / p.life));
-      ctx.fillRect(q[0] - r, q[1] - r, r * 2, r * 2);
+      if (p.z <= BASE + 0.2 || (p.deep && p.z < FAR + 2)) continue; // deep ones were drawn among the columns
+      particle(p);
     }
   }
 
@@ -747,6 +746,13 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     quad(p3(at(eTop, -wide - 0.02), z0), p3(at(L, -wide - 0.02), z0), p3(at(L, Wd + wide + 0.02), z0), p3(at(eTop, Wd + wide + 0.02), z0), fog(COL.column, z0)); // abacus
     line(p3(at(eTop, -wide - 0.02), z0), p3(at(eTop, Wd + wide + 0.02), z0), fog(COL.columnDark, z0), lw(z0) * 0.6);
     if (b.zeus) zeusArcs([p3(at(0, -wide), z0), p3(at(L, -wide), z0), p3(at(L, Wd + wide), z0), p3(at(0, Wd + wide), z0)], b.zeus);
+  }
+
+  function particle(p) {
+    const q = P(p.x, p.y, p.z);
+    const r = Math.max(0.8, p.size * f / (p.z - CAM_Z));
+    ctx.fillStyle = rgb(p.col, 0.85 * (1 - p.age / p.life));
+    ctx.fillRect(q[0] - r, q[1] - r, r * 2, r * 2);
   }
 
   // Zeus's bolt (v0.48.2, user: "the lightning should come from outside, not just appear on the column,
