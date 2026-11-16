@@ -118,5 +118,11 @@
     "date": "2026-11-16",
     "title": "Mosaicos, vasos e entulho",
     "text": "Terceira etapa do visual: de vez em quando o corredor passa por um mosaico claro com borda de grega azul e uma estrela no centro; entre as colunas aparecem vasos de figuras negras (alguns tombados e quebrados) e pedras soltas. Na 0.42.1 a vegetação ficou mais rara, os obstáculos perderam os contornos e o desenho ficou mais leve."
+  },
+  {
+    "v": "0.44",
+    "date": "2026-11-16",
+    "title": "Obstáculos no mesmo estilo",
+    "text": "Quarta etapa do visual: a mureta virou blocos de pedra com laje de arremate, a coluna caída um tambor dórico com caneluras, o muro em ruínas ganhou fiadas de blocos e uma rachadura, a viga caída tríglifos azuis com sulcos e cornija, o pórtico tambores canelados, e a coluna que tomba tem capitel dórico. Formatos e cores claras mantidos. Na 0.43.1, vasos 20% mais raros."
   }
 ]

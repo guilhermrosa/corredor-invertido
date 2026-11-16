@@ -275,7 +275,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       // a black-figure vase between two columns (some knocked over and broken), and loose stones
       if (idx & 1) for (const s of [-1, 1]) {
         const h = hash(idx * 23 + s * 3);
-        if (h < 0.05 && !missingAt(S.obs, -1, z0 + 1)) vase(s * (HW + 0.27), z0 + 1, idx * 3 + s, h < 0.015);
+        if (h < 0.04 && !missingAt(S.obs, -1, z0 + 1)) vase(s * (HW + 0.27), z0 + 1, idx * 3 + s, h < 0.012); // v0.43.1: 20% rarer (user)
         else if (h > 0.9 && !missingAt(S.obs, -1, z0 + 0.6)) rubble(s * (HW + 0.2), z0 + 0.6, idx * 5 + s);
       }
     }
@@ -606,7 +606,11 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     quad(p3(side[0], z0), p3(side[1], z0), p3(side[1], b.z1), p3(side[0], b.z1), fog(COL.columnShade, z0));
     quad(p3(A, z0), p3(B, z0), p3(C, z0), p3(D, z0), fog(COL.column, z0));
     const fc = fog(COL.columnShade, z0);
-    for (const q of [0.33, 0.66]) line(p3(at(0.1, Wd * q), z0), p3(at(L - 0.1, Wd * q), z0), fc, lw(z0) * 0.8);
+    for (const q of [0.25, 0.5, 0.75]) line(p3(at(0.1, Wd * q), z0), p3(at(L - 0.3, Wd * q), z0), fc, lw(z0) * 0.7);
+    // Doric capital at the top end (v0.44): echinus and abacus, a little wider than the shaft
+    const cap = [at(L - 0.22, -0.06), at(L, -0.08), at(L, Wd + 0.08), at(L - 0.22, Wd + 0.06)];
+    quad(p3(cap[0], z0), p3(cap[1], z0), p3(cap[2], z0), p3(cap[3], z0), fog(COL.columnShade, z0));
+    line(p3(at(L - 0.24, 0), z0), p3(at(L - 0.24, Wd), z0), fog(COL.frieze, z0), lw(z0) * 1.4);
     // a dark outline keeps the white column readable against the white marble floor
     path([p3(A, z0), p3(B, z0), p3(C, z0), p3(D, z0)]);
     ctx.strokeStyle = fog(COL.edge, z0);
@@ -665,7 +669,8 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       // drums at the lane edges
       for (const [da, db] of [[x0, x0 + 0.32], [x1 - 0.32, x1]]) {
         quad(P(da, sy, z0), P(db, sy, z0), P(db, gy, z0), P(da, gy, z0), fog(COL.column, z0));
-        line(P((da + db) / 2, sy, z0), P((da + db) / 2, gy, z0), fog(COL.columnShade, z0), lwz);
+        for (const q of [0.3, 0.55, 0.8]) line(P(lerp(da, db, q), sy, z0), P(lerp(da, db, q), gy, z0), fog(COL.columnShade, z0), lwz * 0.8);
+        const by = lerp(sy, gy, 0.85); line(P(da, by, z0), P(db, by, z0), fog(COL.frieze, z0), lwz * 1.4);
       }
       // the slab, with a broken far edge and a painted band along the gap
       const far = b.side < 0 ? y1 : y0;
@@ -691,30 +696,50 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       const steps = 7;
       for (let i = steps; i >= 0; i--) pts.push(P(x0 + W2 * i / steps, y1 - RUIN_DIP * hash(b.seed * 13 + i), z0));
       poly(pts, face);
+      // v0.44: a few lighter blocks in the lower courses, joints, and a crack
+      for (let r = 0; r < 2; r++) for (let i = 0; i < 4; i++) {
+        if (hash(b.seed * 3 + r * 7 + i) > 0.45) continue;
+        const xa = x0 + W2 * (i + (r ? 0.5 : 0)) / 4.5, xb = xa + W2 / 4.5, ya = y0 + Hh * 0.33 * r, yb = ya + Hh * 0.33;
+        quad(P(xa, ya, z0), P(xb, ya, z0), P(xb, yb, z0), P(xa, yb, z0), fog(mix(b.col, COL.column, 0.3), z0));
+      }
       for (const r of [0.33, 0.66]) line(P(x0, y0 + Hh * r, z0), P(x1, y0 + Hh * r, z0), dark, lwz);
       for (let i = 1; i < 5; i++) {
         const x = x0 + W2 * (i / 5 + (i % 2 ? 0.06 : -0.06));
         line(P(x, y0 + Hh * (i % 2 ? 0 : 0.33), z0), P(x, y0 + Hh * (i % 2 ? 0.33 : 0.66), z0), dark, lwz);
       }
+      const cx = x0 + W2 * (0.3 + 0.4 * hash(b.seed));
+      ctx.strokeStyle = dark; ctx.lineWidth = lwz * 0.8; ctx.beginPath();
+      [[0, 0.95], [0.04, 0.8], [-0.03, 0.68], [0.05, 0.55]].forEach(([dx, r], i) => { const p = P(cx + dx, y0 + Hh * r, z0); i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); });
+      ctx.stroke();
       return;
     }
     quad(P(x0, y0, z0), P(x1, y0, z0), P(x1, y1, z0), P(x0, y1, z0), face);
-    if (b.kind === 'wall') { // low wall: stone blocks in two staggered rows
-      line(P(x0, y0 + Hh * 0.5, z0), P(x1, y0 + Hh * 0.5, z0), dark, lwz);
-      for (let i = 1; i < 6; i++) {
-        const row = i % 2;
-        const x = x0 + W2 * (i / 6);
-        line(P(x, y0 + Hh * (row ? 0 : 0.5), z0), P(x, y0 + Hh * (row ? 0.5 : 1), z0), dark, lwz);
+    if (b.kind === 'wall') { // low wall (v0.44): ashlar blocks in two staggered rows under a coping slab
+      const cap = Hh * 0.18, rowH = (Hh - cap) / 2;
+      for (let r = 0; r < 2; r++) for (let i = 0; i < 4; i++) {
+        const xa = x0 + W2 * Math.max(0, (i - (r ? 0.5 : 0)) / 3.5), xb = x0 + W2 * Math.min(1, (i + 1 - (r ? 0.5 : 0)) / 3.5);
+        if (xb <= xa) continue;
+        const ya = y0 + rowH * r, yb = ya + rowH;
+        quad(P(xa, ya, z0), P(xb, ya, z0), P(xb, yb, z0), P(xa, yb, z0), fog(mix(b.col, COL.column, 0.35 * hash(b.seed * 7 + r * 5 + i)), z0));
+        line(P(xa, ya, z0), P(xa, yb, z0), dark, lwz);
       }
-    } else if (b.kind === 'drum') { // fallen column lying across the path: flutes along its length
-      for (const r of [0.22, 0.5, 0.78]) line(P(x0, y0 + Hh * r, z0), P(x1, y0 + Hh * r, z0), fog(COL.columnShade, z0), lwz);
+      line(P(x0, y0 + rowH, z0), P(x1, y0 + rowH, z0), dark, lwz);
+      quad(P(x0 - 0.04, y1 - cap, z0), P(x1 + 0.04, y1 - cap, z0), P(x1 + 0.04, y1, z0), P(x0 - 0.04, y1, z0), fog(mix(b.col, COL.column, 0.55), z0));
+      line(P(x0 - 0.04, y1 - cap, z0), P(x1 + 0.04, y1 - cap, z0), dark, lwz);
+    } else if (b.kind === 'drum') { // fallen Doric drum lying across the path (v0.44): rounded shading, flutes
+      quad(P(x0, y0, z0), P(x1, y0, z0), P(x1, y0 + Hh * 0.22, z0), P(x0, y0 + Hh * 0.22, z0), fog(COL.columnShade, z0));
+      quad(P(x0, y1 - Hh * 0.14, z0), P(x1, y1 - Hh * 0.14, z0), P(x1, y1, z0), P(x0, y1, z0), fog(mix(COL.column, COL.columnShade, 0.4), z0));
+      for (const r of [0.3, 0.45, 0.6, 0.75]) line(P(x0, y0 + Hh * r, z0), P(x1, y0 + Hh * r, z0), fog(COL.columnShade, z0), lwz * 0.8);
+      for (const xe of [x0 + 0.06, x1 - 0.06]) line(P(xe, y0, z0), P(xe, y1, z0), fog(COL.columnDark, z0), lwz * 0.8); // the drum's joints
     } else if (b.kind === 'lintel') { // fallen roof beam: painted triglyphs, a band of dentils
       const top = y1 - Hh * 0.08, mid = y0 + Hh * 0.5;
       const n = 8;
       for (let i = 0; i < n; i += 2) {
-        const xa = x0 + W2 * i / n, xc = x0 + W2 * (i + 1) / n;
+        const xa = x0 + W2 * (i + 0.2) / n, xc = x0 + W2 * (i + 0.8) / n;
         quad(P(xa, mid, z0), P(xc, mid, z0), P(xc, top, z0), P(xa, top, z0), fog(COL.frieze, z0));
+        for (const g of [0.36, 0.64]) { const gx = lerp(xa, xc, g); line(P(gx, mid + Hh * 0.04, z0), P(gx, top - Hh * 0.04, z0), fog(COL.columnDark, z0), lwz * 0.6); }
       }
+      quad(P(x0, top, z0), P(x1, top, z0), P(x1, y1, z0), P(x0, y1, z0), fog(mix(b.col, COL.column, 0.5), z0)); // cornice
       line(P(x0, mid, z0), P(x1, mid, z0), dark, lwz * 1.4);
       for (let i = 0; i < 16; i++) {
         const xa = x0 + W2 * (i + 0.25) / 16, xc = x0 + W2 * (i + 0.75) / 16;
