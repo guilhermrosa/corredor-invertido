@@ -139,8 +139,12 @@ h2 { font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; }
 .lives { display: flex; gap: 4px; justify-content: center; margin-top: 2px; }
 .heart { display: block; width: 20px; height: 20px; color: #c9413f; filter: drop-shadow(0 1px 3px rgba(255, 255, 255, .9)); }
 .heart svg { display: block; width: 100%; height: 100%; }
+.heart .pith { fill: #f7ead4; }
+.heart .seed { fill: #a3122e; }
+.heart .hl { fill: #fff; opacity: .45; }
 .heart.lost { color: transparent; }
-.heart.lost svg * { stroke: #8a9399; stroke-width: 1.2; }
+.heart.lost .skin { stroke: #8a9399; stroke-width: 1.2; }
+.heart.lost .in { display: none; }
 .heart.pulse { animation: heart-lost .6s ease-out; }
 @keyframes heart-lost { 0% { transform: scale(1.8); color: #d6544a; } 100% { transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .heart.pulse { animation: none; } }

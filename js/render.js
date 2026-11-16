@@ -9,6 +9,16 @@ import { HM, HW, PH, PL, OH, HIT, RUIN_DIP, PORTAL_GAP, HEART_LIFT, HERMES_TIME,
 import { blockHitbox, holeKillZone, playerBox, fallAmount } from './sim.js';
 import { drawAxolotl, drawShieldFace } from './hero.js';
 
+// the split pomegranate, in the HUD icon's 20-unit box (see POMEGRANATE in main.js); built on first use
+let POM = null;
+function pom() {
+  return POM || (POM = {
+    crown: new Path2D('M7.2 6.2 6.6 2.6 8.6 4.3 10 1.8 11.4 4.3 13.4 2.6 12.8 6.2Z'),
+    pith: new Path2D('M10.4 7.4C14 7.3 17.2 9.6 17.3 12.4 17.4 15.2 14.8 17.8 11.6 17.9 9.5 15.6 8.8 10.8 10.4 7.4Z'),
+    seeds: [[12, 9.6], [14, 9.9], [15.6, 11.6], [11.4, 11.7], [13.5, 11.8], [15.4, 13.6], [11.6, 13.8], [13.5, 14], [12.2, 15.9], [14.2, 15.7]],
+  });
+}
+
 const CAM_Z = -4.4, NEAR = 0.6, BASE = CAM_Z + NEAR;
 let FAR = 75; // draw distance; set per frame from the quality level
 
@@ -805,17 +815,19 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     ctx.translate(x, yy);
     // upright for the hero on either surface; it slowly turns like a coin
     ctx.scale(Math.max(0.25, Math.abs(Math.cos(t * 2.2 + b.z0))) * r * 0.85, (b.side < 0 ? 1 : -1) * r * 0.85);
-    // a golden pomegranate, Persephone's fruit: a round body under a crown of five points
-    const fill = rgb(mix([244, 196, 92], COL.haze, fk)), edge = rgb(mix([150, 104, 30], COL.haze, fk));
-    ctx.beginPath();
-    ctx.moveTo(-0.32, -0.62);
-    ctx.lineTo(-0.36, -1.0); ctx.lineTo(-0.16, -0.8); ctx.lineTo(0, -1.08); ctx.lineTo(0.16, -0.8);
-    ctx.lineTo(0.36, -1.0); ctx.lineTo(0.32, -0.62); ctx.closePath();
-    ctx.fillStyle = fill; ctx.fill(); ctx.lineWidth = 0.1; ctx.strokeStyle = edge; ctx.lineJoin = 'round'; ctx.stroke();
-    ctx.beginPath(); ctx.ellipse(0, 0.08, 0.86, 0.8, 0, 0, Math.PI * 2);
-    ctx.fillStyle = fill; ctx.fill(); ctx.lineWidth = 0.12; ctx.stroke();
-    ctx.beginPath(); ctx.ellipse(-0.3, -0.18, 0.18, 0.24, -0.5, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255,255,255,${0.55 * (1 - fk)})`; ctx.fill();
+    // a golden pomegranate, Persephone's fruit, split open: ruby seeds in the cut (same drawing as the HUD lives)
+    ctx.translate(0, 0.05); ctx.scale(0.12, 0.12); ctx.translate(-10, -11.5);
+    const POM = pom();
+    const skin = rgb(mix([244, 196, 92], COL.haze, fk)), edge = rgb(mix([150, 104, 30], COL.haze, fk));
+    ctx.lineJoin = 'round';
+    ctx.fillStyle = skin; ctx.strokeStyle = edge;
+    ctx.lineWidth = 1.2; ctx.fill(POM.crown); ctx.stroke(POM.crown);
+    ctx.beginPath(); ctx.ellipse(10, 12, 7.4, 6.9, 0, 0, Math.PI * 2); ctx.fill(); ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = rgb(mix([247, 234, 212], COL.haze, fk)); ctx.fill(POM.pith);
+    ctx.fillStyle = rgb(mix([163, 18, 46], COL.haze, fk));
+    for (const [sx, sy] of POM.seeds) { ctx.beginPath(); ctx.arc(sx, sy, 0.95, 0, Math.PI * 2); ctx.fill(); }
+    ctx.beginPath(); ctx.ellipse(6.4, 9.4, 1.4, 2, -0.49, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${0.5 * (1 - fk)})`; ctx.fill();
     ctx.restore();
   }
 

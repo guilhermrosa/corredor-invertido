@@ -108,8 +108,8 @@ function onHurt({ cause, kind, lives }) {
   if (cause === 'block') onHit(S);
   renderLives(lives, true);
 }
-// A pomegranate (Persephone's fruit) for each life, drawn in currentColor.
-const POMEGRANATE = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.2 6.2 6.6 2.6 8.6 4.3 10 1.8 11.4 4.3 13.4 2.6 12.8 6.2Z" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/><ellipse cx="10" cy="12" rx="7.4" ry="6.9" fill="currentColor"/><ellipse cx="7.4" cy="9.6" rx="1.6" ry="2.1" transform="rotate(-28 7.4 9.6)" fill="#fff" opacity=".45"/></svg>';
+// A split pomegranate (Persephone's fruit) for each life: skin in currentColor, seeds showing in the cut.
+const POMEGRANATE = '<svg viewBox="0 0 20 20" aria-hidden="true"><path class="skin" d="M7.2 6.2 6.6 2.6 8.6 4.3 10 1.8 11.4 4.3 13.4 2.6 12.8 6.2Z" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/><ellipse class="skin" cx="10" cy="12" rx="7.4" ry="6.9" fill="currentColor"/><g class="in"><path class="pith" d="M10.4 7.4C14 7.3 17.2 9.6 17.3 12.4 17.4 15.2 14.8 17.8 11.6 17.9 9.5 15.6 8.8 10.8 10.4 7.4Z"/><g class="seed"><circle cx="12" cy="9.6" r=".95"/><circle cx="14" cy="9.9" r=".95"/><circle cx="15.6" cy="11.6" r=".95"/><circle cx="11.4" cy="11.7" r=".95"/><circle cx="13.5" cy="11.8" r=".95"/><circle cx="15.4" cy="13.6" r=".95"/><circle cx="11.6" cy="13.8" r=".95"/><circle cx="13.5" cy="14" r=".95"/><circle cx="12.2" cy="15.9" r=".95"/><circle cx="14.2" cy="15.7" r=".95"/></g><ellipse class="hl" cx="6.4" cy="9.4" rx="1.4" ry="2" transform="rotate(-28 6.4 9.4)"/></g></svg>';
 // Pomegranates for the ordinary lives (hearts until v0.47.1), plus a gold one while the golden heart is held.
 function renderLives(lives, justLost = false) {
   const el = $('lives');
