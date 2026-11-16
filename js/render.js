@@ -146,8 +146,8 @@ function drawBackdrop(ctx, W, H, t, Q, storm = 0, zeus = 0) {
 // Zeus in the storm (v0.50): a huge figure of dark cloud rising behind the sea on the left, with a
 // beard of cloud, eyes of white light and a thunderbolt raised in his right hand; `k` 0..1 fades him in
 function drawZeus(ctx, W, H, t, k) {
-  // v0.50.3: high in the storm, seen through the cloud roof
-  const x = -W * 0.2, base = -H * 0.06, r = W * 0.1, bob = Math.sin(t * 0.8) * r * 0.05;
+  // where he first appeared (v0.50; the user preferred it to v0.50.2's lower and v0.50.3's higher spot)
+  const x = -W * 0.36, base = H * 0.03, r = W * 0.075, bob = Math.sin(t * 0.8) * r * 0.05;
   // v0.50.3: a little lighter than the storm, with a lightning-lit rim, so he reads against it
   const flashK = Math.sin(t * 2.3) > 0.93 ? 1 : 0; // now and then the lightning lights him up
   const body = `rgba(${70 + flashK * 40},${82 + flashK * 40},${110 + flashK * 40},${(0.92 * k).toFixed(3)})`, rim = `rgba(190,215,255,${(0.75 * k).toFixed(3)})`;
@@ -576,18 +576,6 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     const flutes = Q.flutes && zc < 22 ? [0.2, 0.4, 0.6, 0.8] : zc < 45 ? [0.35, 0.65] : []; // detail only where it can be seen
     const fTop = shaftTop - (broken ? 0.2 : 0.04);
     for (const q of flutes) line(P(lerp(x0, x1, q), 0.04, zc), P(lerp(lerp(x0, x1, q), lerp(t0, t1, q), fTop / shaftTop), fTop, zc), fc, lw(zc) * 0.55);
-  }
-
-  // v0.50.3: Zeus seen through the translucent cloud roof of his arena: drawn again over it, softer,
-  // only above the horizon (the backdrop's frame), so he looms in the storm instead of vanishing behind it
-  // (not while he runs on the clouds: from up there they lie under his feet)
-  if (zeus > 0 && S.camT < 0.99 && arenas.some(o => o.z < 40)) {
-    ctx.save();
-    ctx.translate(Math.tan(yaw) * f, -Math.tan(pitch) * f / Math.cos(yaw));
-    ctx.beginPath(); ctx.rect(-4 * W, -4 * H, 8 * W, 4 * H); ctx.clip();
-    ctx.globalAlpha = 0.6 * (1 - S.camT);
-    drawZeus(ctx, W, H, t, zeus);
-    ctx.restore();
   }
 
   // 2. holes and the broken slab edges of open stretches
