@@ -5,7 +5,7 @@
 // Where a surface is missing (an "open" stretch in the simulation) nothing is drawn,
 // so the backdrop shows through: open sky above, the sea far below.
 
-import { HM, HW, PH, PL, OH, HIT, RUIN_DIP, PORTAL_GAP, HEART_LIFT, clamp, lerp, mix, rgb, COL } from './config.js';
+import { HM, HW, PH, PL, OH, HIT, RUIN_DIP, PORTAL_GAP, HEART_LIFT, HERMES_TIME, clamp, lerp, mix, rgb, COL } from './config.js';
 import { blockHitbox, holeKillZone, playerBox, fallAmount } from './sim.js';
 import { drawAxolotl } from './hero.js';
 
@@ -580,6 +580,25 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       const onCeil = S.grav > 0;
       const feet = P(0, onCeil ? b.y1 : b.y0, 0.3);
       const u = P(1, 0, 0.3)[0] - P(0, 0, 0.3)[0]; // pixels per metre at the hero's depth
+      // Hermes' sandals: a gold ring on the surface around his feet empties like a clock,
+      // so the time left can be read without looking away from him
+      if (S.hermes > 0) {
+        ctx.save();
+        const sy = onCeil ? b.y1 : b.y0, R = 0.62, ZR = 0.42, ZC = 0.3;
+        const ring = (a0, a1) => {
+          ctx.beginPath();
+          for (let k = 0; k <= 40; k++) {
+            const a = a0 + (a1 - a0) * k / 40, q = P(R * Math.sin(a), sy, ZC - ZR * Math.cos(a));
+            k ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]);
+          }
+        };
+        const blink = S.hermes < 1.2 ? 0.45 + 0.55 * Math.abs(Math.sin(t * 9)) : 1;
+        ctx.lineCap = 'round';
+        ring(0, Math.PI * 2); ctx.lineWidth = Math.max(3, u * 0.07); ctx.strokeStyle = rgb([226, 176, 76], 0.25); ctx.stroke();
+        ring(0, Math.PI * 2 * S.hermes / HERMES_TIME); ctx.lineWidth = Math.max(4, u * 0.11);
+        ctx.strokeStyle = rgb([226, 176, 76], 0.95 * blink); ctx.stroke();
+        ctx.restore();
+      }
       ctx.save();
       if (S.invuln > 0 && Math.floor(S.invuln * 10) % 2) ctx.globalAlpha = 0.35; // blink while protected
       ctx.translate(feet[0], feet[1]);

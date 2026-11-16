@@ -150,6 +150,6 @@ h2 { font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; }
 @media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
 .heart.gold { color: #d9a43c; text-shadow: 0 0 8px rgba(244, 196, 92, .9), 0 1px 6px rgba(255, 255, 255, .9); }
 .menu-link { color: var(--accent); }
-.boost { display: flex; align-items: center; gap: 6px; justify-content: center; margin-top: 3px; font: 600 11px/1 var(--body); color: #9a7520; text-shadow: 0 1px 6px rgba(255,255,255,.9); }
-.boost-track { width: 56px; height: 5px; border-radius: 3px; background: rgba(154,117,32,.25); overflow: hidden; }
-.boost-track i { display: block; height: 100%; background: #e2b04c; border-radius: 3px; }
+.boost { display: flex; align-items: center; gap: 8px; justify-content: center; margin-top: 5px; font: 700 14px/1 var(--body); color: #9a7520; text-shadow: 0 1px 6px rgba(255,255,255,.9); }
+.boost-track { width: 110px; height: 10px; border-radius: 5px; box-shadow: 0 0 6px rgba(255,255,255,.8); background: rgba(154,117,32,.25); overflow: hidden; }
+.boost-track i { display: block; height: 100%; background: #e2b04c; border-radius: 5px; }

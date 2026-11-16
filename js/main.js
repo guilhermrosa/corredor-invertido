@@ -59,6 +59,7 @@ let tut = null;            // tutorial in progress, or null for a normal run
 let runSeconds = 0;        // time actually played in this run (pauses excluded)
 let run = { flips: 0, slides: 0, cleanMetres: 0, hurt: false }; // for achievements
 let achCheckIn = 0;
+let hermesLeft = 0;          // last frame's S.hermes, for the countdown ticks
 let shake = 0, flash = 0, deadAt = 0;
 let countdownLeft = 0;
 let debug = store.get('debug', false); // hitbox view: H key, or tap the version label 5 times
@@ -211,6 +212,9 @@ function frame(now) {
     // Hermes' sandals: a gold bar under the hearts counts down the seconds left
     $('boost').hidden = !(S.hermes > 0);
     if (S.hermes > 0) $('boostBar').style.width = (100 * S.hermes / HERMES_TIME).toFixed(1) + '%';
+    // and a soft tick on each of the last three seconds, so the end can be heard coming
+    if (S.hermes > 0 && Math.ceil(S.hermes) < Math.ceil(hermesLeft) && Math.ceil(S.hermes) <= 3) audio.sfx('boostTick', { left: Math.ceil(S.hermes) });
+    hermesLeft = S.hermes;
     achCheckIn -= dt;
     if (achCheckIn <= 0) { achCheckIn = 0.5; checkAchievements(Math.floor(S.dist)); }
   }

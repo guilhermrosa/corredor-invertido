@@ -73,6 +73,9 @@ export function sfx(type, data = {}) {
     case 'boost': // a gift of the gods: a quick, bright run up the strings
       lyre.strum([deg(4), deg(7), deg(9), deg(11), deg(NOTES.length - 1)], 0.035, 0.42, { sustain: 40 });
       break;
+    case 'boostTick': // the last seconds of a gift: one short high note each, lower as it runs out
+      lyre.pluck(deg(NOTES.length - 1 - (3 - (data?.left ?? 3)) * 2), 0, 0.3, { sustain: 0, bright: 70, dur: 0.1 });
+      break;
     case 'boostEnd': // the gift fades: two soft falling notes
       lyre.pluck(deg(9), 0, 0.3, { sustain: 10, dur: 0.3 });
       lyre.pluck(deg(7), ac.currentTime + 0.09, 0.26, { sustain: 10, dur: 0.3 });
