@@ -2,7 +2,7 @@
 // Options live in options.js, touch gestures in input.js, the stats and achievements panels in panels.js.
 
 import { COL, rgb } from './config.js';
-import { createSim, update, press, slide } from './sim.js';
+import { createSim, update, press, flipUp, slide } from './sim.js';
 import { drawTunnel, QUALITY } from './render.js';
 import { store } from './store.js';
 import { opt, quality, buzz, watchFrames, renderOptions, bindOptions, SWIPE } from './options.js';
@@ -398,13 +398,14 @@ bindTouch(cvs, {
   onTouch: () => audio.unlock(),
   press: () => press(S, emit),
   slide: () => slide(S, emit),
-  heroJumping: () => S.mode === 'jump',
+  flip: () => flipUp(S, emit),
   surfaceOnTop: () => opt.camera === 'fixed' && S.grav > 0,
   swipePx: () => SWIPE[opt.swipe],
 });
 addEventListener('keydown', e => {
   const k = e.code;
-  if (state === 'play' && ['Space', 'ArrowUp', 'KeyW'].includes(k)) { e.preventDefault(); press(S, emit); }
+  if (state === 'play' && k === 'Space') { e.preventDefault(); press(S, emit); }
+  else if (state === 'play' && ['ArrowUp', 'KeyW'].includes(k)) { e.preventDefault(); flipUp(S, emit); }
   else if (state === 'play' && ['ArrowDown', 'KeyS'].includes(k)) { e.preventDefault(); slide(S, emit); }
   else if ((k === 'Escape' || k === 'KeyP') && (state === 'play' || state === 'countdown')) { e.preventDefault(); pause(); }
   else if ((k === 'Escape' || k === 'KeyP' || k === 'Space' || k === 'Enter') && state === 'paused') { e.preventDefault(); resume(); }

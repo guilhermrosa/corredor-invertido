@@ -1,8 +1,8 @@
-// A brute-force player for the tests: tries every input (nothing, tap, swipe down) every few
+// A brute-force player for the tests: tries every input (nothing, tap, swipe up, swipe down) every few
 // frames and keeps the distinct states, to prove a stretch of obstacles can be passed.
 // Uses the real simulation, so it stays honest when physics or hitboxes change.
 
-import { createSim, update, press, slide } from '../js/sim.js';
+import { createSim, update, press, flipUp, slide } from '../js/sim.js';
 import { speedAt, HM, PH } from '../js/config.js';
 
 const DT = 1 / 60;
@@ -52,9 +52,10 @@ export function solve(S0, { maxStates = 4000, strict = true } = {}) {
   for (let tick = 0; tick < 60 * seconds / STEP; tick++) {
     const next = new Map();
     for (const { S, path } of layer) {
-      for (const act of ['-', 'tap', 'down']) {
+      for (const act of ['-', 'tap', 'up', 'down']) {
         const T = clone(S);
-        if (act === 'tap') { if (T.grounded || T.mode === 'jump' || T.sink > 0) press(T, noop); else continue; }
+        if (act === 'tap') { if (T.grounded || T.sink > 0) press(T, noop); else continue; }
+        if (act === 'up') { if (T.grounded || T.canFlip || T.sink > 0) flipUp(T, noop); else continue; }
         if (act === 'down') { if (T.slide > 0 && T.grounded) continue; slide(T, noop); }
         slipped = false;
         for (let f = 0; f < STEP && !T.dead; f++) update(T, DT, watch, { live: true });

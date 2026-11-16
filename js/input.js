@@ -1,13 +1,14 @@
-// Touch controls for a run. Every touch acts at once (jump on a surface, flip in the air).
-// Then the same finger can drag:
+// Touch controls for a run (v0.40: one gesture per action). A touch acts at once: it jumps from a
+// surface (in the air it is remembered and jumps on landing; slipping into a hole, it flips him
+// out). Then the same finger can drag:
 // - toward the surface the hero stands on: slide (in the air: drop fast, slide on landing);
-// - away from it: flip gravity. From a surface that is the touch's jump plus a flip in one
-//   gesture; a touch that already flipped is not flipped back.
+// - away from it: flip gravity (from a surface that is the touch's jump plus a flip); a touch
+//   that already flipped is not flipped back.
 // The hero's surface is at the bottom of the screen, except with the "sem girar" camera on the
 // roof, where it is at the top, so the directions follow the hero.
 //
 // `game` supplies: active() (a run is being played), press() → 'jump' | 'flip' | 'buffer' | null,
-// slide(), heroJumping() (still in the air from a jump), surfaceOnTop(), swipePx(), onTouch().
+// flip() (swipe away), slide(), surfaceOnTop(), swipePx(), onTouch().
 
 export function bindTouch(cvs, game) {
   let touch = null;
@@ -26,7 +27,7 @@ export function bindTouch(cvs, game) {
     if (toward > game.swipePx()) { touch.swiped = true; game.slide(); }
     else if (-toward > game.swipePx()) {
       touch.swiped = true;
-      if (touch.did === 'jump' && game.heroJumping()) game.press(); // jumped on touch: now flip
+      if (touch.did !== 'flip') game.flip();
     }
   });
   const endTouch = e => { if (touch && e.pointerId === touch.id) touch = null; };

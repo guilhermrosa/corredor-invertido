@@ -93,6 +93,7 @@ export function createSim(opts = {}) {
     dead: false, falling: false, fallT: 0, fallHole: null,
     sink: 0, // seconds of grace left while slipping into a hole (see SINK_TIME)
     slide: 0, slideQueued: false, // slide: seconds left lying flat; queued: slide on landing
+    canFlip: false, // one flip per time in the air: set on leaving a surface, used by the flip
   };
   spawn(S);
   return S;
@@ -229,7 +230,7 @@ function spawn(S) {
 }
 
 function jump(S, emit) {
-  S.grounded = false; S.mode = 'jump'; S.vy = -S.grav * JV; S.buffer = 0;
+  S.grounded = false; S.mode = 'jump'; S.canFlip = true; S.vy = -S.grav * JV; S.buffer = 0;
   S.slide = 0; S.slideQueued = false;
   emit('jump');
 }
@@ -250,20 +251,34 @@ export function slide(S, emit) {
 }
 
 function flip(S, emit) {
-  S.grav *= -1; S.grounded = false; S.mode = 'flip'; S.buffer = 0;
+  S.grav *= -1; S.grounded = false; S.mode = 'flip'; S.buffer = 0; S.canFlip = false;
   S.sink = 0; // flipping out of a hole saves him
   S.vy = S.grav * Math.max(FLIP_V, S.vy * S.grav); // keep momentum toward the new surface
   emit('flip', { toCeiling: S.grav > 0 });
 }
 
-// 1st tap: jump. 2nd tap while still in the air from that jump: flip gravity.
+// Controls (v0.40, user request: one gesture per action, so a touch in the air can start a slide):
+// a tap jumps; swiping away from the surface flips gravity (flipUp); swiping toward it slides.
+// Tap: jump from a surface; while slipping into a hole it flips him out (nothing else can be
+// meant there); in the air it is remembered and jumps on landing.
 // Returns what the press did: 'jump', 'flip' or 'buffer' (nothing when the run is over).
 export function press(S, emit) {
   if (S.dead) return null;
   if (S.grounded) { jump(S, emit); return 'jump'; }
-  if (S.mode === 'jump' || S.sink > 0) { flip(S, emit); return 'flip'; }
-  S.buffer = 0.12; // tapped during a flip: jump as soon as we land
+  if (S.sink > 0) { flip(S, emit); return 'flip'; }
+  S.buffer = 0.12; // tapped in the air: jump as soon as we land
   return 'buffer';
+}
+
+// Swipe away from the surface: flip gravity. From a surface it is a jump and a flip at once;
+// in the air it works once per time off the ground (a slide in the air does not give another).
+// Returns true when it flipped.
+export function flipUp(S, emit) {
+  if (S.dead) return false;
+  if (S.grounded) jump(S, emit);
+  if (!(S.canFlip || S.sink > 0)) return false;
+  flip(S, emit);
+  return true;
 }
 
 // opts.live: collisions on. opts.autopilot: attract-mode player for the menu.

@@ -5,7 +5,7 @@
 //          from the floor as they come near, a paper texture over everything, the hero flipping
 //          like a card when gravity turns (camera fixed, no roll).
 
-import { createSim, update, press, slide, fallAmount } from '../../js/sim.js';
+import { createSim, update, press, flipUp, slide, fallAmount } from '../../js/sim.js';
 import { HM, HW, PH, PL, OH, LOWH, PORTAL_GAP, clamp, lerp } from '../../js/config.js';
 import { bindTouch } from '../../js/input.js';
 import { drawAxolotl } from '../../js/hero.js';
@@ -241,10 +241,11 @@ function frame(now) {
 }
 bindTouch(cvs, {
   active: () => !S.dead, onTouch: () => {}, press: () => press(S, emit), slide: () => slide(S, emit),
-  heroJumping: () => S.mode === 'jump', surfaceOnTop: () => style === 'papel' && S.grav > 0, swipePx: () => 26,
+  flip: () => flipUp(S, emit), surfaceOnTop: () => style === 'papel' && S.grav > 0, swipePx: () => 26,
 });
 addEventListener('keydown', e => {
-  if (['Space', 'ArrowUp', 'KeyW'].includes(e.code)) { e.preventDefault(); press(S, emit); }
+  if (e.code === 'Space') { e.preventDefault(); press(S, emit); }
+  if (['ArrowUp', 'KeyW'].includes(e.code)) { e.preventDefault(); flipUp(S, emit); }
   if (['ArrowDown', 'KeyS'].includes(e.code)) { e.preventDefault(); slide(S, emit); }
 });
 for (const b of document.querySelectorAll('[data-estilo]')) {

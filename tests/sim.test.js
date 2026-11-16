@@ -1,7 +1,7 @@
 // Rules of the simulation: the grace when slipping into a hole, lives, the golden heart, the tutorial.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createSim, update, press } from '../js/sim.js';
+import { createSim, update, press, flipUp, slide } from '../js/sim.js';
 import { STEPS, createTutorial, startStep } from '../js/tutorial.js';
 import { SINK_TIME, SINK_DEPTH } from '../js/config.js';
 import { makeRun, solve } from './solver.js';
@@ -84,12 +84,33 @@ test('every tutorial step can be passed, from the floor and from the roof', () =
   }
 });
 
+test('controls: a tap in the air never flips; swipe up flips once per time in the air', () => {
+  const S = createSim({ scripted: true });
+  const events = [];
+  const emit = t => events.push(t);
+  press(S, emit);                       // jump
+  update(S, DT, emit, { live: true });
+  assert.equal(press(S, emit), 'buffer'); // a second tap in the air is not a flip
+  assert.equal(S.grav, -1);
+  slide(S, emit);                       // so a touch in the air can start a fast drop and a slide
+  assert.equal(S.mode, 'fall');
+  assert.equal(flipUp(S, emit), true);  // and a swipe up still flips, once
+  assert.equal(S.grav, 1);
+  slide(S, emit);
+  assert.equal(flipUp(S, emit), false); // not a second time before landing
+  assert.equal(S.grav, 1);
+  const G = createSim({ scripted: true });
+  assert.equal(flipUp(G, emit), true);  // from a surface: a jump and a flip in one gesture
+  assert.equal(G.grav, 1);
+});
+
 test('random play never throws', () => {
   for (let r = 0; r < 50; r++) {
     const S = createSim({ lives: 3 });
     for (let i = 0; i < 60 * 60 && !S.dead; i++) {
       update(S, 1 / 60, () => {}, { live: true });
-      if (Math.random() < 0.03) press(S, () => {});
+      const r = Math.random();
+      if (r < 0.03) press(S, () => {}); else if (r < 0.045) flipUp(S, () => {}); else if (r < 0.055) slide(S, () => {});
     }
   }
 });
