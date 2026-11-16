@@ -58,7 +58,7 @@ let state = 'menu';
 let S = createSim();
 let tut = null;            // tutorial in progress, or null for a normal run
 let runSeconds = 0;        // time actually played in this run (pauses excluded)
-let run = { flips: 0, slides: 0, cleanMetres: 0, hurt: false }; // for achievements
+let run = { flips: 0, slides: 0, cleanMetres: 0, hurt: false, gods: new Set() }; // for achievements
 let achCheckIn = 0;
 let hermesLeft = 0;          // last frame's S.hermes, for the countdown ticks
 let shake = 0, flash = 0, deadAt = 0;
@@ -77,7 +77,7 @@ const emit = (type, data) => {
     onFlipBlessing(S);
     if (data.god === 'athena') { onBlessing('Atena', 'Escudo', 'quebra o próximo muro'); renderLives(S.lives, false); }
     else onBlessing('Hermes', 'Sandálias aladas', 'ande sobre os buracos');
-    if (!tut) stats.recordBoost(data.god);
+    if (!tut) { stats.recordBoost(data.god); run.gods.add(data.god); }
     return;
   }
   if (type === 'heal') {
@@ -85,8 +85,10 @@ const emit = (type, data) => {
     onFlipBlessing(S);
     onBlessing('Perséfone', 'Romã dourada', '+1 vida');
     stats.recordHeal(data.from, true);
+    if (!tut) run.gods.add('persephone');
     return;
   }
+  if (type === 'hermesHold') { if (!tut) stats.recordHermesHold(); return; }
   if (type === 'smash') { onSmash(S); shake = Math.max(shake, 0.25); buzz(25); renderLives(S.lives, false); if (!tut) stats.recordSmash(data.kind); return; }
   if (type === 'land') onLand(data.side);
   else if (type === 'thud') { onThud(data.z); shake = Math.max(shake, 0.12); }
@@ -280,7 +282,7 @@ function startTutorial() {
 // ---- achievements ----
 function runState(metres) {
   if (!run.hurt) run.cleanMetres = metres;
-  return { metres, cleanMetres: run.cleanMetres, flips: run.flips, slides: run.slides };
+  return { metres, cleanMetres: run.cleanMetres, flips: run.flips, slides: run.slides, gods: run.gods.size };
 }
 function checkAchievements(metres) {
   for (const a of ach.evaluate(runState(metres), stats.get())) toast(a);
@@ -320,7 +322,7 @@ function start() {
   $('btnSkipTut').hidden = true;
   S = createSim();
   clearFx();
-  run = { flips: 0, slides: 0, cleanMetres: 0, hurt: false };
+  run = { flips: 0, slides: 0, cleanMetres: 0, hurt: false, gods: new Set() };
   enterPlay();
   $('dist').classList.remove('compact');
   $('dist').textContent = '0 m';

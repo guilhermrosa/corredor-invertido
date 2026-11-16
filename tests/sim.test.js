@@ -111,6 +111,7 @@ test("Hermes' sandals: holes hold the hero for a few seconds, then they don't", 
   for (let i = 0; i < 120 * 2; i++) update(S, DT, t => events.push(t), { live: true });
   assert.ok(events.includes('boost'));
   assert.ok(!events.includes('slip') && !S.dead, 'ran over the hole');
+  assert.equal(events.filter(t => t === 'hermesHold').length, 1, 'the hole held over is counted once');
   S.obs.push({ type: 'hole', side: -1, z: 4 + S.speed * 5, len: 3 }); // still holding when it arrives? no: reached after the boost ends
   for (let i = 0; i < 120 * 8 && !S.dead; i++) update(S, DT, t => events.push(t), { live: true });
   assert.ok(events.includes('boostEnd'));

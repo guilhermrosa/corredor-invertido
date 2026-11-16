@@ -29,6 +29,7 @@ function bars(rows) {
 export function renderStats() {
   const d = stats.get();
   const avg = d.runs ? Math.round(d.totalMetres / d.runs) : 0;
+  const g = ach.giftsOf(d);
   const deathRows = Object.entries(stats.KIND_LABEL).map(([k, label]) => [label, d.deaths[k] || 0]).sort((a, b) => b[1] - a[1]);
   const bucketRows = stats.BUCKETS.map((b, i) => [stats.bucketLabel(b), d.buckets[i] || 0]);
   const tutRows = STEPS.map((st, i) =>
@@ -48,6 +49,13 @@ export function renderStats() {
     </div>
     <h3>O que encerrou as corridas</h3>${bars(deathRows)}
     <h3>Vidas perdidas (a corrida continuou)</h3>${bars(Object.entries(stats.KIND_LABEL).map(([k, label]) => [label, (d.hurts || {})[k] || 0]).sort((a, b) => b[1] - a[1]))}
+    <h3>Presentes dos deuses</h3>${bars([
+      ['Romãs douradas (Perséfone)', g.pomegranates],
+      ['Sandálias de Hermes', g.sandals],
+      ['Buracos atravessados com as sandálias', g.holds],
+      ['Escudos de Atena', g.shields],
+      ['Muros quebrados com o escudo', g.smashes],
+    ])}
     <h3>Até onde as corridas chegaram</h3>${bars(bucketRows)}
     <h3>Ações</h3>${bars([['Pulos', d.actions.jump], ['Inversões', d.actions.flip], ['Deslizes', d.actions.slide]])}
     <h3>Tutorial</h3>

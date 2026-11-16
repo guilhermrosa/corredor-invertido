@@ -11,8 +11,25 @@ export const ACHIEVEMENTS = [
   { id: 'clean300', name: 'Intocável', desc: 'Corra 300 m sem perder nenhuma vida.', check: r => r.cleanMetres >= 300 },
   { id: 'flips20', name: 'Acrobata', desc: 'Inverta a gravidade 20 vezes numa corrida.', check: r => r.flips >= 20 },
   { id: 'slides10', name: 'Escorregadio', desc: 'Deslize 10 vezes numa corrida.', check: r => r.slides >= 10 },
+  // gifts of the gods (v0.47.4)
+  { id: 'persephone5', name: 'Segunda chance', desc: 'Pegue 5 romãs douradas de Perséfone.', check: (r, t) => giftsOf(t).pomegranates >= 5 },
+  { id: 'hermes10', name: 'Pés alados', desc: 'Atravesse 10 buracos com as sandálias de Hermes.', check: (r, t) => (t.hermesHolds || 0) >= 10 },
+  { id: 'athena5', name: 'Égide', desc: 'Quebre 5 muros com o escudo de Atena.', check: (r, t) => giftsOf(t).smashes >= 5 },
+  { id: 'favored', name: 'Favorito dos deuses', desc: 'Receba os três presentes (romã, sandálias e escudo) na mesma corrida.', check: r => (r.gods || 0) >= 3 },
   { id: 'runs25', name: 'Persistente', desc: 'Jogue 25 corridas.', check: (r, t) => t.runs >= 25 },
 ];
+
+// lifetime counts of the gifts, from the stats (the golden fruit was Athena's heart until v0.47)
+export function giftsOf(t) {
+  const h = t.heals || {}, b = t.boosts || {};
+  return {
+    pomegranates: (h.persephone || 0) + (h.athena || 0),
+    sandals: b.hermes || 0,
+    shields: b.athena || 0,
+    smashes: Object.values(t.smashes || {}).reduce((a, n) => a + n, 0),
+    holds: t.hermesHolds || 0,
+  };
+}
 
 function load() {
   try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; }

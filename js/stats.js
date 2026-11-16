@@ -81,6 +81,11 @@ export function recordHeal(from, healed) {
 }
 
 // boosters taken, by god (v0.46: Hermes' sandals)
+export function recordHermesHold() {
+  data.hermesHolds = (data.hermesHolds || 0) + 1; // holes and voids crossed on Hermes' sandals
+  save();
+}
+
 export function recordSmash(kind) {
   data.smashes = data.smashes || {}; // walls broken by Athena's shield, by kind
   data.smashes[kind] = (data.smashes[kind] || 0) + 1;

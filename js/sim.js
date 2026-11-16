@@ -96,6 +96,8 @@ export function createSim(opts = {}) {
     sink: 0, // seconds of grace left while slipping into a hole (see SINK_TIME)
     slide: 0, slideQueued: false, // slide: seconds left lying flat; queued: slide on landing
     canFlip: false, // one flip per time in the air: set on leaving a surface, used by the flip
+    // chances of the gifts of the gods per regular obstacle (opts.chances overrides them: tools/balance.mjs)
+    chances: { heart: HEART_CHANCE, sandals: HERMES_CHANCE, aegis: AEGIS_CHANCE, ...opts.chances },
   };
   spawn(S);
   return S;
@@ -225,12 +227,12 @@ function spawn(S) {
     S.obs.push(ob);
     S.nextZ = ob.z + ob.len + sp * 0.55 + 1.6 + Math.random() * sp * 0.6;
     // a golden heart (Persephone's blessing) in the free stretch after it, unless one is held or on its way
-    if (far > HEART_FROM && !S.scripted && !S.gold && !S.obs.some(o => o.type === 'heart') && Math.random() < HEART_CHANCE) {
+    if (far > HEART_FROM && !S.scripted && !S.gold && !S.obs.some(o => o.type === 'heart') && Math.random() < S.chances.heart) {
       S.obs.push({ type: 'heart', z: (ob.z + ob.len + S.nextZ) / 2 - 0.25, len: 0.5, side: Math.random() < 0.5 ? -1 : 1 });
-    } else if (far > HERMES_FROM && !S.scripted && S.hermes <= 0 && !S.obs.some(o => o.type === 'sandals') && Math.random() < HERMES_CHANCE) {
+    } else if (far > HERMES_FROM && !S.scripted && S.hermes <= 0 && !S.obs.some(o => o.type === 'sandals') && Math.random() < S.chances.sandals) {
       // Hermes' winged sandals, in the same kind of free stretch
       S.obs.push({ type: 'sandals', z: (ob.z + ob.len + S.nextZ) / 2 - 0.25, len: 0.5, side: Math.random() < 0.5 ? -1 : 1 });
-    } else if (far > AEGIS_FROM && !S.scripted && !S.aegis && !S.obs.some(o => o.type === 'aegis') && Math.random() < AEGIS_CHANCE) {
+    } else if (far > AEGIS_FROM && !S.scripted && !S.aegis && !S.obs.some(o => o.type === 'aegis') && Math.random() < S.chances.aegis) {
       // Athena's shield, in the same kind of free stretch
       S.obs.push({ type: 'aegis', z: (ob.z + ob.len + S.nextZ) / 2 - 0.25, len: 0.5, side: Math.random() < 0.5 ? -1 : 1 });
     }
@@ -356,6 +358,10 @@ export function update(S, dt, emit, opts = {}) {
       else {
         const h = opts.live && S.invuln <= 0 && S.hermes <= 0 && holeUnder(S); // Hermes' sandals: holes hold
         if (h) { startSink(S, h); emit('slip', { side: S.grav }); }
+        else if (opts.live && S.hermes > 0) { // a hole the sandals are holding him over: counted once
+          const held = holeUnder(S);
+          if (held && !held.held) { held.held = true; emit('hermesHold', { kind: obstacleKind(held) }); }
+        }
       }
     }
     if (S.grounded && !wasGrounded) emit('land', { side: S.grav });
