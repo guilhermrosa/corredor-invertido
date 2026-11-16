@@ -1,5 +1,5 @@
 // Main character, drawn from behind, following the user's silhouette sketch (v0.45: proportions
-// closer to it: plump pear-shaped body, short thick limbs as filled shapes, big wide head):
+// closer to it: pear-shaped body, short limbs as filled shapes, big wide head; v0.45.1 slimmer):
 // big oval head, three long fringed gills per side spread like a crown, slim humanoid body,
 // asymmetric running pose (one arm raised with an open hand, the other low; one leg kicked
 // back showing its sole), and a long thick tail with a crest hanging toward the camera.
@@ -129,8 +129,8 @@ function drawSlide(ctx, phase) {
   const wig = Math.sin(phase * 2.2) * 0.05;
   // arms stretched forward
   for (const side of [-1, 1]) {
-    limb(ctx, [[side * 0.15, -0.26], [side * 0.21, -0.38], [side * 0.23, -0.48]], 0.095);
-    hand(ctx, side * 0.23, -0.5, -Math.PI / 2 + side * 0.25);
+    limb(ctx, [[side * 0.13, -0.26], [side * 0.19, -0.38], [side * 0.21, -0.48]], 0.08);
+    hand(ctx, side * 0.21, -0.5, -Math.PI / 2 + side * 0.25);
   }
   // gills, smaller because the head is further away
   for (const side of [-1, 1]) {
@@ -141,7 +141,7 @@ function drawSlide(ctx, phase) {
     });
   }
   blob(ctx, 0, -0.4, 0.17, 0.12, C.body);  // head
-  blob(ctx, 0, -0.2, 0.23, 0.14, C.body);  // flat, plump body
+  blob(ctx, 0, -0.2, 0.19, 0.12, C.body);  // flat body
   // tail lying back toward the camera
   const sw = Math.sin(phase * 0.6) * 0.05;
   limb(ctx, [[0, -0.14], [sw, -0.02], [sw * 1.5, 0.08]], 0.08);
@@ -150,8 +150,8 @@ function drawSlide(ctx, phase) {
   ctx.beginPath(); ctx.moveTo(0, -0.12); ctx.lineTo(sw * 1.4, 0.06); ctx.stroke();
   // legs back, soles up toward the camera
   for (const side of [-1, 1]) {
-    const foot = [side * 0.19, -0.04];
-    limb(ctx, [[side * 0.09, -0.15], foot], 0.12);
+    const foot = [side * 0.17, -0.04];
+    limb(ctx, [[side * 0.08, -0.15], foot], 0.1);
     blob(ctx, foot[0], foot[1], 0.05, 0.06, C.sole);
     ctx.strokeStyle = C.line;
     ctx.lineWidth = 0.016;
@@ -192,26 +192,26 @@ export function drawAxolotl(ctx, phase, air, sliding = false, blessing = 0) {
   const legs = [-1, 1].map(side => {
     const back = side < 0 ? k : 1 - k;  // how far this leg is kicked back
     const kick = air ? 0.4 : back;
-    const hip = [side * 0.11, -0.24];
-    const knee = [side * lerp(0.15, 0.17, kick), lerp(-0.15, -0.1, kick)];
-    const foot = [side * lerp(0.15, 0.19, kick), lerp(-0.08, 0.04, kick)];
+    const hip = [side * 0.08, -0.24];
+    const knee = [side * lerp(0.12, 0.14, kick), lerp(-0.15, -0.1, kick)];
+    const foot = [side * lerp(0.12, 0.16, kick), lerp(-0.08, 0.04, kick)];
     return { side, kick, hip, knee, foot };
   });
   for (const L of legs.filter(l => l.kick < 0.5)) {
-    limb(ctx, [L.hip, L.knee, L.foot], 0.13, C.shade);
-    blob(ctx, L.foot[0], L.foot[1], 0.05, 0.04, C.shade);
+    limb(ctx, [L.hip, L.knee, L.foot], 0.1, C.shade);
+    blob(ctx, L.foot[0], L.foot[1], 0.045, 0.035, C.shade);
   }
 
   // arms: short and thick, one raised beside the head with an open hand, the other low
   const arms = [-1, 1].map(side => {
     const up = air ? 0.75 : (side < 0 ? 1 - k : k);
-    const sh = [side * 0.15, -0.55];
-    const elbow = [side * 0.25, lerp(-0.46, -0.62, up)];
-    const hd = [side * lerp(0.3, 0.29, up), lerp(-0.37, -0.74, up)];
+    const sh = [side * 0.11, -0.56];
+    const elbow = [side * 0.21, lerp(-0.46, -0.63, up)];
+    const hd = [side * lerp(0.27, 0.26, up), lerp(-0.37, -0.75, up)];
     const ang = side < 0 ? lerp(Math.PI * 0.75, Math.PI * 1.2, up) : lerp(Math.PI * 0.25, -Math.PI * 0.2, up);
     return { sh, elbow, hd, ang };
   });
-  for (const A of arms) { limb(ctx, [A.sh, A.elbow, A.hd], 0.1); hand(ctx, A.hd[0], A.hd[1], A.ang); }
+  for (const A of arms) { limb(ctx, [A.sh, A.elbow, A.hd], 0.08); hand(ctx, A.hd[0], A.hd[1], A.ang); }
 
   // tail first (it starts under the body): long and thick, past the feet toward the camera
   const sw = air ? 0 : Math.sin(phase * 0.5) * 0.06;
@@ -224,7 +224,7 @@ export function drawAxolotl(ctx, phase, air, sliding = false, blessing = 0) {
   for (let i = 0; i <= N; i++) {
     const t = i / N, [x, y] = tp(t), [x2, y2] = tp(Math.min(1, t + 0.05));
     const nx = -(y2 - y), ny = x2 - x, nl = Math.hypot(nx, ny) || 1;
-    const w = lerp(0.1, 0.022, t);
+    const w = lerp(0.08, 0.02, t);
     l.push([x + nx / nl * w, y + ny / nl * w]);
     r.push([x - nx / nl * w, y - ny / nl * w]);
   }
@@ -241,10 +241,10 @@ export function drawAxolotl(ctx, phase, air, sliding = false, blessing = 0) {
 
   // body: a plump pear, narrow at the neck and broad at the hips, with a darker spine
   ctx.beginPath();
-  ctx.moveTo(-0.12, -0.62);
-  ctx.bezierCurveTo(-0.2, -0.56, -0.25, -0.38, -0.2, -0.24);
-  ctx.bezierCurveTo(-0.16, -0.14, 0.16, -0.14, 0.2, -0.24);
-  ctx.bezierCurveTo(0.25, -0.38, 0.2, -0.56, 0.12, -0.62);
+  ctx.moveTo(-0.1, -0.62);
+  ctx.bezierCurveTo(-0.15, -0.56, -0.18, -0.38, -0.15, -0.25);
+  ctx.bezierCurveTo(-0.12, -0.16, 0.12, -0.16, 0.15, -0.25);
+  ctx.bezierCurveTo(0.18, -0.38, 0.15, -0.56, 0.1, -0.62);
   ctx.closePath();
   ctx.fillStyle = C.body;
   ctx.fill();
@@ -256,7 +256,7 @@ export function drawAxolotl(ctx, phase, air, sliding = false, blessing = 0) {
   ctx.lineCap = 'round';
   ctx.beginPath(); ctx.moveTo(0, -0.58); ctx.quadraticCurveTo(0.012, -0.4, 0, -0.24); ctx.stroke();
   ctx.lineWidth = 0.014;
-  ctx.beginPath(); ctx.ellipse(0, -0.27, 0.15, 0.06, 0, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(0, -0.27, 0.11, 0.05, 0, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
   ctx.fillStyle = C.crest; // crest down the tail, starting at the hips
   ctx.strokeStyle = C.crest;
   ctx.lineWidth = 0.018;
@@ -280,8 +280,8 @@ export function drawAxolotl(ctx, phase, air, sliding = false, blessing = 0) {
 
   // the kicked-back leg is nearest the camera: short and thick, the sole and toes showing
   for (const L of legs.filter(l => l.kick >= 0.5)) {
-    limb(ctx, [L.hip, L.knee, L.foot], 0.14);
-    blob(ctx, L.foot[0], L.foot[1], 0.065, 0.075, C.sole);
+    limb(ctx, [L.hip, L.knee, L.foot], 0.11);
+    blob(ctx, L.foot[0], L.foot[1], 0.058, 0.07, C.sole);
     ctx.strokeStyle = C.line;
     ctx.lineWidth = 0.02;
     ctx.lineCap = 'round';
