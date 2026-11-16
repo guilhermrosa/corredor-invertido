@@ -89,7 +89,7 @@ const zeusOf = o => (o.p > 0 && o.p < 0.5 ? 1 - o.p / 0.5 * 0.6 : 0);
 let backCache = null;
 export function invalidateBackdrop() { backCache = null; }
 if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (!document.hidden) backCache = null; });
-function drawBackdrop(ctx, W, H, t, Q, storm = 0, zeus = 0) {
+function drawBackdrop(ctx, W, H, t, Q, storm = 0, zeus = 0, flipStorm = false) {
   const R = Math.hypot(W, H);
   const key = W + 'x' + H;
   if (!backCache || backCache.key !== key || backCache.lost || backCache.c.isContextLost?.()) {
@@ -108,6 +108,8 @@ function drawBackdrop(ctx, W, H, t, Q, storm = 0, zeus = 0) {
   if (storm > 0) { // Zeus's storm (v0.49.1): the sky and sea darken, heavy dark clouds roll in
     ctx.fillStyle = `rgba(44,54,74,${(0.5 * storm).toFixed(3)})`;
     ctx.fillRect(-R, -R, 2 * R, 2 * R);
+    ctx.save();
+    if (flipStorm) ctx.scale(-1, 1);
     for (let i = 0; i < 12; i++) {
       const x = ((hash(i * 7 + 1) * 2.4 - 1.2) * W + t * 9 * (0.5 + hash(i))) % (W * 2.6) - W * 1.3;
       const y = -H * (0.03 + 0.13 * hash(i * 3 + 2)), r = W * (0.12 + 0.08 * hash(i * 5 + 3)); // low, in the strip of sky under the roof
@@ -118,8 +120,9 @@ function drawBackdrop(ctx, W, H, t, Q, storm = 0, zeus = 0) {
       ctx.ellipse(x + r, y - r * 0.3, r * 1.2, r * 0.75, 0, 0, Math.PI * 2);
       ctx.fill();
     }
+    ctx.restore();
   }
-  if (zeus > 0) drawZeus(ctx, W, H, t, zeus);
+  if (zeus > 0) { ctx.save(); if (flipStorm) ctx.scale(-1, 1); drawZeus(ctx, W, H, t, zeus); ctx.restore(); }
   // drifting clouds
   ctx.fillStyle = rgb(COL.cloud, 0.92 * (1 - storm * 0.8));
   for (const c of CLOUDS) {
@@ -300,8 +303,8 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   // v0.50.9 (user, after a preview): in Zeus's fight, while the hero runs on the clouds, the backdrop is
   // mirrored left to right, so on the rolled screen it is the floor's view turned upside down: the sea
   // on top, and below, seen through the clouds under his feet, the storm with Zeus hanging upside down
-  if (zeus > 0 && ease > 0.5) ctx.scale(-1, 1);
-  drawBackdrop(ctx, W, H, t, Q, storm, zeus);
+  // v0.51 (user): only Zeus and his storm clouds get it; the rest of the backdrop stays as it is
+  drawBackdrop(ctx, W, H, t, Q, storm, zeus, zeus > 0 && ease > 0.5);
   ctx.restore();
 
   // 1. the stoa, slice by slice, far to near: floor, roof, painted band, columns
@@ -587,6 +590,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     const dy = o.side < 0 ? -SLAB : SLAB;
     const w = o.open ? EDGE : HW;
     const mouth = [P(-w, sy, z0), P(w, sy, z0), P(w, sy, z1), P(-w, sy, z1)];
+    if (o.side > 0 && inArena(o.z)) { cloudTear(o, z0, z1, w); continue; } // v0.51: a gap in Zeus's cloud roof
     ctx.save();
     path(mouth);
     ctx.clip();
@@ -661,7 +665,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     if (o.drop) {
       // hangs from the roof, wobbles, then drops to the floor
       const d = fallAmount(o) * (HM - OH) + (o.p && o.p < 0.27 ? 0.03 * Math.sin(t * 70) : 0);
-      items.push({ x0: -HW, x1: HW, y0: HM - OH - d, y1: HM - d, z0: o.z, z1: o.z + o.len, col: COL.lintel, kind: 'lintel', seed: o.len });
+      items.push({ x0: -HW, x1: HW, y0: HM - OH - d, y1: HM - d, z0: o.z, z1: o.z + o.len, col: COL.lintel, kind: inArena(o.z) ? 'hail' : 'lintel', seed: o.len });
       continue;
     }
     const bh = o.h || OH;
@@ -892,6 +896,60 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     if (flick) {
       ctx.fillStyle = 'rgba(170,205,255,.35)';
       path([P(-EDGE, HM - 0.01, a), P(EDGE, HM - 0.01, a), P(EDGE, HM - 0.01, b), P(-EDGE, HM - 0.01, b)]); ctx.fill();
+    }
+  }
+
+  // v0.51 (user: marble walls and marble-edged holes made no sense on the cloud roof): in Zeus's arena
+  // what hangs from the roof is a knot of dense storm cloud (same box, same hitbox), with lightning
+  // glinting inside, and a gap in the roof is a tear in the clouds with the storm sky beyond
+  function cloudBlock(b, z0, falling = false) {
+    // v0.51: no box faces and no outline (user: the rectangle broke it): only overlapping puffs filling
+    // the obstacle's box, a pale lit edge on them, and the shock crackling in the middle
+    const fk = fogK(z0), dark = mix([46, 54, 74], COL.haze, fk * 0.6), mid = mix([70, 80, 104], COL.haze, fk * 0.6);
+    const u = f / (z0 - CAM_Z), seed = Math.floor(b.seed * 1000), cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2;
+    const hgt = b.y1 - b.y0, wdt = b.x1 - b.x0, rows = Math.max(1, Math.round(hgt / 0.45));
+    const puffs = [];
+    // v0.51 (user: less like a bunch of grapes): flatter, wider puffs that overlap and blend, over a soft base
+    for (let r = 0; r < rows; r++) for (let k = 0; k < 4; k++) {
+      const x = b.x0 + wdt * (k + 0.5) / 4 + (hash(seed + r * 9 + k) - 0.5) * 0.35;
+      const y = b.y0 + hgt * (r + 0.5) / rows + (hash(seed + r * 5 + k * 3) - 0.5) * 0.1;
+      puffs.push([x, y, (0.42 + 0.16 * hash(seed + k * 7 + r)) * (falling ? 1.1 : 1)]);
+    }
+    const [bx, by] = P(cx, cy, z0);
+    ctx.fillStyle = rgb(dark, 0.55);
+    ctx.beginPath(); ctx.ellipse(bx, by, wdt * 0.55 * u, Math.max(hgt * 0.5, 0.2) * u, 0, 0, Math.PI * 2); ctx.fill();
+    for (const [x, y, rr] of puffs) {
+      const [px, py] = P(x, y, z0), R = rr * u;
+      ctx.fillStyle = rgb(hash(x * 13 + y) < 0.5 ? dark : mid, 0.7);
+      ctx.beginPath(); ctx.ellipse(px, py, R * 1.35, R * 0.5, (hash(x * 7 + y) - 0.5) * 0.3, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.strokeStyle = `rgba(160,190,240,${(0.45 * (1 - fk)).toFixed(3)})`; ctx.lineWidth = Math.max(1, u * 0.02);
+    for (const [x, y, rr] of puffs) { // a pale edge where the lightning light catches them
+      const [px, py] = P(x, y, z0), R = rr * u;
+      ctx.beginPath(); ctx.ellipse(px, py, R * 1.35, R * 0.5, (hash(x * 7 + y) - 0.5) * 0.3, 1.2 * Math.PI, 1.8 * Math.PI); ctx.stroke();
+    }
+    // the shock (user's pick): an electric spark crackling in its middle, a new shape each frame
+    const core = [P(cx - 0.45, cy - hgt * 0.25, z0), P(cx + 0.45, cy - hgt * 0.25, z0), P(cx + 0.45, cy + hgt * 0.25, z0), P(cx - 0.45, cy + hgt * 0.25, z0)];
+    zeusArcs(core, 0.9 * (1 - fk));
+    const [gx, gy] = P(cx, cy, z0), gr = 0.55 * u;
+    const g = ctx.createRadialGradient(gx, gy, 0, gx, gy, gr);
+    g.addColorStop(0, `rgba(220,235,255,${(0.75 * (1 - fk)).toFixed(3)})`); g.addColorStop(1, 'rgba(120,170,255,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(gx, gy, gr, 0, Math.PI * 2); ctx.fill();
+  }
+  // v0.51: what falls from the storm in the arena is a mass of charged cloud (a giant hailstone was rejected)
+  function hailBlock(b, z0) { cloudBlock(b, z0, true); }
+  function cloudTear(o, z0, z1, w) {
+    const sy = HM, fk = fogK(z0);
+    ctx.fillStyle = rgb(mix([30, 38, 56], COL.haze, fk * 0.5)); // the storm sky beyond
+    path([P(-w, sy, z0), P(w, sy, z0), P(w, sy, z1), P(-w, sy, z1)]); ctx.fill();
+    for (const [z, k0] of [[z0, 1], [z1, 2]]) { // ragged cloud lips along both edges
+      if (z <= BASE + 0.2) continue;
+      const u = f / (z - CAM_Z);
+      for (let k = 0; k < 7; k++) {
+        const [px, py] = P(lerp(-w, w, (k + 0.5) / 7), sy - 0.04, z), r = (0.3 + 0.15 * hash(k * 7 + k0 + Math.floor(o.len * 100))) * u;
+        ctx.fillStyle = rgb(mix(k % 2 ? [74, 84, 106] : [56, 64, 84], COL.haze, fk * 0.5), 0.9);
+        ctx.beginPath(); ctx.ellipse(px, py, r, r * 0.5, 0, 0, Math.PI * 2); ctx.fill();
+      }
     }
   }
 
@@ -1183,6 +1241,8 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
 
   function drawObstacle(b, z0) {
     if (b.kind === 'pillar') { drawPillar(b, z0); return; }
+    if (b.kind === 'hail') { hailBlock(b, z0); return; } // v0.51: what falls from his storm is charged cloud
+    if (b.y1 >= HM - 0.01 && b.y0 > 0.05 && inArena(b.z0)) { cloudBlock(b, z0); return; } // v0.51: on Zeus's cloud roof
     const face = fog(b.col, z0);
     const lid = fog(mix(b.col, COL.cloud, 0.45), z0);
     const dark = fog(mix(b.col, COL.edge, 0.55), z0);
