@@ -67,14 +67,46 @@ export const SEQUENCES = [
       { t: 0.85, type: 'tall', side: 'ceil', len: 1.4 },
     ],
   },
+  // Gift stretches (v0.47.5): never picked at random. One follows a gift of the gods every time
+  // the gift appears on the path, taken or not (user: "if you took it, lucky you; if not, a
+  // punishment"). They start about half a second after the pickup and end well inside the
+  // sandals' 6 s, and must be passable without the gift.
+  {
+    id: 'caminho-de-hermes', gift: 'sandals', from: 0, weight: 0, end: 3.6, // holes on both surfaces and a missing roof or floor: on the sandals you just run
+    items: [
+      { t: 0, type: 'hole', side: 'a', len: 1.2, lenT: 0.12 },
+      { t: 0, type: 'hole', side: 'b', len: 1.2, lenT: 0.12 },
+      { t: 0.7, type: 'hole', side: 'a', len: 1.2, lenT: 0.12 },
+      { t: 0.7, type: 'hole', side: 'b', len: 1.2, lenT: 0.12 },
+      { t: 1.4, type: 'void', side: 'a', len: 0, lenT: 0.9 },
+      { t: 1.75, type: 'hole', side: 'b', len: 1.2, lenT: 0.12 },
+      { t: 2.75, type: 'hole', side: 'a', len: 1.2, lenT: 0.12 },
+      { t: 2.75, type: 'hole', side: 'b', len: 1.2, lenT: 0.12 },
+      { t: 3.4, type: 'hole', side: 'a', len: 1.2, lenT: 0.12 },
+      { t: 3.4, type: 'hole', side: 'b', len: 1.2, lenT: 0.12 },
+    ],
+  },
+  {
+    id: 'muralha-de-atena', gift: 'aegis', from: 0, weight: 0, end: 2.9, // walls and portals on both sides: the shield breaks the first one in the way
+    items: [
+      { t: 0, type: 'tall', side: 'a', len: 1.2 },
+      { t: 0, type: 'portal', side: 'b', len: 0.8 },
+      { t: 1.0, type: 'tall', side: 'b', len: 1.2 },
+      { t: 1.75, type: 'tall', side: 'a', len: 1.2 },
+      { t: 2.5, type: 'portal', side: 'a', len: 0.8 },
+    ],
+  },
 ];
+
+// The stretch that follows a gift (see above), by the gift's type.
+export const giftSequence = type => SEQUENCES.find(s => s.gift === type) || null;
 
 // How likely a stretch is instead of a generated obstacle: more of them as the run goes on.
 export const sequenceChance = metres => (metres < 120 ? 0 : Math.min(0.3, 0.1 + (metres - 120) / 2000 * 0.2));
 
 // A stretch that may appear at `metres`, weighted at random; `rand` returns 0..1.
 export function pickSequence(metres, rand = Math.random) {
-  const ok = SEQUENCES.filter(s => metres >= s.from);
+  const ok = SEQUENCES.filter(s => metres >= s.from && s.weight > 0);
   let r = rand() * ok.reduce((n, s) => n + s.weight, 0);
   for (const s of ok) { r -= s.weight; if (r < 0) return s; }
   return ok[ok.length - 1] || null;

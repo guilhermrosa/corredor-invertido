@@ -13,7 +13,7 @@ import {
   HEART_FROM, HEART_CHANCE, HEART_LIFT, HERMES_FROM, HERMES_CHANCE, HERMES_TIME, AEGIS_FROM, AEGIS_CHANCE,
   SPEED_START, speedAt, clamp,
 } from './config.js';
-import { sequenceChance, pickSequence } from './sequences.js';
+import { sequenceChance, pickSequence, giftSequence } from './sequences.js';
 
 // The part of an obstacle that kills: follows its drawn shape, trimmed a little (see HIT).
 // The ruined wall is drawn with a jagged top, so it only counts up to its lowest dip.
@@ -157,6 +157,12 @@ function spawn(S) {
     const roll = Math.random();
     const far = S.dist + S.nextZ;
 
+    if (S.giftSeq) {
+      // the stretch that follows a gift of the gods, taken or not (sequences.js)
+      placeSequence(S, S.giftSeq, S.nextZ, sp, Math.random() < 0.5 ? -1 : 1);
+      S.giftSeq = null;
+      continue;
+    }
     if (Math.random() < sequenceChance(far)) {
       // an authored stretch (sequences.js)
       const seq = pickSequence(far);
@@ -232,9 +238,11 @@ function spawn(S) {
     } else if (far > HERMES_FROM && !S.scripted && S.hermes <= 0 && !S.obs.some(o => o.type === 'sandals') && Math.random() < S.chances.sandals) {
       // Hermes' winged sandals, in the same kind of free stretch
       S.obs.push({ type: 'sandals', z: (ob.z + ob.len + S.nextZ) / 2 - 0.25, len: 0.5, side: Math.random() < 0.5 ? -1 : 1 });
+      S.giftSeq = giftSequence('sandals');
     } else if (far > AEGIS_FROM && !S.scripted && !S.aegis && !S.obs.some(o => o.type === 'aegis') && Math.random() < S.chances.aegis) {
       // Athena's shield, in the same kind of free stretch
       S.obs.push({ type: 'aegis', z: (ob.z + ob.len + S.nextZ) / 2 - 0.25, len: 0.5, side: Math.random() < 0.5 ? -1 : 1 });
+      S.giftSeq = giftSequence('aegis');
     }
   }
 }
@@ -327,12 +335,14 @@ export function update(S, dt, emit, opts = {}) {
   if (opts.live && Math.floor(S.dist / 100) > Math.floor(before / 100)) emit('milestone', { metres: Math.floor(S.dist / 100) * 100 });
 
   if (opts.autopilot && S.grounded) {
-    const pt = S.obs.find(o => o.type === 'portal' && o.z + o.len > 0);
+    // it uses the gifts as a player would: runs straight on Hermes' sandals, lets the shield break the next wall
+    const pt = S.obs.find(o => o.type === 'portal' && o.z + o.len > 0 && !(S.aegis && o.side === S.grav));
     if (pt && pt.side === S.grav && pt.z < S.speed * 0.2 + PL && S.slide <= 0) slide(S, emit);
     else if (pt && pt.side !== S.grav && pt.z < S.speed * 0.45 + PL) { jump(S, emit); flip(S, emit); slide(S, emit); }
   }
   if (opts.autopilot && S.grounded) {
-    const nx = S.obs.find(o => o.z + o.len > PL / 2 && o.side === S.grav);
+    const nx = S.obs.find(o => o.z + o.len > PL / 2 && o.side === S.grav && !o.spent
+      && !(S.hermes > 0.6 && (o.type === 'hole' || o.open)) && !(S.aegis && smashable(o)));
     if (nx && (nx.open || (nx.type === 'block' && !nx.h)) && nx.z < S.speed * 0.4 + PL) { jump(S, emit); flip(S, emit); }
     else if (nx && nx.type === 'block' && nx.h && nx.z < PL + S.speed * 0.08) jump(S, emit);
     else if (nx && nx.type === 'hole' && nx.z < PL / 2 + 0.15) jump(S, emit);

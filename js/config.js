@@ -50,7 +50,7 @@ export const INVULN_TIME = 1.6; // seconds of protection after losing a life
 // Golden heart (Athena's blessing): an extra life on top of the LIVES, at most one at a time.
 // It can appear from HEART_FROM m while the player does not hold one; a hit takes it first.
 export const HEART_FROM = 100;
-export const HEART_CHANCE = 0.09; // per regular obstacle spawned (about one every 600 m)
+export const HEART_CHANCE = 0.06; // per regular obstacle spawned (about one every 900 m; 0.09 until v0.47.5)
 export const HEART_LIFT = 0.55;   // height of the heart's centre above its surface
 // Hermes' winged sandals (v0.46, the first booster): for HERMES_TIME seconds the hero runs over
 // holes and missing surfaces as if they were solid. From HERMES_FROM m, about one every 800 m,
