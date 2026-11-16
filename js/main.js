@@ -82,7 +82,7 @@ const emit = (type, data) => {
   if (type === 'heal') {
     renderLives(S.lives, false);
     onFlipBlessing(S);
-    onBlessing('Perséfone', 'Coração dourado', '+1 vida');
+    onBlessing('Perséfone', 'Romã dourada', '+1 vida');
     stats.recordHeal(data.from, true);
     return;
   }
@@ -108,7 +108,9 @@ function onHurt({ cause, kind, lives }) {
   if (cause === 'block') onHit(S);
   renderLives(lives, true);
 }
-// Red hearts for the ordinary lives, plus a gold one while the golden heart is held.
+// A pomegranate (Persephone's fruit) for each life, drawn in currentColor.
+const POMEGRANATE = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.2 6.2 6.6 2.6 8.6 4.3 10 1.8 11.4 4.3 13.4 2.6 12.8 6.2Z" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/><ellipse cx="10" cy="12" rx="7.4" ry="6.9" fill="currentColor"/><ellipse cx="7.4" cy="9.6" rx="1.6" ry="2.1" transform="rotate(-28 7.4 9.6)" fill="#fff" opacity=".45"/></svg>';
+// Pomegranates for the ordinary lives (hearts until v0.47.1), plus a gold one while the golden heart is held.
 function renderLives(lives, justLost = false) {
   const el = $('lives');
   el.innerHTML = '';
@@ -116,13 +118,13 @@ function renderLives(lives, justLost = false) {
   for (let i = 0; i < S.maxLives; i++) {
     const h = document.createElement('span');
     h.className = 'heart' + (i < red ? '' : ' lost') + (justLost && !S.gold && i === red ? ' pulse' : '');
-    h.textContent = i < red ? '♥' : '♡';
+    h.innerHTML = POMEGRANATE;
     el.appendChild(h);
   }
   if (S.gold) {
     const g = document.createElement('span');
     g.className = 'heart gold pulse';
-    g.textContent = '♥';
+    g.innerHTML = POMEGRANATE;
     el.appendChild(g);
   }
   if (S.aegis) { // Athena's shield, while carried

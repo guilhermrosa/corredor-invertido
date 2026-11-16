@@ -804,18 +804,18 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     ctx.save();
     ctx.translate(x, yy);
     // upright for the hero on either surface; it slowly turns like a coin
-    ctx.scale(Math.max(0.25, Math.abs(Math.cos(t * 2.2 + b.z0))) * r, (b.side < 0 ? 1 : -1) * r);
+    ctx.scale(Math.max(0.25, Math.abs(Math.cos(t * 2.2 + b.z0))) * r * 0.85, (b.side < 0 ? 1 : -1) * r * 0.85);
+    // a golden pomegranate, Persephone's fruit: a round body under a crown of five points
+    const fill = rgb(mix([244, 196, 92], COL.haze, fk)), edge = rgb(mix([150, 104, 30], COL.haze, fk));
     ctx.beginPath();
-    ctx.moveTo(0, 0.95);
-    ctx.bezierCurveTo(-1.1, 0.2, -1.1, -0.85, -0.5, -0.85);
-    ctx.bezierCurveTo(-0.2, -0.85, 0, -0.6, 0, -0.4);
-    ctx.bezierCurveTo(0, -0.6, 0.2, -0.85, 0.5, -0.85);
-    ctx.bezierCurveTo(1.1, -0.85, 1.1, 0.2, 0, 0.95);
-    ctx.fillStyle = rgb(mix([244, 196, 92], COL.haze, fk));
-    ctx.fill();
-    ctx.lineWidth = 0.12;
-    ctx.strokeStyle = rgb(mix([150, 104, 30], COL.haze, fk));
-    ctx.stroke();
+    ctx.moveTo(-0.32, -0.62);
+    ctx.lineTo(-0.36, -1.0); ctx.lineTo(-0.16, -0.8); ctx.lineTo(0, -1.08); ctx.lineTo(0.16, -0.8);
+    ctx.lineTo(0.36, -1.0); ctx.lineTo(0.32, -0.62); ctx.closePath();
+    ctx.fillStyle = fill; ctx.fill(); ctx.lineWidth = 0.1; ctx.strokeStyle = edge; ctx.lineJoin = 'round'; ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(0, 0.08, 0.86, 0.8, 0, 0, Math.PI * 2);
+    ctx.fillStyle = fill; ctx.fill(); ctx.lineWidth = 0.12; ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(-0.3, -0.18, 0.18, 0.24, -0.5, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${0.55 * (1 - fk)})`; ctx.fill();
     ctx.restore();
   }
 

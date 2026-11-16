@@ -120,7 +120,7 @@ function gill(ctx, bx, by, ang, len, side, wig) {
 
 // Belly slide, seen from behind: soles nearest the camera, flat body, head further ahead,
 // arms stretched forward on both sides of the head.
-function drawSlide(ctx, phase) {
+function drawSlide(ctx, phase, aegis = false) {
   halo(ctx, 0, -0.45, 0.5);
   ctx.fillStyle = 'rgba(0,0,0,.22)';
   ctx.beginPath();
@@ -163,6 +163,9 @@ function drawSlide(ctx, phase) {
       ctx.lineTo(foot[0] + Math.cos(a) * 0.085, foot[1] + Math.sin(a) * 0.085);
       ctx.stroke();
     }
+  }
+  if (aegis) { // Athena's shield strapped on his back, lying flat with him, over everything
+    ctx.save(); ctx.translate(0, -0.21); ctx.scale(0.15, 0.1); drawShieldFace(ctx); ctx.restore();
   }
 }
 
@@ -214,7 +217,7 @@ function shield(ctx, x, y) {
 
 export function drawAxolotl(ctx, phase, air, sliding = false, blessing = 0, sandals = 0, aegis = false) {
   bless = Math.max(0, Math.min(1, blessing));
-  if (sliding) { drawSlide(ctx, phase); if (sandals > 0) for (const side of [-1, 1]) wing(ctx, side * 0.17, -0.06, side, sandals, phase); if (aegis) shield(ctx, -0.3, -0.16); return; }
+  if (sliding) { drawSlide(ctx, phase, aegis); if (sandals > 0) for (const side of [-1, 1]) wing(ctx, side * 0.17, -0.06, side, sandals, phase); return; }
   halo(ctx, 0, -0.76, 0.78); // behind everything else
   const s = air ? 0 : Math.sin(phase);
   const k = (s + 1) / 2;            // 1: left leg kicked back / right arm raised; 0: the mirror pose
