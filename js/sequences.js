@@ -4,10 +4,10 @@
 // Times are in seconds of running, so a stretch keeps its rhythm at any speed:
 // an item at `t` sits t × speed metres after the stretch starts; `len` is in metres, plus
 // `lenT` seconds of running when given. Sides: 'a' is picked at random when the stretch is
-// placed, 'b' is the other one; 'floor' / 'ceil' are fixed.
+// placed, 'b' is the other one; 'floor' / 'ceil' are fixed; 'any' is random for each item.
 // Types: 'tall' (flip away), 'low' (jump), 'hole' (jump), 'portal' (slide on its side),
 // 'void' (that surface is missing: stay off it), 'drop' (a roof block that falls, from 200 m),
-// 'topple' (v0.49: a colonnade column Zeus strikes; its side 'a' / 'b' is the colonnade, it lands on the
+// 'topple' (v0.49: a colonnade column Zeus strikes; its side 'a' / 'b' / 'any' (random, v0.49.1) is the colonnade, it lands on the
 // floor across the lane; snapped onto the nearest colonnade column).
 // `end`: when the stretch is over (seconds). `from`: first metre it may appear. `weight`: how often.
 // tests/sequences.test.js proves every stretch can be passed at slow and top speed.
@@ -73,14 +73,14 @@ export const SEQUENCES = [
     // Fúria de Zeus (v0.49, user's idea: "several columns Zeus strikes one after another, needing more
     // reflex, falling from both sides, never both at once"). Lintels on the roof in between, so hiding
     // up there does not get you through: down on the floor, jump the columns in rhythm.
-    id: 'furia-de-zeus', from: 500, weight: 1, end: 3.3,
+    id: 'furia-de-zeus', from: 500, weight: 1, end: 3.3, storm: true, // storm: the sky darkens (v0.49.1)
     items: [
-      { t: 0, type: 'topple', side: 'a', len: 0.5 },
+      { t: 0, type: 'topple', side: 'any', len: 0.5 },
       { t: 0.45, type: 'tall', side: 'ceil', len: 1.2 },
-      { t: 0.9, type: 'topple', side: 'b', len: 0.5 },
-      { t: 1.8, type: 'topple', side: 'a', len: 0.5 },
+      { t: 0.9, type: 'topple', side: 'any', len: 0.5 },
+      { t: 1.8, type: 'topple', side: 'any', len: 0.5 },
       { t: 2.25, type: 'tall', side: 'ceil', len: 1.2 },
-      { t: 2.7, type: 'topple', side: 'b', len: 0.5 },
+      { t: 2.7, type: 'topple', side: 'any', len: 0.5 },
     ],
   },
   // Gift stretches (v0.47.5): never picked at random. One follows a gift of the gods every time

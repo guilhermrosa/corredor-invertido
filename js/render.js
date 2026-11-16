@@ -89,7 +89,7 @@ const zeusOf = o => (o.p > 0 && o.p < 0.5 ? 1 - o.p / 0.5 * 0.6 : 0);
 let backCache = null;
 export function invalidateBackdrop() { backCache = null; }
 if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (!document.hidden) backCache = null; });
-function drawBackdrop(ctx, W, H, t, Q) {
+function drawBackdrop(ctx, W, H, t, Q, storm = 0) {
   const R = Math.hypot(W, H);
   const key = W + 'x' + H;
   if (!backCache || backCache.key !== key || backCache.lost || backCache.c.isContextLost?.()) {
@@ -105,8 +105,22 @@ function drawBackdrop(ctx, W, H, t, Q) {
     cv.addEventListener('contextrestored', () => { cache.lost = true; });
   }
   ctx.drawImage(backCache.cv, -R, -R, 2 * R, 2 * R);
+  if (storm > 0) { // Zeus's storm (v0.49.1): the sky and sea darken, heavy dark clouds roll in
+    ctx.fillStyle = `rgba(44,54,74,${(0.5 * storm).toFixed(3)})`;
+    ctx.fillRect(-R, -R, 2 * R, 2 * R);
+    for (let i = 0; i < 12; i++) {
+      const x = ((hash(i * 7 + 1) * 2.4 - 1.2) * W + t * 9 * (0.5 + hash(i))) % (W * 2.6) - W * 1.3;
+      const y = -H * (0.03 + 0.13 * hash(i * 3 + 2)), r = W * (0.12 + 0.08 * hash(i * 5 + 3)); // low, in the strip of sky under the roof
+      ctx.fillStyle = `rgba(${i % 2 ? '58,66,84' : '72,80,98'},${(0.85 * storm).toFixed(3)})`;
+      ctx.beginPath();
+      ctx.ellipse(x, y, r * 2, r * 0.7, 0, 0, Math.PI * 2);
+      ctx.ellipse(x - r * 1.2, y + r * 0.2, r * 1.3, r * 0.55, 0, 0, Math.PI * 2);
+      ctx.ellipse(x + r, y - r * 0.3, r * 1.2, r * 0.75, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
   // drifting clouds
-  ctx.fillStyle = rgb(COL.cloud, 0.92);
+  ctx.fillStyle = rgb(COL.cloud, 0.92 * (1 - storm * 0.8));
   for (const c of CLOUDS) {
     const span = W * 2;
     const x = ((c.x * W + t * c.v * 6) % span + span) % span - W;
@@ -228,6 +242,10 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
   };
 
+  // Zeus's storm (v0.49.1): builds up as a stretch of his wrath comes near (70 → 35 m ahead), holds
+  // through it and clears over 20 m once it has passed
+  let storm = 0;
+  for (const o of S.obs) if (o.type === 'storm') storm = Math.max(storm, clamp((70 - o.z) / 35, 0, 1) * clamp((o.z + o.len + 20) / 20, 0, 1));
   ctx.fillStyle = rgb(COL.haze);
   ctx.fillRect(0, 0, W, H);
   ctx.save();
@@ -235,7 +253,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   ctx.rotate(roll);
   ctx.save();
   ctx.translate(Math.tan(yaw) * f, -Math.tan(pitch) * f / Math.cos(yaw)); // the backdrop is infinitely far: it only pans
-  drawBackdrop(ctx, W, H, t, Q);
+  drawBackdrop(ctx, W, H, t, Q, storm);
   ctx.restore();
 
   // 1. the stoa, slice by slice, far to near: floor, roof, painted band, columns
@@ -688,6 +706,11 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       ctx.lineTo(vx + Math.cos(a) * r1, Math.sin(a) * r1);
     }
     ctx.stroke();
+  }
+
+  if (storm > 0) { // the whole scene a little dimmer under the storm
+    ctx.fillStyle = `rgba(30,38,56,${(0.16 * storm).toFixed(3)})`;
+    ctx.fillRect(-4 * W, -4 * H, 9 * W, 9 * H);
   }
 
   // 6. hitboxes (debug view): red = blocks, orange = where a hole makes you fall, green = player

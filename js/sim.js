@@ -114,7 +114,7 @@ function makeOpen(z, len, side) {
 // Lays out an authored stretch from `start` (metres ahead) at speed `sp`; side 'a' becomes `a`.
 export function placeSequence(S, seq, start, sp, a) {
   for (const it of seq.items) {
-    const side = it.side === 'a' ? a : it.side === 'b' ? -a : it.side === 'floor' ? -1 : 1;
+    const side = it.side === 'a' ? a : it.side === 'b' ? -a : it.side === 'any' ? (Math.random() < 0.5 ? -1 : 1) : it.side === 'floor' ? -1 : 1;
     const z = start + it.t * sp, len = it.len + (it.lenT || 0) * sp;
     let o;
     if (it.type === 'void') o = makeOpen(z, len, side);
@@ -128,6 +128,8 @@ export function placeSequence(S, seq, start, sp, a) {
     else o = { type: it.type, z, len, side }; // 'hole', 'portal'
     S.obs.push(o);
   }
+  // a stretch of Zeus's wrath brings a storm: a marker the renderer reads to darken the sky (v0.49.1)
+  if (seq.storm) S.obs.push({ type: 'storm', z: start, len: seq.end * sp });
   S.lastSide = 0;
   S.sameRun = 0;
   S.nextZ = start + seq.end * sp + sp * 0.55 + 1.6;
