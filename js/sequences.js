@@ -114,6 +114,44 @@ export const SEQUENCES = [
   },
 ];
 
+// Zeus's wrath, the mini boss (v0.50, user design): his three attacks in a shuffled order, then the
+// final fury. New item types: 'mark' (a blue ring on that surface; Zeus's bolt strikes it MARK_LEAD s
+// before you get there and it then works as a tall wall: be on the other surface) and 'shock' (that
+// surface is electrified for its length: standing on it costs a life; in the air is fine).
+export const BOSS_PARTS = {
+  'raio-marcado': { end: 3.0, items: [
+    { t: 0, type: 'mark', side: 'a', len: 1.6 },
+    { t: 0.9, type: 'mark', side: 'b', len: 1.6 },
+    { t: 1.8, type: 'mark', side: 'a', len: 1.6 },
+    { t: 2.6, type: 'mark', side: 'any', len: 1.6 },
+  ] },
+  'ceu-desaba': { end: 2.9, items: [
+    { t: 0, type: 'drop', side: 'ceil', len: 1.2 },
+    { t: 0.6, type: 'void', side: 'floor', len: 0, lenT: 0.5 },
+    { t: 1.6, type: 'drop', side: 'ceil', len: 1.2 },
+    { t: 2.2, type: 'void', side: 'floor', len: 0, lenT: 0.45 },
+  ] },
+  'corrente': { end: 3.0, items: [
+    { t: 0.2, type: 'shock', side: 'a', len: 0, lenT: 2.6 },
+    { t: 0.75, type: 'low', side: 'b', len: 0.7 },
+    { t: 1.45, type: 'hole', side: 'b', len: 1.4, lenT: 0.1 },
+    { t: 2.2, type: 'low', side: 'b', len: 0.7 },
+  ] },
+  'furia-final': { end: 3.1, items: [
+    { t: 0, type: 'topple', side: 'any', len: 0.5 },
+    { t: 0.65, type: 'mark', side: 'any', len: 1.6 },
+    { t: 1.3, type: 'topple', side: 'any', len: 0.5 },
+    { t: 1.95, type: 'mark', side: 'any', len: 1.6 },
+    { t: 2.6, type: 'topple', side: 'any', len: 0.5 },
+  ] },
+};
+// The order of one encounter: the three attacks shuffled, the final fury last.
+export function bossOrder(rand = Math.random) {
+  const a = ['raio-marcado', 'ceu-desaba', 'corrente'];
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return [...a, 'furia-final'];
+}
+
 // The stretch that follows a gift (see above), by the gift's type.
 export const giftSequence = type => SEQUENCES.find(s => s.gift === type) || null;
 

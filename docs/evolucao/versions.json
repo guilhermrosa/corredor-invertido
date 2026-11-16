@@ -154,5 +154,11 @@
     "date": "2026-11-16",
     "title": "Fúria de Zeus",
     "text": "As colunas atingidas por Zeus agora caem dos dois lados do corredor, e um novo trecho, a Fúria de Zeus (a partir de 500 m), derruba quatro colunas seguidas, alternando os lados, com vigas no teto para ninguém se esconder lá em cima. Antes disso, na 0.48.x: o raio vem do céu e passa por trás das colunas da frente, a base da coluna explode, a coluna que cai ficou igual às outras (com caneluras, faixa azul, sombra e um contorno suave para não sumir no chão), e os arrastes ficaram mais difíceis de disparar sem querer."
+  },
+  {
+    "v": "0.50",
+    "date": "2026-11-16",
+    "title": "A ira de Zeus (mini chefe)",
+    "text": "De vez em quando, a partir de 1 km, Zeus desperta: a colunata vira ruínas abertas sob uma tempestade, ele surge entre as nuvens e ataca em ordem sorteada com raios marcados no chão ou no teto, blocos que despencam com o chão sumindo, e o chão ou o teto eletrificado; no fim, uma fúria de colunas e raios. Antes, na 0.49.1: lados aleatórios na Fúria de Zeus e a tempestade sobre ela."
   }
 ]

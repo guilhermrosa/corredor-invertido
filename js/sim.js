@@ -11,9 +11,10 @@ import {
   SINK_TIME, SINK_DEPTH, SINK_G, SINK_SLOW,
   FALL_FROM, FALL_LEAD, TOPPLE_TIME, DROP_TIME, FALL_WOBBLE, TOPPLE_H,
   HEART_FROM, HEART_CHANCE, HEART_LIFT, HERMES_FROM, HERMES_CHANCE, HERMES_TIME, AEGIS_FROM, AEGIS_CHANCE, AEGIS_HITS,
+  BOSS_FROM, BOSS_GAP, BOSS_CHANCE, MARK_LEAD,
   SPEED_START, speedAt, clamp,
 } from './config.js';
-import { sequenceChance, pickSequence, giftSequence } from './sequences.js';
+import { sequenceChance, pickSequence, giftSequence, BOSS_PARTS, bossOrder } from './sequences.js';
 
 // The part of an obstacle that kills: follows its drawn shape, trimmed a little (see HIT).
 // The ruined wall is drawn with a jagged top, so it only counts up to its lowest dip.
@@ -28,6 +29,12 @@ export function fallAmount(o) {
 }
 
 export function blockHitbox(o) {
+  // a marked bolt (v0.50): nothing until it strikes, then a tall wall on its surface
+  if (o.type === 'mark') {
+    if (!o.struck) return null;
+    const top = OH - HIT.y;
+    return { z0: o.z + HIT.z, z1: o.z + o.len - HIT.z, y0: o.side < 0 ? 0 : HM - top, y1: o.side < 0 ? top : HM };
+  }
   // a toppling column only counts once it is nearly down across the path
   if (o.topple && fallAmount(o) < 0.75) return null;
   // a dropping roof block counts all the way down (it is solid while it falls)
@@ -71,6 +78,8 @@ export function playerBox(S) {
 // What an obstacle is, in words the stats screen can show (see stats.js).
 export function obstacleKind(o) {
   if (o.topple) return 'pillar';
+  if (o.type === 'mark') return 'bolt';
+  if (o.type === 'shock') return 'shock';
   if (o.drop) return 'drop';
   if (o.type === 'portal') return 'portal';
   if (o.type === 'hole') return o.open ? 'void' : 'hole';
@@ -97,7 +106,8 @@ export function createSim(opts = {}) {
     slide: 0, slideQueued: false, // slide: seconds left lying flat; queued: slide on landing
     canFlip: false, // one flip per time in the air: set on leaving a surface, used by the flip
     // chances of the gifts of the gods per regular obstacle (opts.chances overrides them: tools/balance.mjs)
-    chances: { heart: HEART_CHANCE, sandals: HERMES_CHANCE, aegis: AEGIS_CHANCE, ...opts.chances },
+    chances: { heart: HEART_CHANCE, sandals: HERMES_CHANCE, aegis: AEGIS_CHANCE, boss: BOSS_CHANCE, ...opts.chances },
+    lastBoss: -1e9, // where the last encounter with Zeus's wrath began (metres)
   };
   spawn(S);
   return S;
@@ -121,6 +131,7 @@ export function placeSequence(S, seq, start, sp, a) {
     else if (it.type === 'tall') o = { type: 'block', z, len, side };
     else if (it.type === 'low') o = { type: 'block', h: LOWH, z, len, side };
     else if (it.type === 'drop') o = { type: 'block', drop: true, z, len, side: 1 };
+    else if (it.type === 'mark' || it.type === 'shock') o = { type: it.type, z, len, side };
     else if (it.type === 'topple') { // a colonnade column Zeus strikes (v0.49): 'a' / 'b' name the colonnade
       let d = (((0.8 - 0.1 - (S.dist + z)) % 4) + 4) % 4; if (d > 2) d -= 4; // onto the nearest column
       o = { type: 'block', h: TOPPLE_H, topple: true, z: z + d, len: 0.5, side: -1, col: side };
@@ -133,6 +144,21 @@ export function placeSequence(S, seq, start, sp, a) {
   S.lastSide = 0;
   S.sameRun = 0;
   S.nextZ = start + seq.end * sp + sp * 0.55 + 1.6;
+}
+
+// Zeus's wrath (v0.50): a storm, his three attacks in a shuffled order, then the final fury.
+// A 'boss' marker over the whole encounter tells main.js and the renderer when it starts and ends.
+export function placeBoss(S, sp, rand = Math.random) {
+  const start = S.nextZ, lead = sp * 1.6; // a quiet run-up while the sky darkens and he appears
+  S.nextZ = start + lead;
+  for (const id of bossOrder(rand)) {
+    placeSequence(S, BOSS_PARTS[id], S.nextZ, sp, rand() < 0.5 ? -1 : 1);
+    S.nextZ += sp * 0.35; // a breath between attacks
+  }
+  const len = S.nextZ - start;
+  S.obs.push({ type: 'boss', z: start, len }, { type: 'storm', z: start, len });
+  S.lastBoss = S.dist + start;
+  S.nextZ += sp * 0.8;
 }
 
 function jumpables(S, from, to, side, sp, jd, avoid = []) {
@@ -167,6 +193,10 @@ function spawn(S) {
       // the stretch that follows a gift of the gods, taken or not (sequences.js)
       placeSequence(S, S.giftSeq, S.nextZ, sp, Math.random() < 0.5 ? -1 : 1);
       S.giftSeq = null;
+      continue;
+    }
+    if (far > BOSS_FROM && far - S.lastBoss > BOSS_GAP && Math.random() < S.chances.boss) {
+      placeBoss(S, sp); // Zeus's wrath, the mini boss (v0.50)
       continue;
     }
     if (Math.random() < sequenceChance(far)) {
@@ -332,6 +362,14 @@ export function update(S, dt, emit, opts = {}) {
   S.obs = S.obs.filter(o => o.z + o.len > -8);
   spawn(S);
 
+  // marked bolts strike just before the hero gets there; the encounter's start and end (v0.50)
+  for (const o of S.obs) {
+    if (o.type === 'mark' && !o.struck && o.z < S.speed * MARK_LEAD + PL) { o.struck = true; o.sz = o.z; emit('strike', { side: o.side }); }
+    if (o.type === 'boss') {
+      if (!o.started && o.z < 60) { o.started = true; emit('bossStart'); }
+      if (!o.ended && o.z + o.len < 0) { o.ended = true; emit('bossEnd'); }
+    }
+  }
   // falling obstacles: start when the player gets close, wobble, fall, land
   for (const o of S.obs) {
     if (!(o.topple || o.drop) || o.landed) continue;
@@ -358,7 +396,7 @@ export function update(S, dt, emit, opts = {}) {
   if (opts.autopilot && S.grounded) {
     const nx = S.obs.find(o => o.z + o.len > PL / 2 && o.side === S.grav && !o.spent
       && !(S.hermes > 0.6 && (o.type === 'hole' || o.open)) && !(S.aegis && smashable(o)));
-    if (nx && (nx.open || (nx.type === 'block' && !nx.h)) && nx.z < S.speed * 0.4 + PL) { jump(S, emit); flip(S, emit); }
+    if (nx && (nx.open || nx.type === 'mark' || nx.type === 'shock' || (nx.type === 'block' && !nx.h)) && nx.z < S.speed * 0.4 + PL) { jump(S, emit); flip(S, emit); }
     else if (nx && nx.type === 'block' && nx.h && nx.z < PL + S.speed * 0.08) jump(S, emit);
     else if (nx && nx.type === 'hole' && nx.z < PL / 2 + 0.15) jump(S, emit);
   }
@@ -431,7 +469,8 @@ export function update(S, dt, emit, opts = {}) {
   if (S.invuln > 0) return;
   for (const o of S.obs) {
     if (o.spent) continue;
-    if (o.type === 'block' || o.type === 'portal') {
+    if (o.type === 'shock' && S.grounded && o.side === S.grav && mid > o.z && mid < o.z + o.len) { hit(S, emit, 'block', o); return; } // standing on an electrified surface
+    if (o.type === 'block' || o.type === 'portal' || o.type === 'mark') {
       const hb = blockHitbox(o);
       if (hb && hb.z0 < PL - HIT.player && hb.z1 > HIT.player && pb.y0 < hb.y1 && pb.y1 > hb.y0) {
         if (S.aegis > 0 && smashable(o)) { // Athena's shield breaks the wall and takes a crack; spent after AEGIS_HITS

@@ -13,7 +13,7 @@ import * as stats from './stats.js';
 import * as ach from './achievements.js';
 import { STEPS, createTutorial, startStep, progress } from './tutorial.js';
 import { aegisSvg } from './aegis.js';
-import { fx, onLand, onThud, whileSliding, onHit, onInstantFlip, onFlipBlessing, whileBlessed, onMilestone, onPop, onBlessing, onSmash, onColumnBreak, updateFx, clearFx } from './fx.js';
+import { fx, onLand, onThud, whileSliding, onHit, onInstantFlip, onFlipBlessing, whileBlessed, onMilestone, onPop, onBlessing, onWrath, onSmash, onColumnBreak, updateFx, clearFx } from './fx.js';
 
 const $ = id => document.getElementById(id);
 const VERSION_LABEL = 'Versão ' + self.APP_VERSION; // from js/version.js
@@ -112,6 +112,9 @@ const emit = (type, data) => {
   if (type === 'hermesHold') { if (!tut) stats.recordHermesHold(); return; }
   if (type === 'smash') { onSmash(S); shake = Math.max(shake, 0.25); buzz(25); renderLives(S.lives, false); if (!tut) stats.recordSmash(data.kind); return; }
   if (type === 'crack' && data.kind === 'pillar') zeusFlash = 1;
+  if (type === 'strike') { zeusFlash = 1; shake = Math.max(shake, 0.15); }
+  if (type === 'bossStart') { if (!tut) { onWrath('Zeus desperta', 'sobreviva à tempestade'); run.zeus = true; stats.recordZeus('faced'); } return; }
+  if (type === 'bossEnd') { if (!tut && !S.dead) { onWrath('Zeus se recolhe', 'você resistiu à tempestade'); run.zeusSurvived = (run.zeusSurvived || 0) + 1; stats.recordZeus('survived'); } return; }
   if (type === 'break') { onColumnBreak(data.z, HW, data.col); shake = Math.max(shake, 0.1); } // Zeus's wrath: a white-blue flash as the lightning strikes
   if (type === 'land') onLand(data.side);
   else if (type === 'thud') { onThud(data.z); shake = Math.max(shake, 0.12); }
@@ -199,7 +202,7 @@ function onDie({ cause, kind, metres }) {
     // falling through the roof is falling into the sky
     const intoSky = cause !== 'block' && S.fallHole && S.fallHole.side > 0;
     $('overCause').textContent = intoSky ? 'Caiu no céu'
-      : kind === 'pillar' ? 'A ira de Zeus: ' + stats.KIND_LABEL[kind].toLowerCase() // the toppling column is his wrath
+      : kind === 'pillar' || kind === 'bolt' || kind === 'shock' ? 'A ira de Zeus: ' + stats.KIND_LABEL[kind].toLowerCase() // the toppling column is his wrath
       : CAUSE_TEXT[cause] + (cause === 'block' ? ': ' + stats.KIND_LABEL[kind].toLowerCase() : '');
     $('overDist').textContent = metres + ' m';
     $('overBest').textContent = isRecord ? 'Novo recorde!' : `Recorde: ${best} m`;
@@ -251,7 +254,8 @@ function frame(now) {
   const showBless = fx.blessT > 0 && state === 'play';
   if (showBless && $('blessing').dataset.id !== String(fx.bless.id)) {
     $('blessing').dataset.id = fx.bless.id;
-    $('blessGod').textContent = 'Bênção de ' + fx.bless.god;
+    $('blessGod').textContent = fx.bless.kind === 'wrath' ? 'A ira de Zeus' : 'Bênção de ' + fx.bless.god;
+    $('blessing').classList.toggle('wrath', fx.bless.kind === 'wrath');
     $('blessGift').textContent = fx.bless.gift;
     $('blessText').textContent = fx.bless.text;
     $('blessing').hidden = true; void $('blessing').offsetWidth; // restart the animation
@@ -311,7 +315,7 @@ function startTutorial() {
 // ---- achievements ----
 function runState(metres) {
   if (!run.hurt) run.cleanMetres = metres;
-  return { metres, cleanMetres: run.cleanMetres, flips: run.flips, slides: run.slides, gods: run.gods.size };
+  return { metres, cleanMetres: run.cleanMetres, flips: run.flips, slides: run.slides, gods: run.gods.size, zeus: run.zeusSurvived || 0 };
 }
 function checkAchievements(metres) {
   for (const a of ach.evaluate(runState(metres), stats.get())) toast(a);

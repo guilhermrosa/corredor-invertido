@@ -89,7 +89,7 @@ const zeusOf = o => (o.p > 0 && o.p < 0.5 ? 1 - o.p / 0.5 * 0.6 : 0);
 let backCache = null;
 export function invalidateBackdrop() { backCache = null; }
 if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (!document.hidden) backCache = null; });
-function drawBackdrop(ctx, W, H, t, Q, storm = 0) {
+function drawBackdrop(ctx, W, H, t, Q, storm = 0, zeus = 0) {
   const R = Math.hypot(W, H);
   const key = W + 'x' + H;
   if (!backCache || backCache.key !== key || backCache.lost || backCache.c.isContextLost?.()) {
@@ -119,6 +119,7 @@ function drawBackdrop(ctx, W, H, t, Q, storm = 0) {
       ctx.fill();
     }
   }
+  if (zeus > 0) drawZeus(ctx, W, H, t, zeus);
   // drifting clouds
   ctx.fillStyle = rgb(COL.cloud, 0.92 * (1 - storm * 0.8));
   for (const c of CLOUDS) {
@@ -140,6 +141,44 @@ function drawBackdrop(ctx, W, H, t, Q, storm = 0) {
     ctx.fillStyle = rgb(COL.cloud, a);
     ctx.fillRect(gx - w / 2, gy, w, Math.max(1, w * 0.18));
   }
+}
+
+// Zeus in the storm (v0.50): a huge figure of dark cloud rising behind the sea on the left, with a
+// beard of cloud, eyes of white light and a thunderbolt raised in his right hand; `k` 0..1 fades him in
+function drawZeus(ctx, W, H, t, k) {
+  const x = -W * 0.36, base = H * 0.03, r = W * 0.075, bob = Math.sin(t * 0.8) * r * 0.05;
+  const body = `rgba(36,44,62,${(0.85 * k).toFixed(3)})`, rim = `rgba(150,180,230,${(0.35 * k).toFixed(3)})`;
+  ctx.save();
+  ctx.translate(x, base + bob);
+  ctx.fillStyle = body;
+  ctx.beginPath(); // shoulders and chest
+  ctx.ellipse(0, -r * 0.4, r * 2.6, r * 1.6, 0, Math.PI, 0);
+  ctx.fill();
+  ctx.beginPath(); ctx.arc(0, -r * 2.4, r, 0, Math.PI * 2); ctx.fill(); // head
+  ctx.beginPath(); // the beard, falling in cloud locks
+  ctx.moveTo(-r * 0.85, -r * 2.2);
+  for (let i = 0; i <= 6; i++) ctx.quadraticCurveTo(-r * 0.85 + i * r * 0.28 - r * 0.14, -r * (1.0 + (i % 2) * 0.35), -r * 0.85 + i * r * 0.28, -r * 1.2);
+  ctx.lineTo(r * 0.85, -r * 2.2); ctx.closePath(); ctx.fill();
+  for (let i = 0; i < 7; i++) { ctx.beginPath(); ctx.arc((i - 3) * r * 0.32, -r * 3.25 - (i % 2) * r * 0.15, r * 0.38, 0, Math.PI * 2); ctx.fill(); } // hair of cloud
+  ctx.beginPath(); // the raised arm, out to the right
+  ctx.moveTo(r * 1.6, -r * 1.4); ctx.quadraticCurveTo(r * 2.8, -r * 2.2, r * 2.7, -r * 3.6);
+  ctx.lineTo(r * 2.2, -r * 3.6); ctx.quadraticCurveTo(r * 2.2, -r * 2.4, r * 1.2, -r * 1.7); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = rim; ctx.lineWidth = Math.max(1, r * 0.06);
+  ctx.beginPath(); ctx.arc(0, -r * 2.4, r, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
+  // the eyes
+  const glow = 0.75 + 0.25 * Math.sin(t * 5);
+  for (const ex of [-0.35, 0.35]) {
+    const g = ctx.createRadialGradient(ex * r, -r * 2.45, 0, ex * r, -r * 2.45, r * 0.35);
+    g.addColorStop(0, `rgba(255,255,255,${(k * glow).toFixed(3)})`); g.addColorStop(1, 'rgba(150,200,255,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(ex * r, -r * 2.45, r * 0.35, 0, Math.PI * 2); ctx.fill();
+  }
+  // the thunderbolt in his hand
+  const bx = r * 2.45, by = -r * 3.7;
+  const bolt = [[0, -r * 1.1], [-r * 0.25, -r * 0.3], [r * 0.12, -r * 0.35], [-r * 0.18, r * 0.5], [r * 0.3, -r * 0.45], [-r * 0.02, -r * 0.4], [r * 0.2, -r * 1.1]];
+  ctx.beginPath(); bolt.forEach(([px, py], i) => (i ? ctx.lineTo(bx + px, by + py) : ctx.moveTo(bx + px, by + py))); ctx.closePath();
+  ctx.fillStyle = `rgba(255,255,255,${(k * glow).toFixed(3)})`; ctx.fill();
+  ctx.strokeStyle = `rgba(80,140,255,${(0.8 * k).toFixed(3)})`; ctx.lineWidth = Math.max(1.5, r * 0.08); ctx.stroke();
+  ctx.restore();
 }
 
 function paintStillBackdrop(ctx, W, H, R) {
@@ -246,6 +285,11 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   // through it and clears over 20 m once it has passed
   let storm = 0;
   for (const o of S.obs) if (o.type === 'storm') storm = Math.max(storm, clamp((70 - o.z) / 35, 0, 1) * clamp((o.z + o.len + 20) / 20, 0, 1));
+  // Zeus's wrath (v0.50): how much of him shows in the sky, and where the arena of ruins lies
+  let zeus = 0;
+  const arenas = S.obs.filter(o => o.type === 'boss');
+  for (const o of arenas) zeus = Math.max(zeus, clamp((60 - o.z) / 30, 0, 1) * clamp((o.z + o.len + 10) / 25, 0, 1));
+  const inArena = z => arenas.some(o => z > o.z - 6 && z < o.z + o.len + 6);
   ctx.fillStyle = rgb(COL.haze);
   ctx.fillRect(0, 0, W, H);
   ctx.save();
@@ -253,7 +297,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   ctx.rotate(roll);
   ctx.save();
   ctx.translate(Math.tan(yaw) * f, -Math.tan(pitch) * f / Math.cos(yaw)); // the backdrop is infinitely far: it only pans
-  drawBackdrop(ctx, W, H, t, Q, storm);
+  drawBackdrop(ctx, W, H, t, Q, storm, zeus);
   ctx.restore();
 
   // 1. the stoa, slice by slice, far to near: floor, roof, painted band, columns
@@ -282,7 +326,8 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
         quad(P(-HW * 0.6, HM, ca), P(HW * 0.6, HM, ca), P(HW * 0.6, HM, cb), P(-HW * 0.6, HM, cb), fog(COL.beam, ca));
       }
       // Doric frieze under the roof edge: narrow grooved triglyphs between wider plain metopes
-      for (const s of [-1, 1]) {
+      // (none over Zeus's arena of ruins, v0.50: the columns there are broken stumps)
+      if (!inArena(a)) for (const s of [-1, 1]) {
         const x = s * (HW + 0.05);
         // v0.44.2: the entablature is a solid beam lying on the columns, not a thin painted band:
         // its underside (soffit) spans from the frieze out to the roof's edge, over the capitals
@@ -311,7 +356,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
         }
         // a vine hanging from the roof edge, swaying a little
         const vz = z0 + 0.4 + hash(idx * 17 + s) * 1.2;
-        if (hash(idx * 11 + s * 5) < 0.1 && vz > BASE + 0.5 && !missingAt(S.obs, 1, vz)) vine(s * (HW + 0.02), vz, 0.5 + 0.9 * hash(idx * 19 + s), idx * 7 + s, t);
+        if (hash(idx * 11 + s * 5) < 0.1 && vz > BASE + 0.5 && !missingAt(S.obs, 1, vz) && !inArena(vz)) vine(s * (HW + 0.02), vz, 0.5 + 0.9 * hash(idx * 19 + s), idx * 7 + s, t);
       }
     }
 
@@ -331,8 +376,9 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     // columns: missing where the floor is gone, broken where the roof is gone
     const zc = z0 + 0.8;
     if (!(idx & 1) && zc > BASE && !missingAt(S.obs, -1, zc + COL_D / 2)) {
-      const broken = missingAt(S.obs, 1, zc + COL_D / 2);
-      const h = broken ? HM * (0.3 + 0.4 * hash(idx)) : HM - FRIEZE;
+      const ruin = inArena(zc); // Zeus's arena: the colonnade in ruins, low stumps under the open storm
+      const broken = ruin || missingAt(S.obs, 1, zc + COL_D / 2);
+      const h = ruin ? HM * (0.12 + 0.28 * hash(idx * 3)) : broken ? HM * (0.3 + 0.4 * hash(idx)) : HM - FRIEZE;
       // a toppling column takes the place of the left column near it
       // a toppling column takes the place of the colonnade's column at its spot, on its side
       const gone = S.obs.find(o => o.topple && Math.abs(o.z - zc) < 2.2);
@@ -574,6 +620,12 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     }
   }
 
+  // 2b. Zeus's attacks on the surfaces (v0.50): electrified stretches and the rings where his bolts fall
+  for (const o of S.obs) {
+    if (o.type === 'shock') drawShock(o);
+    if (o.type === 'mark') drawMark(o);
+  }
+
   // 3. boxes: obstacles + the hero, far to near
   const items = [];
   for (const o of S.obs) {
@@ -813,6 +865,77 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     if (b.zeus) zeusArcs([F(0, -wide), F(L, -wide), F(L, CW + wide), F(0, CW + wide)], b.zeus);
   }
 
+
+  // an electrified surface: blue light over it, crackling arcs across it; flickering on its warning
+  // stretch (the 0.8 s just before it), steady and bright while it is live
+  function drawShock(o) {
+    const warn = S.speed * 0.8, z0 = Math.max(BASE, o.z - warn), z1 = Math.min(FAR, o.z + o.len);
+    if (z1 <= z0) return;
+    const sy = o.side < 0 ? 0.005 : HM - 0.005;
+    const live = Math.max(BASE, o.z);
+    ctx.save();
+    if (live > z0) { // warning: a faint blinking glow
+      ctx.fillStyle = `rgba(90,150,255,${(0.12 + 0.12 * (Math.sin(t * 30) > 0 ? 1 : 0)).toFixed(3)})`;
+      path([P(-HW, sy, z0), P(HW, sy, z0), P(HW, sy, live), P(-HW, sy, live)]); ctx.fill();
+    }
+    if (z1 > live) {
+      ctx.fillStyle = `rgba(80,140,255,${(0.34 + 0.08 * Math.sin(t * 40)).toFixed(3)})`;
+      path([P(-HW, sy, live), P(HW, sy, live), P(HW, sy, z1), P(-HW, sy, z1)]); ctx.fill();
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      for (let i = 0; i < 7; i++) { // arcs across the lane, a new shape each frame
+        const z = lerp(live, z1, Math.random());
+        ctx.beginPath();
+        for (let k = 0; k <= 6; k++) {
+          const q = P(lerp(-HW, HW, k / 6), sy, z + (Math.random() - 0.5) * 0.8);
+          k ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]);
+        }
+        const w = Math.max(1.2, f / (z - CAM_Z) * 0.05);
+        ctx.strokeStyle = 'rgba(60,110,235,.75)'; ctx.lineWidth = w * 2.2; ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,255,255,.95)'; ctx.lineWidth = w * 0.8; ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  // where a bolt will fall: a pulsing blue ring on the surface; once struck, a column of lightning
+  // standing on the spot (a tall wall: be on the other surface), and the bolt itself coming down
+  function drawMark(o) {
+    const z0 = Math.max(BASE, o.z), z1 = o.z + o.len, zc = (o.z + z1) / 2;
+    if (z1 <= BASE || o.z > FAR) return;
+    const sy = o.side < 0 ? 0.01 : HM - 0.01, fk = fogK(Math.max(zc, BASE));
+    const ring = (r, a) => {
+      ctx.beginPath();
+      for (let k = 0; k <= 28; k++) { const ang = k / 28 * Math.PI * 2, q = P(Math.cos(ang) * r, sy, zc + Math.sin(ang) * Math.max(0.4, o.len / 2) * r / 1.1); k ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); }
+      ctx.closePath();
+      return a;
+    };
+    ctx.save();
+    if (!o.struck) {
+      const pulse = 0.5 + 0.5 * Math.sin(t * 14);
+      ring(1.1); ctx.fillStyle = `rgba(80,140,255,${((0.18 + 0.14 * pulse) * (1 - fk)).toFixed(3)})`; ctx.fill();
+      ctx.strokeStyle = `rgba(60,110,235,${(0.9 * (1 - fk)).toFixed(3)})`; ctx.lineWidth = Math.max(1.5, f / (zc - CAM_Z) * 0.06); ctx.stroke();
+      ring(0.55); ctx.strokeStyle = `rgba(255,255,255,${(0.8 * pulse * (1 - fk)).toFixed(3)})`; ctx.stroke();
+    } else {
+      // the column of lightning: glowing faces from the surface to wall height, crackling
+      const top = o.side < 0 ? OH : HM - OH;
+      const front = [P(-HW, sy, z0), P(HW, sy, z0), P(HW, top, z0), P(-HW, top, z0)];
+      ctx.fillStyle = 'rgba(110,165,255,.32)'; path(front); ctx.fill();
+      zeusArcs(front, 1);
+      const el = (o.sz - o.z) / Math.max(1, S.speed);
+      if (el < 0.25) { // the bolt coming down out of the storm onto the spot
+        const s = Math.max(0.6, W / 390), end = P(0, sy, zc), start = P(-3, HM + 8, zc + 6);
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        const pts = [start];
+        for (let k = 1; k < 9; k++) { const q = k / 9; pts.push([lerp(start[0], end[0], q) + (hash(o.len * 977 + k) - 0.5) * 40 * s, lerp(start[1], end[1], q)]); }
+        pts.push(end);
+        ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])));
+        ctx.strokeStyle = 'rgba(130,180,255,.3)'; ctx.lineWidth = 16 * s; ctx.stroke();
+        ctx.strokeStyle = 'rgba(60,115,235,.9)'; ctx.lineWidth = 5 * s; ctx.stroke();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2 * s; ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
 
   function particle(p) {
     const q = P(p.x, p.y, p.z);

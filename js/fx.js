@@ -132,7 +132,9 @@ export function onMilestone(metres) { if (fx.blessT > 0) return; fx.popText = `$
 export function onPop(text) { fx.popText = text; fx.popT = 1.4; }
 // a gift of the gods: a gold plaque with the god's name, the gift and what it does
 let blessId = 0;
-export function onBlessing(god, gift, text) { fx.bless = { id: ++blessId, god, gift, text }; fx.blessT = 2.4; fx.popT = 0; }
+export function onBlessing(god, gift, text, kind = 'gift') { fx.bless = { id: ++blessId, god, gift, text, kind }; fx.blessT = 2.4; fx.popT = 0; }
+// Zeus's wrath (v0.50): the same plaque in storm colours
+export function onWrath(title, text) { onBlessing('Zeus', title, text, 'wrath'); }
 
 export function updateFx(dt, speed) {
   fx.flipFade = Math.max(0, fx.flipFade - dt);

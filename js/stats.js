@@ -11,6 +11,8 @@ export const KIND_LABEL = {
   hole: 'Laje quebrada',
   void: 'Vazio (sem chão ou teto)',
   pillar: 'Coluna que tombou',
+  bolt: 'Raio de Zeus',
+  shock: 'Corrente de Zeus',
   drop: 'Bloco que despencou do teto',
 };
 
@@ -83,6 +85,12 @@ export function recordHeal(from, healed) {
 // boosters taken, by god (v0.46: Hermes' sandals)
 export function recordHermesHold() {
   data.hermesHolds = (data.hermesHolds || 0) + 1; // holes and voids crossed on Hermes' sandals
+  save();
+}
+
+export function recordZeus(what) { // Zeus's wrath: encounters faced and survived (v0.50)
+  data.zeus = data.zeus || { faced: 0, survived: 0 };
+  data.zeus[what] = (data.zeus[what] || 0) + 1;
   save();
 }
 

@@ -57,6 +57,17 @@ export function sfx(type, data = {}) {
       lyre.pluck(deg(1), t + 0.09, 0.5, { sustain: 0, bright: 10, dur: 0.3 });
       break;
     }
+    case 'strike': // a marked bolt falls (v0.50): the same crackle and thunder as the struck column
+      sfx('crack', { kind: 'pillar' });
+      break;
+    case 'bossStart': { // Zeus wakes: a long roll of low thunder
+      const t = ac.currentTime + 0.01;
+      [0, 1, 0, 2, 0].forEach((d, i) => lyre.pluck(deg(d), t + i * 0.14, 0.55 - i * 0.06, { sustain: 40, bright: 0, dur: 0.7 }));
+      break;
+    }
+    case 'bossEnd': // the storm passes: a calm rising phrase
+      lyre.strum([deg(4), deg(7), deg(9), deg(11)], 0.09, 0.4, { sustain: 50 });
+      break;
     case 'crack': { // a column or a roof block starts to give way
       const t = ac.currentTime + 0.01;
       if (data.kind !== 'pillar') { // the roof block: just the stone cracking

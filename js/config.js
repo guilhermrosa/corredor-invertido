@@ -65,6 +65,12 @@ export const HERMES_TIME = 6;      // seconds
 // about one every 800 m, only while none is held or on its way.
 export const AEGIS_FROM = 300;
 export const AEGIS_CHANCE = 0.06;  // per regular obstacle spawned
+// Zeus's wrath, the mini boss (v0.50, user design): rare and random from BOSS_FROM m, at least BOSS_GAP m
+// apart; BOSS_CHANCE per regular obstacle (about two encounters every 5 km, see tools/balance.mjs).
+export const BOSS_FROM = 1000;
+export const BOSS_GAP = 1500;
+export const BOSS_CHANCE = 0.05;
+export const MARK_LEAD = 0.45;     // seconds before the hero reaches it that a marked bolt strikes
 export const AEGIS_HITS = 2;       // walls it breaks before it is gone (v0.47.8, user: "it could take 2 hits"; 1 before)
 
 // Falling obstacles (from FALL_FROM m): a column of the left colonnade that topples across

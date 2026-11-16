@@ -16,6 +16,7 @@ export const ACHIEVEMENTS = [
   { id: 'hermes10', name: 'Pés alados', desc: 'Atravesse 10 buracos com as sandálias de Hermes.', check: (r, t) => (t.hermesHolds || 0) >= 10 },
   { id: 'athena5', name: 'Égide', desc: 'Quebre 5 muros com o escudo de Atena.', check: (r, t) => giftsOf(t).smashes >= 5 },
   { id: 'favored', name: 'Favorito dos deuses', desc: 'Receba os três presentes (romã, sandálias e escudo) na mesma corrida.', check: r => (r.gods || 0) >= 3 },
+  { id: 'zeus1', name: 'Para-raios', desc: 'Sobreviva à ira de Zeus.', check: (r, t) => (r.zeus || 0) >= 1 || ((t.zeus || {}).survived || 0) >= 1 },
   { id: 'runs25', name: 'Persistente', desc: 'Jogue 25 corridas.', check: (r, t) => t.runs >= 25 },
 ];
 

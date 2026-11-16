@@ -148,6 +148,12 @@ h2 { font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; }
 .blessing span { font: 600 14px/1.2 var(--body); color: #6b5426; }
 @keyframes bless { 0% { opacity: 0; transform: translateX(-50%) scale(.8); } 10% { opacity: 1; transform: translateX(-50%) scale(1.04); } 18% { transform: translateX(-50%) scale(1); } 82% { opacity: 1; transform: translateX(-50%); } 100% { opacity: 0; transform: translateX(-50%) translateY(-16px); } }
 @media (prefers-reduced-motion: reduce) { .blessing { animation: none; } }
+/* Zeus's wrath (v0.50): the same plaque in storm colours, electric blue on slate */
+.blessing.wrath { background: radial-gradient(ellipse at 50% 0%, rgba(58,70,96,.97), rgba(30,38,56,.95)); box-shadow: 0 0 0 2px #4a7ff0, 0 0 0 5px rgba(30,38,56,.6), 0 0 0 6px rgba(120,170,255,.6), 0 0 28px rgba(90,150,255,.7); }
+.blessing.wrath small { color: #a9c6ff; }
+.blessing.wrath small::before, .blessing.wrath small::after { background: linear-gradient(90deg, transparent, #7fa8ff); }
+.blessing.wrath b { background: linear-gradient(#ffffff, #9cc0ff); -webkit-background-clip: text; background-clip: text; }
+.blessing.wrath span { color: #d6e2ff; }
 .lives { display: flex; gap: 4px; justify-content: center; margin-top: 2px; }
 .heart { display: block; width: 20px; height: 20px; color: #c9413f; filter: drop-shadow(0 1px 3px rgba(255, 255, 255, .9)); }
 .heart svg { display: block; width: 100%; height: 100%; }
