@@ -77,18 +77,26 @@ const CLOUDS = [
 // sea, sun, mountains, the headland) are painted once into a cached image and reused every frame
 // (v0.42.1: repainting them each frame was a large share of the frame time on slow phones);
 // clouds and sun glints stay live on top.
+// v0.47.7: the browser may drop a canvas's pixels (Android under memory pressure, or the app sent to
+// the background): the cache then drew as empty and only the haze showed ("the background was just
+// fog"). It is repainted when its context is lost or restored and whenever the page comes back.
 let backCache = null;
+export function invalidateBackdrop() { backCache = null; }
+if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (!document.hidden) backCache = null; });
 function drawBackdrop(ctx, W, H, t, Q) {
   const R = Math.hypot(W, H);
   const key = W + 'x' + H;
-  if (!backCache || backCache.key !== key) {
+  if (!backCache || backCache.key !== key || backCache.lost || backCache.c.isContextLost?.()) {
     const k = Math.min(1.25, devicePixelRatio || 1); // soft scenery: no need for full resolution
     const cv = document.createElement('canvas');
     cv.width = Math.ceil(2 * R * k); cv.height = Math.ceil(2 * R * k);
     const c = cv.getContext('2d');
     c.scale(k, k); c.translate(R, R);
     paintStillBackdrop(c, W, H, R);
-    backCache = { key, cv };
+    backCache = { key, cv, c, lost: false };
+    const cache = backCache;
+    cv.addEventListener('contextlost', () => { cache.lost = true; });
+    cv.addEventListener('contextrestored', () => { cache.lost = true; });
   }
   ctx.drawImage(backCache.cv, -R, -R, 2 * R, 2 * R);
   // drifting clouds

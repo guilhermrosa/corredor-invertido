@@ -232,17 +232,21 @@ function spawn(S) {
     if (ob.fixedSide) { S.lastSide = ob.side; S.sameRun = 0; }
     S.obs.push(ob);
     S.nextZ = ob.z + ob.len + sp * 0.55 + 1.6 + Math.random() * sp * 0.6;
-    // a golden heart (Persephone's blessing) in the free stretch after it, unless one is held or on its way
-    if (far > HEART_FROM && !S.scripted && !S.gold && !S.obs.some(o => o.type === 'heart') && Math.random() < S.chances.heart) {
-      S.obs.push({ type: 'heart', z: (ob.z + ob.len + S.nextZ) / 2 - 0.25, len: 0.5, side: Math.random() < 0.5 ? -1 : 1 });
-    } else if (far > HERMES_FROM && !S.scripted && S.hermes <= 0 && !S.obs.some(o => o.type === 'sandals') && Math.random() < S.chances.sandals) {
-      // Hermes' winged sandals, in the same kind of free stretch
-      S.obs.push({ type: 'sandals', z: (ob.z + ob.len + S.nextZ) / 2 - 0.25, len: 0.5, side: Math.random() < 0.5 ? -1 : 1 });
-      S.giftSeq = giftSequence('sandals');
-    } else if (far > AEGIS_FROM && !S.scripted && !S.aegis && !S.obs.some(o => o.type === 'aegis') && Math.random() < S.chances.aegis) {
-      // Athena's shield, in the same kind of free stretch
-      S.obs.push({ type: 'aegis', z: (ob.z + ob.len + S.nextZ) / 2 - 0.25, len: 0.5, side: Math.random() < 0.5 ? -1 : 1 });
-      S.giftSeq = giftSequence('aegis');
+    // a gift of the gods in the free stretch after it: each kind rolls its own chance, in a random
+    // order (v0.47.7: a fixed order heart → sandals → shield made the shield the rarest), and at most
+    // one per spawn; none while one of that kind is held or on its way
+    const at = (ob.z + ob.len + S.nextZ) / 2 - 0.25, gside = Math.random() < 0.5 ? -1 : 1;
+    const gifts = [
+      ['heart', far > HEART_FROM && !S.gold],
+      ['sandals', far > HERMES_FROM && S.hermes <= 0],
+      ['aegis', far > AEGIS_FROM && !S.aegis],
+    ].filter(([type, ok]) => ok && !S.obs.some(o => o.type === type));
+    for (let k = gifts.length - 1; k > 0; k--) { const r = Math.floor(Math.random() * (k + 1)); [gifts[k], gifts[r]] = [gifts[r], gifts[k]]; }
+    for (const [type] of gifts) {
+      if (Math.random() >= S.chances[type]) continue;
+      S.obs.push({ type, z: at, len: 0.5, side: gside });
+      if (type !== 'heart') S.giftSeq = giftSequence(type); // its stretch comes next, taken or not
+      break;
     }
   }
 }
