@@ -5,7 +5,7 @@
 import { HM, PH, COL } from './config.js';
 
 const MAX = 160;
-export const fx = { particles: [], hitStop: 0, flipFade: 0, popText: '', popT: 0 };
+export const fx = { particles: [], hitStop: 0, flipFade: 0, popText: '', popT: 0, bless: null, blessT: 0 };
 
 function add(p) {
   if (fx.particles.length >= MAX) fx.particles.shift();
@@ -82,12 +82,16 @@ export function whileBlessed(dt, S) {
 }
 
 // a short "+100 m" pop in the middle of the screen
-export function onMilestone(metres) { fx.popText = `${metres} m`; fx.popT = 1.1; }
+export function onMilestone(metres) { if (fx.blessT > 0) return; fx.popText = `${metres} m`; fx.popT = 1.1; }
 export function onPop(text) { fx.popText = text; fx.popT = 1.4; }
+// a gift of the gods: a gold plaque with the god's name, the gift and what it does
+let blessId = 0;
+export function onBlessing(god, gift, text) { fx.bless = { id: ++blessId, god, gift, text }; fx.blessT = 2.4; fx.popT = 0; }
 
 export function updateFx(dt, speed) {
   fx.flipFade = Math.max(0, fx.flipFade - dt);
   fx.popT = Math.max(0, fx.popT - dt);
+  fx.blessT = Math.max(0, fx.blessT - dt);
   for (const p of fx.particles) {
     p.age += dt;
     p.x += p.vx * dt;
@@ -106,4 +110,5 @@ export function clearFx() {
   fx.hitStop = 0;
   fx.flipFade = 0;
   fx.popT = 0;
+  fx.blessT = 0;
 }

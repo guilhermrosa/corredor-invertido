@@ -12,7 +12,7 @@ import * as audio from './audio.js';
 import * as stats from './stats.js';
 import * as ach from './achievements.js';
 import { STEPS, createTutorial, startStep, progress } from './tutorial.js';
-import { fx, onLand, onThud, whileSliding, onHit, onInstantFlip, onFlipBlessing, whileBlessed, onMilestone, onPop, updateFx, clearFx } from './fx.js';
+import { fx, onLand, onThud, whileSliding, onHit, onInstantFlip, onFlipBlessing, whileBlessed, onMilestone, onPop, onBlessing, updateFx, clearFx } from './fx.js';
 
 const $ = id => document.getElementById(id);
 const VERSION_LABEL = 'Versão ' + self.APP_VERSION; // from js/version.js
@@ -74,14 +74,14 @@ const emit = (type, data) => {
   if (type === 'hurt') return onHurt(data);
   if (type === 'boost') { // Hermes' sandals
     onFlipBlessing(S);
-    onPop('Sandálias de Hermes: ande sobre os buracos');
+    onBlessing('Hermes', 'Sandálias aladas', 'ande sobre os buracos');
     if (!tut) stats.recordBoost(data.god);
     return;
   }
   if (type === 'heal') {
     renderLives(S.lives, false);
     onFlipBlessing(S);
-    onPop('Bênção de Atena: +1 vida');
+    onBlessing('Atena', 'Coração dourado', '+1 vida');
     stats.recordHeal(data.from, true);
     return;
   }
@@ -206,6 +206,15 @@ function frame(now) {
   if (state === 'menu') { ctx.fillStyle = rgb(COL.bg, 0.25); ctx.fillRect(0, 0, W, H); }
   if (fx.popT > 0 && $('pop').textContent !== fx.popText) { $('pop').textContent = fx.popText; }
   $('pop').hidden = !(fx.popT > 0 && state === 'play');
+  const showBless = fx.blessT > 0 && state === 'play';
+  if (showBless && $('blessing').dataset.id !== String(fx.bless.id)) {
+    $('blessing').dataset.id = fx.bless.id;
+    $('blessGod').textContent = 'Bênção de ' + fx.bless.god;
+    $('blessGift').textContent = fx.bless.gift;
+    $('blessText').textContent = fx.bless.text;
+    $('blessing').hidden = true; void $('blessing').offsetWidth; // restart the animation
+  }
+  $('blessing').hidden = !showBless;
 
   if (state === 'play' && !tut) {
     $('dist').textContent = Math.floor(S.dist) + ' m';
@@ -331,7 +340,7 @@ function toMenu() {
   audio.stopMusic();
   S = createSim();
   clearFx();
-  for (const id of ['over', 'hud', 'pause', 'stats', 'options', 'achPanel', 'countdown', 'tutHint', 'pop', 'boost']) $(id).hidden = true;
+  for (const id of ['over', 'hud', 'pause', 'stats', 'options', 'achPanel', 'countdown', 'tutHint', 'pop', 'blessing', 'boost']) $(id).hidden = true;
   $('menu').hidden = false;
   refreshMenu();
 }
