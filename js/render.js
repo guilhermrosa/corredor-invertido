@@ -245,6 +245,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       // abacus: a plain square slab
       quad(P(x0 - s * (wide + 0.02), eTop, zc), P(x1 + s * (wide + 0.02), eTop, zc), P(x1 + s * (wide + 0.02), h, zc), P(x0 - s * (wide + 0.02), h, zc), fog(COL.column, zc));
       line(P(x0 - s * (wide + 0.02), eTop, zc), P(x1 + s * (wide + 0.02), eTop, zc), fog(COL.columnDark, zc), lw(zc) * 0.6);
+      line(P(t0, shaftTop + 0.015, zc), P(t1, shaftTop + 0.015, zc), fog(COL.frieze, zc), lw(zc) * 1.4); // painted band
     }
     // flutes, following the taper
     const fc = fog(COL.columnShade, zc);
@@ -476,6 +477,18 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
 
   function drawObstacle(b, z0) {
     if (b.kind === 'pillar') { drawPillar(b, z0); return; }
+    drawObstacleBody(b, z0);
+    // a dark outline around the front face, so light stone reads against the light scenery
+    ctx.lineJoin = 'round';
+    const ow = lw(z0) * 1.3, oc = fog(COL.outline, z0);
+    if (b.kind === 'ruin') {
+      const steps = 7, pts = [P(b.x0, b.y0, z0), P(b.x1, b.y0, z0)];
+      for (let i = steps; i >= 0; i--) pts.push(P(b.x0 + (b.x1 - b.x0) * i / steps, b.y1 - RUIN_DIP * hash(b.seed * 13 + i), z0));
+      path(pts);
+    } else path([P(b.x0, b.y0, z0), P(b.x1, b.y0, z0), P(b.x1, b.y1, z0), P(b.x0, b.y1, z0)]);
+    ctx.strokeStyle = oc; ctx.lineWidth = ow; ctx.stroke();
+  }
+  function drawObstacleBody(b, z0) {
     const face = fog(b.col, z0);
     const lid = fog(mix(b.col, COL.cloud, 0.45), z0);
     const dark = fog(mix(b.col, COL.edge, 0.55), z0);

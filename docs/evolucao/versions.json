@@ -102,9 +102,9 @@
     "text": "Botão \"Enviar feedback\" abre o formulário já com a versão e as estatísticas. Nas 0.35.1 a 0.36.2, ajustes para as barras do Android."
   },
   {
-    "v": "0.41",
+    "v": "0.41.1",
     "date": "2026-11-16",
-    "title": "Colunas dóricas e calcário dourado",
-    "text": "Primeira etapa do visual a partir das referências do autor: colunas dóricas (capitel em almofada, caneluras, leve afinamento para cima), friso com tríglifos, colunas e teto em calcário dourado como em Segesta, chão de lajes claras e acinzentadas, e obstáculos em pedra mais escura para se destacarem. Nas 0.39 e 0.40, início mais rápido, velocidade que não para de subir e controles com um gesto por ação."
+    "title": "Colunas dóricas em mármore claro",
+    "text": "Primeira etapa do visual a partir das referências do autor: colunas dóricas (capitel em almofada com filete azul pintado, caneluras, leve afinamento para cima), friso com tríglifos azuis, chão de lajes em fileiras desencontradas e obstáculos com contorno escuro. A 0.41 testou calcário dourado e obstáculos marrons, mas pareceu antigo demais; voltou o mármore claro com o azul. Nas 0.39 e 0.40, início mais rápido, velocidade que não para de subir e controles com um gesto por ação."
   }
 ]

@@ -78,17 +78,18 @@ export const COL = {
   haze: [222, 236, 242],     // distance fog and the horizon
   skyTop: [86, 160, 212], sea: [52, 128, 178], seaDeep: [24, 78, 128],
   sun: [255, 246, 222], cloud: [252, 253, 255], island: [150, 170, 160],
-  // v0.41 art direction (user's references, choice "mistura"): golden limestone for the columns,
-  // beams and roof, as at Segesta; light greyish slabs underfoot; obstacles in a darker, weathered
-  // stone with strong outlines so they never blend into the scenery.
-  marble: [216, 212, 201], marble2: [206, 202, 190], joint: [166, 159, 144], stylobate: [204, 174, 126],
-  ceiling: [218, 200, 162], beam: [196, 172, 128],
-  column: [228, 196, 140], columnShade: [184, 147, 98], columnDark: [150, 116, 74],
-  frieze: [158, 122, 78], friezeAlt: [220, 188, 134], // triglyphs (dark, grooved) and metopes
-  wall: [146, 136, 120],     // low wall (mureta), jump: grey weathered blocks
-  ruin: [138, 106, 74],      // tall ruined wall on the floor, flip: dark brown stone
-  lintel: [166, 128, 84],    // fallen beam hanging from the roof, flip: dark golden, with triglyphs
-  edge: [112, 88, 60],       // broken edge around holes
+  // v0.41.1: light marble again (the user found the v0.41 gold too old-looking and the brown
+  // obstacles unpleasant: these ruins are not that ancient), with the painted blue back (triglyphs
+  // and a band on each capital). Obstacles stay light but get a dark outline so they still read.
+  marble: [238, 234, 224], marble2: [228, 223, 211], joint: [194, 187, 172], stylobate: [218, 210, 192],
+  ceiling: [230, 224, 209], beam: [212, 203, 184],
+  column: [248, 245, 237], columnShade: [204, 196, 180], columnDark: [168, 158, 140],
+  frieze: [44, 82, 146], friezeAlt: [238, 231, 213], // blue triglyphs and plain metopes
+  wall: [216, 202, 172],     // low wall (mureta), jump: warm sandstone blocks
+  ruin: [206, 190, 158],     // tall ruined wall on the floor, flip
+  lintel: [224, 212, 184],   // fallen beam hanging from the roof, flip, with blue triglyphs
+  outline: [92, 82, 70],     // dark outline around obstacles, so light stone reads on light stone
+  edge: [150, 122, 84],      // broken edge around holes
   haz: [230, 90, 70],        // hit flash
   ink: [29, 42, 51],
 };
