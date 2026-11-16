@@ -498,15 +498,24 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     ctx.restore();
     // a dark broken lip on the near edge, so gaps read from afar
     if (o.z - 0.2 > BASE) quad(P(-w, sy, o.z - 0.2), P(w, sy, o.z - 0.2), P(w, sy, o.z), P(-w, sy, o.z), fog(COL.edge, o.z));
-    // Hermes' sandals: a path of gold light over the gaps on the hero's side, so he can see they hold
+    // Hermes' sandals (v0.46.1, subtle): a thin gold glow along the gap's edges on the hero's side,
+    // and a few sparks drifting over it; the hole itself stays visible
     if (S.hermes > 0 && o.side === S.grav) {
-      const fade = S.hermes < 1.2 ? 0.5 + 0.5 * Math.sin(t * 18) : 1; // blinks as it runs out
-      const bw = HW * 0.6, ga = Math.max(o.z, BASE), gb = o.z + o.len;
+      const fade = S.hermes < 1.2 ? 0.5 + 0.5 * Math.sin(t * 18) : 1;
+      const ga = Math.max(o.z, BASE), gb = o.z + o.len;
       if (gb > ga) {
-        ctx.globalAlpha = 0.88 * fade; // nearly opaque, so the sea below doesn't turn it green
-        quad(P(-bw, sy, ga), P(bw, sy, ga), P(bw, sy, gb), P(-bw, sy, gb), rgb([250, 222, 140]));
-        ctx.globalAlpha = 0.8 * fade;
-        for (const e of [-bw, bw]) line(P(e, sy, ga), P(e, sy, gb), rgb([255, 226, 150]), lw(ga) * 1.2);
+        ctx.globalAlpha = 0.75 * fade;
+        const gl = rgb([252, 222, 140]), lwg = lw(ga) * 1.1;
+        for (const e of [-w, w]) line(P(e, sy, ga), P(e, sy, gb), gl, lwg);
+        if (o.z > BASE) line(P(-w, sy, o.z), P(w, sy, o.z), gl, lwg);
+        line(P(-w, sy, gb), P(w, sy, gb), gl, lwg);
+        for (let k = 0; k < Math.min(10, o.len * 2); k++) { // sparks rising out of the gap
+          const sz = o.z + hash(k * 7 + o.len) * o.len, sx = (hash(k * 13 + o.len) - 0.5) * 2 * w * 0.8;
+          const up = ((t * 0.6 + hash(k * 3)) % 1), sp = P(sx, sy - Math.sign(sy - HM / 2 || -1) * up * 0.4, sz);
+          if (sz <= BASE) continue;
+          ctx.globalAlpha = fade * (1 - up) * 0.9;
+          ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(sp[0], sp[1], Math.max(1, 0.03 * f / (sz - CAM_Z)), 0, Math.PI * 2); ctx.fill();
+        }
         ctx.globalAlpha = 1;
       }
     }
@@ -684,38 +693,53 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   }
 
 
-  // Hermes' winged sandal (v0.46): floats over its surface with a gold glow, wing beating.
+  // Hermes' winged sandal (v0.46; redrawn v0.46.1): a sandal seen from the side, laces crossing up
+  // to an ankle cuff, and a white wing with gold-edged feathers rising from the heel.
+  function feather(x, y, ang, len, wid, fill, edge, lwid) {
+    const c = Math.cos(ang), s = Math.sin(ang), nx = -s, ny = c;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.quadraticCurveTo(x + c * len * 0.5 + nx * wid, y + s * len * 0.5 + ny * wid, x + c * len, y + s * len);
+    ctx.quadraticCurveTo(x + c * len * 0.5 - nx * wid * 0.6, y + s * len * 0.5 - ny * wid * 0.6, x, y);
+    ctx.fillStyle = fill; ctx.fill();
+    ctx.lineWidth = lwid; ctx.strokeStyle = edge; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + c * len * 0.85, y + s * len * 0.85); ctx.lineWidth = lwid * 0.7; ctx.stroke(); // quill
+  }
   function drawSandals(b) {
     const zc = (b.z0 + b.z1) / 2;
     if (zc <= BASE + 0.3) return;
     const bob = Math.sin(t * 3 + b.z0) * 0.06;
     const y = b.side < 0 ? HEART_LIFT + bob : HM - HEART_LIFT - bob;
     const [x, yy] = P(0, y, zc);
-    const r = 0.5 * f / (zc - CAM_Z), fk = fogK(zc);
-    const glow = ctx.createRadialGradient(x, yy, r * 0.2, x, yy, r * 2.2);
-    glow.addColorStop(0, `rgba(244,196,92,${0.55 * (1 - fk)})`);
-    glow.addColorStop(1, 'rgba(244,196,92,0)');
+    const r = 0.38 * f / (zc - CAM_Z), fk = fogK(zc);
+    const glow = ctx.createRadialGradient(x, yy, r * 0.2, x, yy, r * 2.4);
+    glow.addColorStop(0, `rgba(250,214,120,${0.6 * (1 - fk)})`);
+    glow.addColorStop(1, 'rgba(250,214,120,0)');
     ctx.fillStyle = glow;
-    ctx.beginPath(); ctx.arc(x, yy, r * 2.2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x, yy, r * 2.4, 0, Math.PI * 2); ctx.fill();
     ctx.save();
     ctx.translate(x, yy);
     ctx.scale(r, (b.side < 0 ? 1 : -1) * r); // upright for the hero on either surface
-    const gold = rgb(mix([244, 196, 92], COL.haze, fk)), dark = rgb(mix([150, 104, 30], COL.haze, fk)), light = rgb(mix([255, 240, 200], COL.haze, fk));
-    // the wing, beating, behind the sandal
-    const beat = Math.sin(t * 9 + b.z0) * 0.25;
-    ctx.save(); ctx.translate(-0.35, 0.05); ctx.rotate(-0.35 + beat);
-    for (let k = 0; k < 4; k++) {
-      ctx.beginPath(); ctx.ellipse(-0.15 - k * 0.1, -0.25 - k * 0.14, 0.45 - k * 0.06, 0.13, -0.5 - k * 0.15, 0, Math.PI * 2);
-      ctx.fillStyle = k % 2 ? light : gold; ctx.fill(); ctx.lineWidth = 0.05; ctx.strokeStyle = dark; ctx.stroke();
-    }
-    ctx.restore();
-    // the sandal: a sole seen from the side, straps over it
+    const gold = rgb(mix([236, 178, 64], COL.haze, fk)), dark = rgb(mix([140, 94, 26], COL.haze, fk));
+    const white = rgb(mix([255, 252, 242], COL.haze, fk)), light = rgb(mix([252, 226, 150], COL.haze, fk));
+    // the wing, rising up and back from the ankle; its feathers lift and settle
+    const beat = Math.sin(t * 8 + b.z0) * 0.12;
+    const wx = -0.5, wy = -0.3;
+    const feathers = [[-1.75, 1.35, 0.24], [-2.05, 1.3, 0.24], [-2.35, 1.15, 0.22], [-2.62, 0.95, 0.2], [-2.88, 0.72, 0.17]];
+    feathers.forEach(([a, len, wid], k) => feather(wx, wy, a - beat * (1 - k * 0.15), len, wid, k % 2 ? light : white, gold, 0.06));
+    ctx.beginPath(); ctx.ellipse(wx - 0.1, wy - 0.16, 0.3, 0.17, -0.7, 0, Math.PI * 2); // coverts over the feather roots
+    ctx.fillStyle = white; ctx.fill(); ctx.lineWidth = 0.06; ctx.strokeStyle = gold; ctx.stroke();
+    // the sandal: a filled silhouette (heel, ankle, instep, toe) with two darker straps
     ctx.beginPath();
-    ctx.moveTo(-0.75, 0.35); ctx.quadraticCurveTo(-0.85, 0.15, -0.55, 0.12);
-    ctx.lineTo(0.55, 0.12); ctx.quadraticCurveTo(0.9, 0.18, 0.8, 0.38); ctx.closePath();
-    ctx.fillStyle = gold; ctx.fill(); ctx.lineWidth = 0.08; ctx.strokeStyle = dark; ctx.stroke();
-    ctx.lineWidth = 0.1; ctx.strokeStyle = dark;
-    for (const [x0, x1] of [[-0.45, -0.1], [0, 0.35], [-0.3, 0.2]]) { ctx.beginPath(); ctx.moveTo(x0, 0.14); ctx.quadraticCurveTo((x0 + x1) / 2, -0.35, x1, 0.14); ctx.stroke(); }
+    ctx.moveTo(-0.72, 0.32);
+    ctx.lineTo(-0.68, -0.32); ctx.quadraticCurveTo(-0.48, -0.42, -0.26, -0.32); // heel up to the ankle
+    ctx.quadraticCurveTo(-0.2, -0.05, 0.12, 0.08);                              // instep
+    ctx.quadraticCurveTo(0.7, 0.14, 0.88, 0.3);                                 // toe
+    ctx.closePath();
+    ctx.fillStyle = gold; ctx.fill(); ctx.lineWidth = 0.06; ctx.strokeStyle = dark; ctx.stroke();
+    ctx.lineWidth = 0.07; ctx.strokeStyle = dark; ctx.lineCap = 'round';
+    for (const [ax, ay, bx2, by2] of [[-0.66, -0.12, -0.24, -0.16], [-0.05, 0.03, 0.12, 0.3]]) { ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx2, by2); ctx.stroke(); }
+    ctx.beginPath(); ctx.moveTo(-0.76, 0.32); ctx.lineTo(0.92, 0.32); ctx.lineWidth = 0.1; ctx.stroke(); // sole
     ctx.restore();
   }
 

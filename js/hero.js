@@ -166,19 +166,24 @@ function drawSlide(ctx, phase) {
   }
 }
 
-// Hermes' sandals (v0.46): a small gold wing at the ankle, beating; `alpha` blinks as it runs out.
+// Hermes' sandals (v0.46; redrawn v0.46.1): a small white wing at the ankle, three pointed
+// feathers with gold edges spreading out and up, fluttering; `alpha` blinks as it runs out.
 function wing(ctx, x, y, side, alpha, phase) {
   ctx.save();
   ctx.globalAlpha = alpha;
-  ctx.translate(x + side * 0.05, y);
-  ctx.rotate(side * (0.6 + Math.sin(phase * 3) * 0.25));
-  for (let k = 0; k < 3; k++) {
+  ctx.translate(x + side * 0.04, y - 0.02);
+  const flap = Math.sin(phase * 3) * 0.18;
+  [[0.2, -0.55], [0.17, -0.9], [0.13, -1.2]].forEach(([len, a], k) => {
+    const ang = side > 0 ? a + flap : Math.PI - a - flap;
+    const c = Math.cos(ang), s = Math.sin(ang), nx = -s, ny = c, wd = 0.032;
     ctx.beginPath();
-    ctx.ellipse(side * (0.07 + k * 0.04), -0.04 - k * 0.035, 0.1 - k * 0.015, 0.03, side * (0.2 + k * 0.25), 0, Math.PI * 2);
-    ctx.fillStyle = k % 2 ? '#fff0c8' : '#f4c45c';
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(c * len * 0.5 + nx * wd * side, s * len * 0.5 + ny * wd * side, c * len, s * len);
+    ctx.quadraticCurveTo(c * len * 0.5 - nx * wd * 0.5 * side, s * len * 0.5 - ny * wd * 0.5 * side, 0, 0);
+    ctx.fillStyle = k === 1 ? '#fbe6a6' : '#fffcf2';
     ctx.fill();
-    ctx.strokeStyle = '#96681e'; ctx.lineWidth = 0.008; ctx.stroke();
-  }
+    ctx.strokeStyle = '#c9902a'; ctx.lineWidth = 0.008; ctx.stroke();
+  });
   ctx.restore();
 }
 
