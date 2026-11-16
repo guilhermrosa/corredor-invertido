@@ -12,6 +12,7 @@ import * as audio from './audio.js';
 import * as stats from './stats.js';
 import * as ach from './achievements.js';
 import { STEPS, createTutorial, startStep, progress } from './tutorial.js';
+import { aegisSvg } from './aegis.js';
 import { fx, onLand, onThud, whileSliding, onHit, onInstantFlip, onFlipBlessing, whileBlessed, onMilestone, onPop, onBlessing, onSmash, updateFx, clearFx } from './fx.js';
 
 const $ = id => document.getElementById(id);
@@ -130,6 +131,7 @@ function renderLives(lives, justLost = false) {
   if (S.aegis) { // Athena's shield, while carried
     const a = document.createElement('span');
     a.className = 'aegis-icon';
+    a.innerHTML = aegisSvg();
     a.title = 'Escudo de Atena';
     el.appendChild(a);
   }

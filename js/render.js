@@ -7,7 +7,8 @@
 
 import { HM, HW, PH, PL, OH, HIT, RUIN_DIP, PORTAL_GAP, HEART_LIFT, HERMES_TIME, clamp, lerp, mix, rgb, COL } from './config.js';
 import { blockHitbox, holeKillZone, playerBox, fallAmount } from './sim.js';
-import { drawAxolotl, drawShieldFace } from './hero.js';
+import { drawAxolotl } from './hero.js';
+import { drawAegisFace } from './aegis.js';
 
 // the split pomegranate, in the HUD icon's 20-unit box (see POMEGRANATE in main.js); built on first use
 let POM = null;
@@ -794,7 +795,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     ctx.save();
     ctx.translate(x, yy);
     ctx.scale(Math.max(0.3, Math.abs(Math.cos(t * 1.8 + b.z0))) * r, (b.side < 0 ? 1 : -1) * r);
-    drawShieldFace(ctx, fk);
+    drawAegisFace(ctx, fk);
     ctx.restore();
   }
 

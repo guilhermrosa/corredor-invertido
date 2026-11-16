@@ -1,3 +1,4 @@
+import { drawAegisFace } from './aegis.js';
 // Main character, drawn from behind, following the user's silhouette sketch (v0.45: proportions
 // closer to it: pear-shaped body, short limbs as filled shapes, big wide head; v0.45.1 slimmer):
 // big oval head, three long fringed gills per side spread like a crown, slim humanoid body,
@@ -165,7 +166,7 @@ function drawSlide(ctx, phase, aegis = false) {
     }
   }
   if (aegis) { // Athena's shield strapped on his back, lying flat with him, over everything
-    ctx.save(); ctx.translate(0, -0.21); ctx.scale(0.15, 0.1); drawShieldFace(ctx); ctx.restore();
+    ctx.save(); ctx.translate(0, -0.21); ctx.scale(0.15, 0.1); drawAegisFace(ctx); ctx.restore();
   }
 }
 
@@ -192,26 +193,13 @@ function wing(ctx, x, y, side, alpha, phase) {
 
 // phase: running cycle in radians; air: true while jumping or flipping; sliding: belly slide;
 // blessing: 0..1, how much of the divine gold shows (the hero's inverted gravity)
-// Athena's shield, face on, in a unit circle: a gold rim, a blue field with a cream ring and a
-// gold boss. fog (0..1) fades it toward the haze for the far pickup.
-export function drawShieldFace(ctx, fog = 0) {
-  const m = (a, b) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * fog)).join(',')})`, hz = [214, 228, 234];
-  ctx.beginPath(); ctx.arc(0, 0, 1, 0, Math.PI * 2); ctx.fillStyle = m([226, 176, 76], hz); ctx.fill();
-  ctx.lineWidth = 0.09; ctx.strokeStyle = m([150, 104, 30], hz); ctx.stroke();
-  ctx.beginPath(); ctx.arc(0, 0, 0.8, 0, Math.PI * 2); ctx.fillStyle = m([70, 108, 168], hz); ctx.fill();
-  ctx.beginPath(); ctx.arc(0, 0, 0.56, 0, Math.PI * 2); ctx.lineWidth = 0.1; ctx.strokeStyle = m([246, 240, 226], hz); ctx.stroke();
-  ctx.beginPath(); ctx.arc(0, 0, 0.26, 0, Math.PI * 2); ctx.fillStyle = m([244, 196, 92], hz); ctx.fill();
-  ctx.lineWidth = 0.06; ctx.strokeStyle = m([150, 104, 30], hz); ctx.stroke();
-  ctx.beginPath(); ctx.arc(-0.07, -0.08, 0.08, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fill();
-}
-
 // the shield on his left arm, turned a little toward the camera
 function shield(ctx, x, y) {
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(-0.15);
   ctx.scale(0.13, 0.2);
-  drawShieldFace(ctx);
+  drawAegisFace(ctx);
   ctx.restore();
 }
 

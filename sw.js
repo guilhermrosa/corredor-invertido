@@ -11,7 +11,7 @@ const SHELL = [
   'js/config.js',
   'js/sim.js',
   'js/render.js',
-  'js/hero.js',
+  'js/hero.js', 'js/aegis.js',
   'js/audio.js',
   'js/lyre.js',
   'js/stats.js',
