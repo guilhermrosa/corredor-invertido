@@ -187,6 +187,8 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       quad(P(HW, 0, a), P(EDGE, 0, a), P(EDGE, 0, b), P(HW, 0, b), fog(COL.stylobate, a));
       const jc = fog(COL.joint, a);
       if (z0 >= a && z0 <= b) line(P(-HW, 0, z0), P(HW, 0, z0), jc, lw(z0) * 0.8);
+      // slabs in staggered rows: one or two joints along the lane, shifted every row
+      for (const fx of alt ? [-0.33, 0.33] : [0]) line(P(fx * HW * 2, 0, a), P(fx * HW * 2, 0, b), jc, lw(a) * 0.6);
     }
     for (const [a, b] of solidParts(S.obs, 1, za, zb)) {
       quad(P(-EDGE, HM, a), P(EDGE, HM, a), P(EDGE, HM, b), P(-EDGE, HM, b), fog(COL.ceiling, a));
@@ -194,15 +196,18 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
         const ca = a + 0.3, cb = b - 0.3;
         quad(P(-HW * 0.6, HM, ca), P(HW * 0.6, HM, ca), P(HW * 0.6, HM, cb), P(-HW * 0.6, HM, cb), fog(COL.beam, ca));
       }
-      // painted band under the roof edge: blue triglyphs alternating with plain metopes
+      // Doric frieze under the roof edge: narrow grooved triglyphs between wider plain metopes
       for (const s of [-1, 1]) {
         const x = s * (HW + 0.05);
-        for (let h = 0; h < 2; h++) {
-          const ha = Math.max(a, z0 + h), hb = Math.min(b, z0 + h + 1);
+        for (const [u0, u1, col] of [[0, 0.7, COL.friezeAlt], [0.7, 1, COL.frieze], [1, 1.7, COL.friezeAlt], [1.7, 2, COL.frieze]]) {
+          const ha = Math.max(a, z0 + u0), hb = Math.min(b, z0 + u1);
           if (hb <= ha) continue;
-          const col = h === 0 ? COL.frieze : COL.friezeAlt;
           quad(P(x, HM - FRIEZE, ha), P(x, HM - FRIEZE, hb), P(x, HM, hb), P(x, HM, ha), fog(col, ha));
+          if (col === COL.frieze && Q.flutes) { // the triglyph's two grooves
+            for (const g of [0.33, 0.66]) { const gz = ha + (hb - ha) * g; line(P(x, HM - FRIEZE + 0.04, gz), P(x, HM - 0.06, gz), fog(COL.columnDark, gz), lw(gz) * 0.5); }
+          }
         }
+        line(P(x, HM - FRIEZE, a), P(x, HM - FRIEZE, b), fog(COL.columnDark, a), lw(a) * 0.6); // architrave line
       }
     }
     // columns: missing where the floor is gone, broken where the roof is gone
@@ -212,23 +217,40 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       const h = broken ? HM * (0.3 + 0.4 * hash(idx)) : HM - FRIEZE;
       // a toppling column takes the place of the left column near it
       const replaced = S.obs.some(o => o.topple && Math.abs(o.z - zc) < 2.2);
-      for (const s of replaced ? [1] : [-1, 1]) {
-        const x0 = s * COL_X0, x1 = s * COL_X1;
-        quad(P(x0, 0, zc), P(x0, 0, zc + COL_D), P(x0, h, zc + COL_D), P(x0, h, zc), fog(COL.columnShade, zc));
-        if (broken) {
-          const j1 = h + 0.12 * hash(idx * 3 + s), j2 = h - 0.1;
-          poly([P(x0, 0, zc), P(x1, 0, zc), P(x1, j1, zc), P((x0 + x1) / 2, j2, zc), P(x0, h, zc)], fog(COL.column, zc));
-        } else {
-          quad(P(x0, 0, zc), P(x1, 0, zc), P(x1, h, zc), P(x0, h, zc), fog(COL.column, zc));
-          quad(P(x0 - s * 0.05, h - 0.14, zc), P(x1 + s * 0.05, h - 0.14, zc), P(x1 + s * 0.05, h, zc), P(x0 - s * 0.05, h, zc), fog(COL.columnShade, zc));
-        }
-        const fc = fog(COL.columnShade, zc);
-        for (const q of Q.flutes ? [0.35, 0.65] : []) {
-          const fx = lerp(x0, x1, q);
-          line(P(fx, 0.05, zc), P(fx, h - (broken ? 0.15 : 0.18), zc), fc, lw(zc) * 0.7);
-        }
-      }
+      for (const s of replaced ? [1] : [-1, 1]) drawDoric(s, zc, h, broken, idx);
     }
+  }
+
+  // A Doric column (v0.41, from the user's references): no base, a shaft that narrows a little
+  // toward the top (entasis), flutes, and a capital of a rounded cushion (echinus) under a square
+  // slab (abacus). Broken columns end in a jagged top and keep their flutes.
+  function drawDoric(s, zc, h, broken, idx) {
+    const x0 = s * COL_X0, x1 = s * COL_X1, taper = 0.035;
+    const capH = broken ? 0 : 0.2;                       // echinus + abacus
+    const shaftTop = h - capH;
+    const t0 = x0 + s * taper, t1 = x1 - s * taper;      // shaft edges at the top
+    const top = y => lerp(0, 1, y / Math.max(0.01, shaftTop));
+    const xAt = (a, b, y) => lerp(a, b, top(y));
+    // the side facing the lane, in shade
+    quad(P(x0, 0, zc), P(x0, 0, zc + COL_D), P(t0, shaftTop, zc + COL_D), P(t0, shaftTop, zc), fog(COL.columnShade, zc));
+    if (broken) {
+      const j1 = shaftTop + 0.12 * hash(idx * 3 + s), j2 = shaftTop - 0.1, j3 = shaftTop + 0.05 * hash(idx * 5 + s);
+      poly([P(x0, 0, zc), P(x1, 0, zc), P(xAt(x1, t1, j1), j1, zc), P(xAt(lerp(x0, x1, 0.65), lerp(t0, t1, 0.65), j3), j3, zc),
+        P(xAt(lerp(x0, x1, 0.4), lerp(t0, t1, 0.4), j2), j2, zc), P(t0, shaftTop, zc)], fog(COL.column, zc));
+    } else {
+      quad(P(x0, 0, zc), P(x1, 0, zc), P(t1, shaftTop, zc), P(t0, shaftTop, zc), fog(COL.column, zc));
+      // echinus: a rounded band widening up to the abacus
+      const eTop = shaftTop + 0.09, wide = 0.07;
+      poly([P(t0, shaftTop, zc), P(t1, shaftTop, zc), P(x1 + s * wide, eTop, zc), P(x0 - s * wide, eTop, zc)], fog(COL.columnShade, zc));
+      // abacus: a plain square slab
+      quad(P(x0 - s * (wide + 0.02), eTop, zc), P(x1 + s * (wide + 0.02), eTop, zc), P(x1 + s * (wide + 0.02), h, zc), P(x0 - s * (wide + 0.02), h, zc), fog(COL.column, zc));
+      line(P(x0 - s * (wide + 0.02), eTop, zc), P(x1 + s * (wide + 0.02), eTop, zc), fog(COL.columnDark, zc), lw(zc) * 0.6);
+    }
+    // flutes, following the taper
+    const fc = fog(COL.columnShade, zc);
+    const flutes = Q.flutes ? [0.2, 0.4, 0.6, 0.8] : [0.35, 0.65];
+    const fTop = shaftTop - (broken ? 0.2 : 0.04);
+    for (const q of flutes) line(P(lerp(x0, x1, q), 0.04, zc), P(lerp(lerp(x0, x1, q), lerp(t0, t1, q), fTop / shaftTop), fTop, zc), fc, lw(zc) * 0.55);
   }
 
   // 2. holes and the broken slab edges of open stretches
