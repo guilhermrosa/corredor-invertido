@@ -11,7 +11,7 @@ Endless runner para navegador em túnel pseudo-3D. Um toque pula; um segundo toq
 | Ação | Celular | Teclado |
 | --- | --- | --- |
 | Pular | Toque | Espaço |
-| Inverter a gravidade | Arrastar para cima (uma vez por salto) | ↑ ou W |
+| Inverter a gravidade | Arrastar para cima (uma vez por salto) | Espaço de novo no ar, ou ↑ / W |
 | Deslizar | Arrastar para baixo (no ar: desce rápido e desliza ao tocar a superfície) | ↓ ou S |
 | Pausar | Botão "Pausa" (pausa sozinho ao sair do app) | Esc ou P |
 | Ver as áreas de colisão | Tocar 5 vezes em "Versão" no menu | H |

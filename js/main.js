@@ -404,7 +404,8 @@ bindTouch(cvs, {
 });
 addEventListener('keydown', e => {
   const k = e.code;
-  if (state === 'play' && k === 'Space') { e.preventDefault(); press(S, emit); }
+  // keyboard: Space jumps and, pressed again in the air, flips (no swipes on a keyboard; v0.40.1)
+  if (state === 'play' && k === 'Space') { e.preventDefault(); if (!S.grounded && S.canFlip) flipUp(S, emit); else press(S, emit); }
   else if (state === 'play' && ['ArrowUp', 'KeyW'].includes(k)) { e.preventDefault(); flipUp(S, emit); }
   else if (state === 'play' && ['ArrowDown', 'KeyS'].includes(k)) { e.preventDefault(); slide(S, emit); }
   else if ((k === 'Escape' || k === 'KeyP') && (state === 'play' || state === 'countdown')) { e.preventDefault(); pause(); }

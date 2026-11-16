@@ -244,7 +244,7 @@ bindTouch(cvs, {
   flip: () => flipUp(S, emit), surfaceOnTop: () => style === 'papel' && S.grav > 0, swipePx: () => 26,
 });
 addEventListener('keydown', e => {
-  if (e.code === 'Space') { e.preventDefault(); press(S, emit); }
+  if (e.code === 'Space') { e.preventDefault(); if (!S.grounded && S.canFlip) flipUp(S, emit); else press(S, emit); }
   if (['ArrowUp', 'KeyW'].includes(e.code)) { e.preventDefault(); flipUp(S, emit); }
   if (['ArrowDown', 'KeyS'].includes(e.code)) { e.preventDefault(); slide(S, emit); }
 });
