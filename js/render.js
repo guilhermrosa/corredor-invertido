@@ -593,30 +593,30 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   // A column of the colonnade toppling across the path: it turns as one piece around the
   // corner of its base nearest the lane, like a tree falling, and lies on the floor when down.
   function drawPillar(b, z0) {
-    const L = HM - FRIEZE, Wd = 0.5;
+    // v0.44.1: drawn exactly like the colonnade's Doric columns (taper, flutes, painted band,
+    // echinus and abacus), only turned around its base corner as it falls
+    const L = HM - FRIEZE, Wd = 0.5; // thicker than the colonnade's: lying down it must match its hitbox (LOWH)
     const a = b.ang + (b.wobble ? 0.03 * Math.sin(t * 60) : 0);
     const ax = Math.sin(a), ay = Math.cos(a);   // along the column
     const px = Math.cos(a), py = -Math.sin(a);  // across it, toward its far side
     const piv = [-(HW + 0.05), 0];
     const at = (u, w) => [piv[0] + ax * u - px * w, piv[1] + ay * u - py * w];
     const p3 = ([x, y], z) => P(x, y, z);
-    const A = at(0, 0), B = at(L, 0), C = at(L, Wd), D = at(0, Wd);
-    // the side of the column the camera can see: its lane-facing side while standing, its top once low
-    const side = a < Math.PI / 4 ? [A, B] : [D, C];
+    const taper = 0.055, capH = 0.26, shaft = L - capH, wide = 0.1;
+    const wAt = (u, w) => lerp(w, w < Wd / 2 ? taper : Wd - taper, u / shaft); // taper toward the top
+    // the side the camera sees: the lane-facing side while standing, the top once low
+    const side = a < Math.PI / 4 ? [at(0, 0), at(shaft, taper)] : [at(0, Wd), at(shaft, Wd - taper)];
     quad(p3(side[0], z0), p3(side[1], z0), p3(side[1], b.z1), p3(side[0], b.z1), fog(COL.columnShade, z0));
-    quad(p3(A, z0), p3(B, z0), p3(C, z0), p3(D, z0), fog(COL.column, z0));
+    quad(p3(at(0, 0), z0), p3(at(shaft, taper), z0), p3(at(shaft, Wd - taper), z0), p3(at(0, Wd), z0), fog(COL.column, z0));
     const fc = fog(COL.columnShade, z0);
-    for (const q of [0.25, 0.5, 0.75]) line(p3(at(0.1, Wd * q), z0), p3(at(L - 0.3, Wd * q), z0), fc, lw(z0) * 0.7);
-    // Doric capital at the top end (v0.44): echinus and abacus, a little wider than the shaft
-    const cap = [at(L - 0.22, -0.06), at(L, -0.08), at(L, Wd + 0.08), at(L - 0.22, Wd + 0.06)];
-    quad(p3(cap[0], z0), p3(cap[1], z0), p3(cap[2], z0), p3(cap[3], z0), fog(COL.columnShade, z0));
-    line(p3(at(L - 0.24, 0), z0), p3(at(L - 0.24, Wd), z0), fog(COL.frieze, z0), lw(z0) * 1.4);
-    // a dark outline keeps the white column readable against the white marble floor
-    path([p3(A, z0), p3(B, z0), p3(C, z0), p3(D, z0)]);
-    ctx.strokeStyle = fog(COL.edge, z0);
-    ctx.lineWidth = lw(z0) * 1.6;
-    ctx.stroke();
+    for (const q of [0.2, 0.4, 0.6, 0.8]) line(p3(at(0.04, Wd * q), z0), p3(at(shaft - 0.04, wAt(shaft - 0.04, Wd * q)), z0), fc, lw(z0) * 0.55);
+    line(p3(at(shaft + 0.015, taper), z0), p3(at(shaft + 0.015, Wd - taper), z0), fog(COL.frieze, z0), lw(z0) * 1.4); // painted band
+    const eTop = shaft + 0.12;
+    quad(p3(at(shaft, taper), z0), p3(at(eTop, -wide), z0), p3(at(eTop, Wd + wide), z0), p3(at(shaft, Wd - taper), z0), fog(COL.columnShade, z0)); // echinus
+    quad(p3(at(eTop, -wide - 0.02), z0), p3(at(L, -wide - 0.02), z0), p3(at(L, Wd + wide + 0.02), z0), p3(at(eTop, Wd + wide + 0.02), z0), fog(COL.column, z0)); // abacus
+    line(p3(at(eTop, -wide - 0.02), z0), p3(at(eTop, Wd + wide + 0.02), z0), fog(COL.columnDark, z0), lw(z0) * 0.6);
   }
+
 
   // Golden heart (Athena's blessing): floats and turns over its surface, with a gold glow.
   function drawHeart(b) {

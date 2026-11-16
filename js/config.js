@@ -85,9 +85,10 @@ export const COL = {
   ceiling: [230, 224, 209], beam: [212, 203, 184],
   column: [248, 245, 237], columnShade: [204, 196, 180], columnDark: [168, 158, 140],
   frieze: [44, 82, 146], friezeAlt: [238, 231, 213], // blue triglyphs and plain metopes
-  wall: [222, 203, 165],     // low wall (mureta), jump
-  ruin: [201, 168, 120],     // tall ruined wall on the floor, flip
-  lintel: [214, 196, 160],   // fallen beam hanging from the roof, flip, with blue triglyphs
+  // v0.44.1: lighter and less yellow (user)
+  wall: [230, 220, 199],     // low wall (mureta), jump
+  ruin: [216, 200, 172],     // tall ruined wall on the floor, flip
+  lintel: [228, 218, 198],   // fallen beam hanging from the roof, flip, with blue triglyphs
   // nature (v0.42): grass and weeds in the joints, vines from the roof, wild flowers, cypresses
   grass: [126, 166, 88], grassDark: [86, 128, 64], grassLight: [168, 198, 110], vine: [88, 138, 70],
   flowers: [[244, 204, 62], [238, 132, 56], [214, 74, 62], [156, 116, 204], [250, 248, 240]],
