@@ -320,6 +320,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       if (a < 40) for (const fx of alt ? [-0.33, 0.33] : [0]) line(P(fx * HW * 2, 0, a), P(fx * HW * 2, 0, b), jc, lw(a) * 0.6);
     }
     for (const [a, b] of solidParts(S.obs, 1, za, zb)) {
+      if (inArena(a)) { stormRoof(a, b, idx); continue; } // v0.50.1: over Zeus's arena the roof is his storm
       quad(P(-EDGE, HM, a), P(EDGE, HM, a), P(EDGE, HM, b), P(-EDGE, HM, b), fog(COL.ceiling, a));
       if (Q.coffers && b - a > 0.9) { // coffer
         const ca = a + 0.3, cb = b - 0.3;
@@ -865,6 +866,28 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     if (b.zeus) zeusArcs([F(0, -wide), F(L, -wide), F(L, CW + wide), F(0, CW + wide)], b.zeus);
   }
 
+
+  // Zeus's arena (v0.50.1, user: "with the columns broken the roof just floats"): the roof there is a
+  // layer of dark storm cloud, solid under his gravity, with lumpy undersides, ragged edges out past
+  // the lane and lightning flickering inside now and then
+  function stormRoof(a, b, idx) {
+    const dark = mix([52, 60, 80], COL.haze, fogK(a) * 0.6), mid = mix([74, 84, 106], COL.haze, fogK(a) * 0.6);
+    quad(P(-EDGE - 0.4, HM, a), P(EDGE + 0.4, HM, a), P(EDGE + 0.4, HM, b), P(-EDGE - 0.4, HM, b), rgb(dark));
+    for (let k = 0; k < 5; k++) { // puffs hanging below the layer, and wider ones at its ragged edges
+      const hx = hash(idx * 31 + k * 7), edge = k >= 3, side = k === 3 ? -1 : 1;
+      const x = edge ? side * (EDGE + 0.2) : (hx - 0.5) * 2 * HW, z = lerp(a, b, hash(idx * 17 + k * 3));
+      if (z <= BASE + 0.3) continue;
+      const [cx, cy] = P(x, HM - (edge ? 0.25 : 0.08), z), rr = (edge ? 0.9 : 0.6 + 0.4 * hx) * f / (z - CAM_Z);
+      ctx.fillStyle = rgb(k % 2 ? mid : dark);
+      ctx.beginPath(); ctx.ellipse(cx, cy, rr, rr * 0.45, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    // lightning inside the cloud: a slice lights up briefly, at random
+    const flick = hash(idx * 13 + Math.floor(t * 7)) < 0.04;
+    if (flick) {
+      ctx.fillStyle = 'rgba(170,205,255,.35)';
+      path([P(-EDGE, HM - 0.01, a), P(EDGE, HM - 0.01, a), P(EDGE, HM - 0.01, b), P(-EDGE, HM - 0.01, b)]); ctx.fill();
+    }
+  }
 
   // an electrified surface: blue light over it, crackling arcs across it; flickering on its warning
   // stretch (the 0.8 s just before it), steady and bright while it is live
