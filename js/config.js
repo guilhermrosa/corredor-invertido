@@ -9,14 +9,13 @@ export const LOWH = 0.6;  // low block height (jump to clear)
 export const PIT = 2.2;   // visual depth of holes
 export const G = 42;      // gravity during a flip / fall
 export const JUMP_H = 1.05; // jump height, metres
-// v0.39: a floatier jump (JG 30 → 21): same height, about 20% more time in the air, so it
-// reaches further, mostly at the slow start (user feedback: slightly longer gaps should be
-// jumpable before the run gets fast).
-export const JG = 21;     // gravity while jumping
+// v0.39 tried a floatier jump (JG 21, 0.63 s in the air); the user found it too floaty, so v0.39.1
+// is back to the original jump.
+export const JG = 30;     // gravity while jumping
 export const JV = Math.sqrt(2 * JG * JUMP_H); // jump speed for that height
-export const AIR = 2 * JV / JG;               // airtime of a jump, seconds (about 0.63)
-// The generator still sizes holes and spacing for the old 0.53 s jump, so the gaps stay as they
-// were and the longer jump is pure margin for the player.
+export const AIR = 2 * JV / JG;               // airtime of a jump, seconds (about 0.53)
+// The airtime the generator sizes holes and spacing for (kept separate so the jump can be tuned
+// without changing the layouts).
 export const LAYOUT_AIR = 2 * Math.sqrt(2 * 30 * JUMP_H) / 30;
 
 // Hitboxes are a little smaller than what is drawn, so grazing an obstacle feels fair.
