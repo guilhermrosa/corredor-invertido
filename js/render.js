@@ -297,9 +297,10 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   ctx.rotate(roll);
   ctx.save();
   ctx.translate(Math.tan(yaw) * f, -Math.tan(pitch) * f / Math.cos(yaw)); // the backdrop is infinitely far: it only pans
-  // v0.50.8 (user): in Zeus's fight, while the hero runs on the clouds, the sky (with its storm and
-  // Zeus) is simply mirrored to where the sea would show, so it stays in view
-  if (zeus > 0 && ease > 0.5) ctx.scale(-1, -1); // turned with the camera: the sky shows as it does from the floor
+  // v0.50.9 (user, after a preview): in Zeus's fight, while the hero runs on the clouds, the backdrop is
+  // mirrored left to right, so on the rolled screen it is the floor's view turned upside down: the sea
+  // on top, and below, seen through the clouds under his feet, the storm with Zeus hanging upside down
+  if (zeus > 0 && ease > 0.5) ctx.scale(-1, 1);
   drawBackdrop(ctx, W, H, t, Q, storm, zeus);
   ctx.restore();
 
