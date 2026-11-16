@@ -239,6 +239,9 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       // Doric frieze under the roof edge: narrow grooved triglyphs between wider plain metopes
       for (const s of [-1, 1]) {
         const x = s * (HW + 0.05);
+        // v0.44.2: the entablature is a solid beam lying on the columns, not a thin painted band:
+        // its underside (soffit) spans from the frieze out to the roof's edge, over the capitals
+        quad(P(x, HM - FRIEZE, a), P(s * EDGE, HM - FRIEZE, a), P(s * EDGE, HM - FRIEZE, b), P(x, HM - FRIEZE, b), fog(mix(COL.friezeAlt, COL.columnShade, 0.55), a));
         quad(P(x, HM - FRIEZE, a), P(x, HM - FRIEZE, b), P(x, HM, b), P(x, HM, a), fog(COL.friezeAlt, a));
         for (const [u0, u1, col] of [[0.7, 1, COL.frieze], [1.7, 2, COL.frieze]]) {
           const ha = Math.max(a, z0 + u0), hb = Math.min(b, z0 + u1);
