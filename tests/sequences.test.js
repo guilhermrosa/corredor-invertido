@@ -6,7 +6,7 @@ import { placeSequence } from '../js/sim.js';
 import { makeRun, solve } from './solver.js';
 
 for (const seq of SEQUENCES) {
-  for (const speed of [12, 16, 21]) {
+  for (const speed of [13, 17, 21, 26]) {
     for (const a of [-1, 1]) for (const start of [-1, 1]) {
       test(`${seq.id} at ${speed} m/s (a = ${a < 0 ? 'floor' : 'roof'}, player on the ${start < 0 ? 'floor' : 'roof'})`, () => {
         const S = makeRun(speed, start);

@@ -8,9 +8,16 @@ export const OH = 1.55;   // tall block height (flip to dodge)
 export const LOWH = 0.6;  // low block height (jump to clear)
 export const PIT = 2.2;   // visual depth of holes
 export const G = 42;      // gravity during a flip / fall
-export const JG = 30;     // gravity while jumping (floatier)
-export const JV = Math.sqrt(2 * JG * 1.05); // jump speed for a 1.05 m hop
-export const AIR = 2 * JV / JG;             // airtime of a jump, seconds
+export const JUMP_H = 1.05; // jump height, metres
+// v0.39: a floatier jump (JG 30 → 21): same height, about 20% more time in the air, so it
+// reaches further, mostly at the slow start (user feedback: slightly longer gaps should be
+// jumpable before the run gets fast).
+export const JG = 21;     // gravity while jumping
+export const JV = Math.sqrt(2 * JG * JUMP_H); // jump speed for that height
+export const AIR = 2 * JV / JG;               // airtime of a jump, seconds (about 0.63)
+// The generator still sizes holes and spacing for the old 0.53 s jump, so the gaps stay as they
+// were and the longer jump is pure margin for the player.
+export const LAYOUT_AIR = 2 * Math.sqrt(2 * 30 * JUMP_H) / 30;
 
 // Hitboxes are a little smaller than what is drawn, so grazing an obstacle feels fair.
 export const HIT = {
@@ -56,12 +63,16 @@ export const TOPPLE_TIME = 0.6;  // seconds, wobble included
 export const DROP_TIME = 0.55;
 export const FALL_WOBBLE = 0.27; // share of that time spent wobbling before the fall
 
-// Speed eases in: quick gains early, then it levels off toward SPEED_MAX (no late rush).
-// speed = START + (MAX - START) * (1 - e^(-metres / SPEED_EASE)): about 13 m/s at 100 m,
-// 16 at 300 m, 18.5 at 600 m, 20 at 1000 m.
-export const SPEED_START = 11;
+// Speed eases in, then keeps creeping up (v0.39, user feedback "slow at first, then it stays the
+// same": in a 2 km run half the time was spent at the old 21 m/s ceiling).
+// speed = START + (MAX - START) * (1 - e^(-m / EASE)) + LATE * m / 1000, never above CAP:
+// 13 m/s at the start, about 15 at 100 m, 19 at 500 m, 21 at 1 km, 23 at 2 km, 24 at 3 km, 26 from about 5 km.
+export const SPEED_START = 13;
 export const SPEED_MAX = 21;
-export const SPEED_EASE = 450; // metres
+export const SPEED_EASE = 450;  // metres
+export const SPEED_LATE = 1;    // m/s gained per km on top of the eased part
+export const SPEED_CAP = 26;
+export const speedAt = m => Math.min(SPEED_CAP, SPEED_START + (SPEED_MAX - SPEED_START) * (1 - Math.exp(-m / SPEED_EASE)) + SPEED_LATE * m / 1000);
 
 // Placeholder world: a seaside stoa (covered colonnade) in white marble on a sunny day.
 export const COL = {

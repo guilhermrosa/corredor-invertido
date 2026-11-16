@@ -6,12 +6,12 @@
 // side: -1 floor, +1 ceiling. grav: -1 pulls to the floor, +1 to the ceiling.
 
 import {
-  HM, HW, PH, PL, OH, LOWH, PIT, G, JG, JV, AIR, HIT, RUIN_DIP,
+  HM, HW, PH, PL, OH, LOWH, PIT, G, JG, JV, LAYOUT_AIR, HIT, RUIN_DIP,
   SLIDE_TIME, SLIDE_H, FAST_FALL, PORTAL_GAP, PORTAL_FROM, FLIP_V, LIVES, INVULN_TIME,
   SINK_TIME, SINK_DEPTH, SINK_G, SINK_SLOW,
   FALL_FROM, FALL_LEAD, TOPPLE_TIME, DROP_TIME, FALL_WOBBLE,
   HEART_FROM, HEART_CHANCE, HEART_LIFT,
-  SPEED_START, SPEED_MAX, SPEED_EASE, clamp,
+  SPEED_START, speedAt, clamp,
 } from './config.js';
 import { sequenceChance, pickSequence } from './sequences.js';
 
@@ -125,7 +125,7 @@ export function placeSequence(S, seq, start, sp, a) {
 }
 
 function jumpables(S, from, to, side, sp, jd, avoid = []) {
-  const step = sp * (AIR + 0.3) + 1;
+  const step = sp * (LAYOUT_AIR + 0.3) + 1;
   for (let oz = from; oz < to; oz += step + Math.random() * sp * 0.35) {
     if (avoid.some(t => oz + 2 > t.z - step && oz < t.z + t.len + step)) continue;
     if (S.dist + oz > PORTAL_FROM && Math.random() < 0.2) {
@@ -148,7 +148,7 @@ function spawn(S) {
   if (S.scripted) return;
   while (S.nextZ < 95) {
     const sp = Math.max(S.speed, 12);
-    const jd = S.speed * AIR;
+    const jd = S.speed * LAYOUT_AIR;
     const roll = Math.random();
     const far = S.dist + S.nextZ;
 
@@ -277,7 +277,7 @@ export function update(S, dt, emit, opts = {}) {
     return;
   }
 
-  S.speed = SPEED_START + (SPEED_MAX - SPEED_START) * (1 - Math.exp(-S.dist / SPEED_EASE));
+  S.speed = speedAt(S.dist);
   const v = S.speed * (S.sink > 0 ? SINK_SLOW : 1) * dt;
   const before = S.dist;
   S.dist += v;

@@ -3,13 +3,17 @@
 // Uses the real simulation, so it stays honest when physics or hitboxes change.
 
 import { createSim, update, press, slide } from '../js/sim.js';
-import { SPEED_START, SPEED_MAX, SPEED_EASE, HM, PH } from '../js/config.js';
+import { speedAt, HM, PH } from '../js/config.js';
 
 const DT = 1 / 60;
 const STEP = 3; // frames between decisions (20 decisions a second)
 
 // The distance at which the run reaches `speed` (the sim derives speed from distance).
-export const distForSpeed = speed => -SPEED_EASE * Math.log(1 - (speed - SPEED_START) / (SPEED_MAX - SPEED_START));
+export function distForSpeed(speed) {
+  let lo = 0, hi = 20000;
+  for (let i = 0; i < 60; i++) { const mid = (lo + hi) / 2; if (speedAt(mid) < speed) lo = mid; else hi = mid; }
+  return hi;
+}
 
 // A scripted sim at `speed`, with the player on `side` (-1 floor, +1 roof) and one life.
 export function makeRun(speed, side = -1) {

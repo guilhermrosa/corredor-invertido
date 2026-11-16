@@ -349,7 +349,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   }
 
   // 5. speed lines streaming from the far end once the run gets fast
-  const rush = clamp((S.speed - 14) / 6, 0, 1);
+  const rush = clamp((S.speed - 16) / 8, 0, 1); // v0.39: from 16 m/s (about 250 m) to full at 24 (about 3 km)
   if (rush > 0) {
     const R = Math.hypot(W, H), vx = Math.tan(yaw) * f;
     ctx.strokeStyle = rgb(COL.ink, 0.22 * rush); // dark enough to read over white marble

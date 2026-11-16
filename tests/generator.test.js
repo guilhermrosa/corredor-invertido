@@ -16,7 +16,7 @@ function windowAt(metres) {
   return S;
 }
 
-for (const metres of [100, 300, 600, 1000, 2000]) {
+for (const metres of [100, 300, 600, 1000, 2000, 5000]) {
   test(`random windows at ${metres} m are passable`, () => {
     for (let i = 0; i < 12; i++) {
       const S = windowAt(metres);

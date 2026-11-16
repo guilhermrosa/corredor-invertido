@@ -214,8 +214,7 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-// music speeds up with the run: 64 bpm at the start, about 95 at top speed
-const tempo = () => 64 + (S.speed - 11) * 3.1;
+const tempo = () => 64 + (S.speed - 13) * 3.1; // 64 bpm at the start, about 104 at top speed
 
 // ---- tutorial ----
 function showHint(title, sub) {
