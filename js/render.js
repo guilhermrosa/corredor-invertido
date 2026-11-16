@@ -89,7 +89,7 @@ const zeusOf = o => (o.p > 0 && o.p < 0.5 ? 1 - o.p / 0.5 * 0.6 : 0);
 let backCache = null;
 export function invalidateBackdrop() { backCache = null; }
 if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (!document.hidden) backCache = null; });
-function drawBackdrop(ctx, W, H, t, Q, storm = 0, zeus = 0) {
+function drawBackdrop(ctx, W, H, t, Q, storm = 0, zeus = 0, ease = 0) {
   const R = Math.hypot(W, H);
   const key = W + 'x' + H;
   if (!backCache || backCache.key !== key || backCache.lost || backCache.c.isContextLost?.()) {
@@ -119,7 +119,13 @@ function drawBackdrop(ctx, W, H, t, Q, storm = 0, zeus = 0) {
       ctx.fill();
     }
   }
-  if (zeus > 0) drawZeus(ctx, W, H, t, zeus);
+  if (zeus > 0) {
+    // v0.50.6 (user's idea): when the hero runs on the roof the camera rolls over and Zeus would end up
+    // under the clouds; he changes sides with the roll instead, fading out and back in, always upright
+    // on screen and in the same place, keeping the player in his sight
+    if (ease < 1) drawZeus(ctx, W, H, t, zeus * (1 - ease));
+    if (ease > 0) { ctx.save(); ctx.rotate(Math.PI); drawZeus(ctx, W, H, t, zeus * ease); ctx.restore(); }
+  }
   // drifting clouds
   ctx.fillStyle = rgb(COL.cloud, 0.92 * (1 - storm * 0.8));
   for (const c of CLOUDS) {
@@ -297,7 +303,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   ctx.rotate(roll);
   ctx.save();
   ctx.translate(Math.tan(yaw) * f, -Math.tan(pitch) * f / Math.cos(yaw)); // the backdrop is infinitely far: it only pans
-  drawBackdrop(ctx, W, H, t, Q, storm, zeus);
+  drawBackdrop(ctx, W, H, t, Q, storm, zeus, ease);
   ctx.restore();
 
   // 1. the stoa, slice by slice, far to near: floor, roof, painted band, columns
