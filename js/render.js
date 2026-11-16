@@ -723,30 +723,34 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   // A column of the colonnade toppling across the path: it turns as one piece around the
   // corner of its base nearest the lane, like a tree falling, and lies on the floor when down.
   function drawPillar(b, z0) {
-    // v0.44.1: drawn exactly like the colonnade's Doric columns (taper, flutes, painted band,
-    // echinus and abacus), only turned around its base corner as it falls
-    const L = HM - FRIEZE, Wd = 0.5; // thicker than the colonnade's: lying down it must match its hitbox (LOWH)
+    // v0.48.4 (user: "the falling column still looks different from the standing ones"): exactly the
+    // colonnade's Doric column (drawDoric: same box COL_X0..COL_X1 and depth COL_D, taper, echinus,
+    // abacus, painted band, flutes), turned around the foot of its lane-side edge as it falls. In
+    // the column's frame u runs up the shaft and w across it, from the lane side (0) outward (CW).
+    const CW = COL_X1 - COL_X0, L = HM - FRIEZE, taper = 0.035, capH = 0.2, shaftTop = L - capH;
+    const eTop = shaftTop + 0.09, wide = 0.07;
     const a = b.ang + (b.wobble ? 0.03 * Math.sin(t * 60) : 0);
     const ax = Math.sin(a), ay = Math.cos(a);   // along the column
-    const px = Math.cos(a), py = -Math.sin(a);  // across it, toward its far side
-    const piv = [-(HW + 0.05), 0];
-    const at = (u, w) => [piv[0] + ax * u - px * w, piv[1] + ay * u - py * w];
+    const px = -Math.cos(a), py = Math.sin(a);  // across it, outward
+    const at = (u, w) => [-COL_X0 + ax * u + px * w, ay * u + py * w];
+    const za = b.z0 + 0.1, zb = za + COL_D;      // its 0.3 m depth, centred in the obstacle
+    const zz = Math.max(za, BASE);
     const p3 = ([x, y], z) => P(x, y, z);
-    const taper = 0.055, capH = 0.26, shaft = L - capH, wide = 0.1;
-    const wAt = (u, w) => lerp(w, w < Wd / 2 ? taper : Wd - taper, u / shaft); // taper toward the top
-    // the side the camera sees: the lane-facing side while standing, the top once low
-    const side = a < Math.PI / 4 ? [at(0, 0), at(shaft, taper)] : [at(0, Wd), at(shaft, Wd - taper)];
-    quad(p3(side[0], z0), p3(side[1], z0), p3(side[1], b.z1), p3(side[0], b.z1), fog(COL.columnShade, z0));
-    quad(p3(at(0, 0), z0), p3(at(shaft, taper), z0), p3(at(shaft, Wd - taper), z0), p3(at(0, Wd), z0), fog(COL.column, z0));
-    const fc = fog(COL.columnShade, z0);
-    for (const q of [0.2, 0.4, 0.6, 0.8]) line(p3(at(0.04, Wd * q), z0), p3(at(shaft - 0.04, wAt(shaft - 0.04, Wd * q)), z0), fc, lw(z0) * 0.55);
-    line(p3(at(shaft + 0.015, taper), z0), p3(at(shaft + 0.015, Wd - taper), z0), fog(COL.frieze, z0), lw(z0) * 1.4); // painted band
-    const eTop = shaft + 0.12;
-    quad(p3(at(shaft, taper), z0), p3(at(eTop, -wide), z0), p3(at(eTop, Wd + wide), z0), p3(at(shaft, Wd - taper), z0), fog(COL.columnShade, z0)); // echinus
-    quad(p3(at(eTop, -wide - 0.02), z0), p3(at(L, -wide - 0.02), z0), p3(at(L, Wd + wide + 0.02), z0), p3(at(eTop, Wd + wide + 0.02), z0), fog(COL.column, z0)); // abacus
-    line(p3(at(eTop, -wide - 0.02), z0), p3(at(eTop, Wd + wide + 0.02), z0), fog(COL.columnDark, z0), lw(z0) * 0.6);
-    if (b.zeus) zeusArcs([p3(at(0, -wide), z0), p3(at(L, -wide), z0), p3(at(L, Wd + wide), z0), p3(at(0, Wd + wide), z0)], b.zeus);
+    const F = (u, w) => p3(at(u, w), zz);
+    // the side the camera sees: the lane side while standing, the top (outer side) once low
+    const e = a < Math.PI / 4 ? [at(0, 0), at(shaftTop, taper)] : [at(0, CW), at(shaftTop, CW - taper)];
+    quad(p3(e[0], zz), p3(e[1], zz), p3(e[1], zb), p3(e[0], zb), fog(COL.columnShade, zz));
+    quad(F(0, 0), F(shaftTop, taper), F(shaftTop, CW - taper), F(0, CW), fog(COL.column, zz));                 // shaft
+    poly([F(shaftTop, taper), F(eTop, -wide), F(eTop, CW + wide), F(shaftTop, CW - taper)], fog(COL.columnShade, zz)); // echinus
+    quad(F(eTop, -wide - 0.02), F(L, -wide - 0.02), F(L, CW + wide + 0.02), F(eTop, CW + wide + 0.02), fog(COL.column, zz)); // abacus
+    line(F(eTop, -wide - 0.02), F(eTop, CW + wide + 0.02), fog(COL.columnDark, zz), lw(zz) * 0.6);
+    line(F(shaftTop + 0.015, taper), F(shaftTop + 0.015, CW - taper), fog(COL.frieze, zz), lw(zz) * 1.4); // painted band
+    const flutes = Q.flutes && zz < 22 ? [0.2, 0.4, 0.6, 0.8] : zz < 45 ? [0.35, 0.65] : [];
+    const fTop = shaftTop - 0.04;
+    for (const q of flutes) line(F(0.04, CW * q), F(fTop, lerp(CW * q, lerp(taper, CW - taper, q), fTop / shaftTop)), fog(COL.columnShade, zz), lw(zz) * 0.55);
+    if (b.zeus) zeusArcs([F(0, -wide), F(L, -wide), F(L, CW + wide), F(0, CW + wide)], b.zeus);
   }
+
 
   function particle(p) {
     const q = P(p.x, p.y, p.z);
@@ -764,9 +768,9 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     const flash = el < 0.07 ? 0 : el < 0.1 ? -1 : el < 0.18 ? 1 : el < 0.21 ? -1 : el < BOLT_TIME ? 2 : -1;
     if (flash < 0) return;
     const fade = flash === 2 ? 1 - (el - 0.21) / (BOLT_TIME - 0.21) * 0.7 : 1;
-    const zc = o.z + o.len / 2;
+    const zc = o.z + 0.1 + COL_D / 2;
     const a = fallAmount(o) * Math.PI / 2, L = HM - FRIEZE;
-    const tx = -(HW + 0.05) + Math.sin(a) * L + Math.cos(a) * 0.25, ty = Math.cos(a) * L - Math.sin(a) * 0.25;
+    const cw = (COL_X1 - COL_X0) / 2, tx = -COL_X0 + Math.sin(a) * L - Math.cos(a) * cw, ty = Math.cos(a) * L + Math.sin(a) * cw;
     const end = P(tx, ty + 0.12, zc);
     const start = P(-14, HM + 6, zc + 1.5); // out in the open sky, nearly at the column's own depth
     const seed = Math.floor(o.len * 9973) + flash * 131;

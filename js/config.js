@@ -6,6 +6,7 @@ export const PH = 0.9;    // player height
 export const PL = 0.8;    // player length
 export const OH = 1.55;   // tall block height (flip to dodge)
 export const LOWH = 0.6;  // low block height (jump to clear)
+export const TOPPLE_H = 0.44; // a toppled column's height for collisions: lying down it is as thick as the colonnade's columns (0.3 m) once HIT.low is trimmed (v0.48.4; LOWH before)
 export const PIT = 2.2;   // visual depth of holes
 export const G = 42;      // gravity during a flip / fall
 export const JUMP_H = 1.05; // jump height, metres

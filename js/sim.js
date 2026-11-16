@@ -9,7 +9,7 @@ import {
   HM, HW, PH, PL, OH, LOWH, PIT, G, JG, JV, LAYOUT_AIR, HIT, RUIN_DIP,
   SLIDE_TIME, SLIDE_H, FAST_FALL, PORTAL_GAP, PORTAL_FROM, FLIP_V, LIVES, INVULN_TIME,
   SINK_TIME, SINK_DEPTH, SINK_G, SINK_SLOW,
-  FALL_FROM, FALL_LEAD, TOPPLE_TIME, DROP_TIME, FALL_WOBBLE,
+  FALL_FROM, FALL_LEAD, TOPPLE_TIME, DROP_TIME, FALL_WOBBLE, TOPPLE_H,
   HEART_FROM, HEART_CHANCE, HEART_LIFT, HERMES_FROM, HERMES_CHANCE, HERMES_TIME, AEGIS_FROM, AEGIS_CHANCE, AEGIS_HITS,
   SPEED_START, speedAt, clamp,
 } from './config.js';
@@ -220,7 +220,7 @@ function spawn(S) {
     S.lastSide = side;
     const r2 = Math.random();
     let ob;
-    if (far > FALL_FROM && r2 > 0.92) ob = { type: 'block', h: LOWH, topple: true, len: 0.5, fixedSide: -1 };
+    if (far > FALL_FROM && r2 > 0.92) ob = { type: 'block', h: TOPPLE_H, topple: true, len: 0.5, fixedSide: -1 };
     else if (far > FALL_FROM && r2 > 0.84) ob = { type: 'block', drop: true, len: 0.9 + Math.random() * 0.6, fixedSide: 1 };
     else if (far > PORTAL_FROM && r2 < 0.15) ob = { type: 'portal', len: 0.6 + Math.random() * 0.4 };
     else if (r2 < 0.3) ob = { type: 'hole', len: 1.8 + Math.random() * 1.8 };
@@ -228,6 +228,9 @@ function spawn(S) {
     else ob = { type: 'block', len: Math.random() < 0.18 ? 3 + Math.random() * 3 : 0.8 + Math.random() * 1.4 };
     // a portal may need a flip and a slide in a row: give it extra room in front
     ob.z = S.nextZ + (ob.type === 'portal' ? sp * 0.3 : 0);
+    // a toppling column is one of the colonnade's own columns (render.js: one every 4 m, 0.8 m into its
+    // block, 0.3 m deep): move it forward onto that rhythm, its 0.3 m centred in its 0.5 m length (v0.48.4)
+    if (ob.topple) ob.z += (((0.8 - 0.1 - (S.dist + ob.z)) % 4) + 4) % 4;
     ob.side = ob.fixedSide || side;
     if (ob.fixedSide) { S.lastSide = ob.side; S.sameRun = 0; }
     S.obs.push(ob);

@@ -78,7 +78,7 @@ export function onSmash(S) {
 // blue-white sparks at the base of the left colonnade, at depth z. `deep`: drawn among the columns at
 // its own depth (render.js), so the nearer columns pass in front of it.
 export function onColumnBreak(z, hw) {
-  const x0 = -(hw + 0.05) + 0.25;
+  const x0 = -(hw + 0.25); // the middle of a colonnade column's foot (render.js COL_X0..COL_X1)
   for (let i = 0; i < 26; i++) { // chips flying out, mostly toward the lane and up
     const big = i % 3 === 0;
     add({
