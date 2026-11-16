@@ -6,7 +6,9 @@
 // `lenT` seconds of running when given. Sides: 'a' is picked at random when the stretch is
 // placed, 'b' is the other one; 'floor' / 'ceil' are fixed.
 // Types: 'tall' (flip away), 'low' (jump), 'hole' (jump), 'portal' (slide on its side),
-// 'void' (that surface is missing: stay off it), 'drop' (a roof block that falls, from 200 m).
+// 'void' (that surface is missing: stay off it), 'drop' (a roof block that falls, from 200 m),
+// 'topple' (v0.49: a colonnade column Zeus strikes; its side 'a' / 'b' is the colonnade, it lands on the
+// floor across the lane; snapped onto the nearest colonnade column).
 // `end`: when the stretch is over (seconds). `from`: first metre it may appear. `weight`: how often.
 // tests/sequences.test.js proves every stretch can be passed at slow and top speed.
 
@@ -65,6 +67,20 @@ export const SEQUENCES = [
     items: [
       { t: 0, type: 'drop', side: 'ceil', len: 1.2 },
       { t: 0.85, type: 'tall', side: 'ceil', len: 1.4 },
+    ],
+  },
+  {
+    // Fúria de Zeus (v0.49, user's idea: "several columns Zeus strikes one after another, needing more
+    // reflex, falling from both sides, never both at once"). Lintels on the roof in between, so hiding
+    // up there does not get you through: down on the floor, jump the columns in rhythm.
+    id: 'furia-de-zeus', from: 500, weight: 1, end: 3.3,
+    items: [
+      { t: 0, type: 'topple', side: 'a', len: 0.5 },
+      { t: 0.45, type: 'tall', side: 'ceil', len: 1.2 },
+      { t: 0.9, type: 'topple', side: 'b', len: 0.5 },
+      { t: 1.8, type: 'topple', side: 'a', len: 0.5 },
+      { t: 2.25, type: 'tall', side: 'ceil', len: 1.2 },
+      { t: 2.7, type: 'topple', side: 'b', len: 0.5 },
     ],
   },
   // Gift stretches (v0.47.5): never picked at random. One follows a gift of the gods every time

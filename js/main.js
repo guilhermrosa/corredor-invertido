@@ -112,7 +112,7 @@ const emit = (type, data) => {
   if (type === 'hermesHold') { if (!tut) stats.recordHermesHold(); return; }
   if (type === 'smash') { onSmash(S); shake = Math.max(shake, 0.25); buzz(25); renderLives(S.lives, false); if (!tut) stats.recordSmash(data.kind); return; }
   if (type === 'crack' && data.kind === 'pillar') zeusFlash = 1;
-  if (type === 'break') { onColumnBreak(data.z, HW); shake = Math.max(shake, 0.1); } // Zeus's wrath: a white-blue flash as the lightning strikes
+  if (type === 'break') { onColumnBreak(data.z, HW, data.col); shake = Math.max(shake, 0.1); } // Zeus's wrath: a white-blue flash as the lightning strikes
   if (type === 'land') onLand(data.side);
   else if (type === 'thud') { onThud(data.z); shake = Math.max(shake, 0.12); }
   else if (type === 'milestone') onMilestone(data.metres);

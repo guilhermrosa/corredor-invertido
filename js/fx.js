@@ -77,13 +77,13 @@ export function onSmash(S) {
 // Zeus's bolt breaks a column at its foot (v0.48.3): a burst of marble chips, a puff of dust and a few
 // blue-white sparks at the base of the left colonnade, at depth z. `deep`: drawn among the columns at
 // its own depth (render.js), so the nearer columns pass in front of it.
-export function onColumnBreak(z, hw) {
-  const x0 = -(hw + 0.25); // the middle of a colonnade column's foot (render.js COL_X0..COL_X1)
+export function onColumnBreak(z, hw, col = -1) {
+  const x0 = col * (hw + 0.25); // the middle of a colonnade column's foot (render.js COL_X0..COL_X1)
   for (let i = 0; i < 26; i++) { // chips flying out, mostly toward the lane and up
     const big = i % 3 === 0;
     add({
       x: x0 + (Math.random() - 0.5) * 0.4, y: 0.1 + Math.random() * 0.5, z: z + (Math.random() - 0.5) * 0.4,
-      vx: 1 + Math.random() * 4, vy: 1.5 + Math.random() * 4, vz: (Math.random() - 0.5) * 4,
+      vx: -col * (1 + Math.random() * 4), vy: 1.5 + Math.random() * 4, vz: (Math.random() - 0.5) * 4,
       g: -1, life: 0.7 + Math.random() * 0.5, age: 0, size: big ? 0.12 + Math.random() * 0.08 : 0.05 + Math.random() * 0.06,
       col: i % 2 ? COL.column : COL.columnShade, deep: true,
     });
@@ -91,7 +91,7 @@ export function onColumnBreak(z, hw) {
   for (let i = 0; i < 10; i++) { // dust, slow and soft
     add({
       x: x0 + (Math.random() - 0.5) * 0.8, y: 0.05 + Math.random() * 0.3, z: z + (Math.random() - 0.5) * 0.8,
-      vx: (Math.random() - 0.2) * 1.5, vy: 0.4 + Math.random() * 0.8, vz: (Math.random() - 0.5) * 1.5,
+      vx: -col * (Math.random() - 0.2) * 1.5, vy: 0.4 + Math.random() * 0.8, vz: (Math.random() - 0.5) * 1.5,
       g: -0.05, life: 0.6 + Math.random() * 0.4, age: 0, size: 0.22 + Math.random() * 0.18,
       col: [214, 204, 186], deep: true,
     });
@@ -99,7 +99,7 @@ export function onColumnBreak(z, hw) {
   for (let i = 0; i < 8; i++) { // sparks of the bolt
     add({
       x: x0, y: 0.15 + Math.random() * 0.3, z,
-      vx: (Math.random() - 0.3) * 6, vy: 1 + Math.random() * 5, vz: (Math.random() - 0.5) * 5,
+      vx: -col * (Math.random() - 0.3) * 6, vy: 1 + Math.random() * 5, vz: (Math.random() - 0.5) * 5,
       g: -1, life: 0.3 + Math.random() * 0.25, age: 0, size: 0.04, col: [205, 228, 255], deep: true,
     });
   }

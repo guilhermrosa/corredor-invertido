@@ -121,6 +121,10 @@ export function placeSequence(S, seq, start, sp, a) {
     else if (it.type === 'tall') o = { type: 'block', z, len, side };
     else if (it.type === 'low') o = { type: 'block', h: LOWH, z, len, side };
     else if (it.type === 'drop') o = { type: 'block', drop: true, z, len, side: 1 };
+    else if (it.type === 'topple') { // a colonnade column Zeus strikes (v0.49): 'a' / 'b' name the colonnade
+      let d = (((0.8 - 0.1 - (S.dist + z)) % 4) + 4) % 4; if (d > 2) d -= 4; // onto the nearest column
+      o = { type: 'block', h: TOPPLE_H, topple: true, z: z + d, len: 0.5, side: -1, col: side };
+    }
     else o = { type: it.type, z, len, side }; // 'hole', 'portal'
     S.obs.push(o);
   }
@@ -220,7 +224,7 @@ function spawn(S) {
     S.lastSide = side;
     const r2 = Math.random();
     let ob;
-    if (far > FALL_FROM && r2 > 0.92) ob = { type: 'block', h: TOPPLE_H, topple: true, len: 0.5, fixedSide: -1 };
+    if (far > FALL_FROM && r2 > 0.92) ob = { type: 'block', h: TOPPLE_H, topple: true, len: 0.5, fixedSide: -1, col: Math.random() < 0.5 ? -1 : 1 }; // col: which colonnade (v0.49: either)
     else if (far > FALL_FROM && r2 > 0.84) ob = { type: 'block', drop: true, len: 0.9 + Math.random() * 0.6, fixedSide: 1 };
     else if (far > PORTAL_FROM && r2 < 0.15) ob = { type: 'portal', len: 0.6 + Math.random() * 0.4 };
     else if (r2 < 0.3) ob = { type: 'hole', len: 1.8 + Math.random() * 1.8 };
@@ -333,7 +337,7 @@ export function update(S, dt, emit, opts = {}) {
     if (o.p) {
       o.p = Math.min(1, o.p + dt / (o.topple ? TOPPLE_TIME : DROP_TIME));
       // the struck column breaks at its foot as the wobble ends and it starts to fall (v0.48.3)
-      if (o.topple && !o.broke && o.p >= FALL_WOBBLE) { o.broke = true; emit('break', { z: o.z + o.len / 2, kind: obstacleKind(o) }); }
+      if (o.topple && !o.broke && o.p >= FALL_WOBBLE) { o.broke = true; emit('break', { z: o.z + o.len / 2, kind: obstacleKind(o), col: o.col || -1 }); }
       if (o.p >= 1) {
         o.landed = true;
         if (o.drop) o.side = -1; // now it sits on the floor

@@ -83,7 +83,7 @@ const CLOUDS = [
 // how strongly Zeus's lightning shows on a falling obstacle: from its `crack` (o.p > 0) to a little into the fall
 const UPRIGHT = 0.35;     // a toppling column is drawn among the colonnade until it has fallen this much
 const BOLT_TIME = 0.32;   // seconds the bolt shows after the crack (three flashes)
-const pillarItem = o => ({ kind: 'pillar', z0: o.z, z1: o.z + o.len, x0: -HW, x1: HW, y0: 0, y1: OH, col: COL.column, ang: fallAmount(o) * Math.PI / 2, wobble: o.p && o.p < 0.27, zeus: zeusOf(o) });
+const pillarItem = o => ({ colSide: o.col || -1, kind: 'pillar', z0: o.z, z1: o.z + o.len, x0: -HW, x1: HW, y0: 0, y1: OH, col: COL.column, ang: fallAmount(o) * Math.PI / 2, wobble: o.p && o.p < 0.27, zeus: zeusOf(o) });
 const zeusOf = o => (o.p > 0 && o.p < 0.5 ? 1 - o.p / 0.5 * 0.6 : 0);
 
 let backCache = null;
@@ -316,8 +316,9 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       const broken = missingAt(S.obs, 1, zc + COL_D / 2);
       const h = broken ? HM * (0.3 + 0.4 * hash(idx)) : HM - FRIEZE;
       // a toppling column takes the place of the left column near it
-      const replaced = S.obs.some(o => o.topple && Math.abs(o.z - zc) < 2.2);
-      for (const s of replaced ? [1] : [-1, 1]) drawDoric(s, zc, h, broken, idx);
+      // a toppling column takes the place of the colonnade's column at its spot, on its side
+      const gone = S.obs.find(o => o.topple && Math.abs(o.z - zc) < 2.2);
+      for (const s of [-1, 1]) if (!gone || s !== (gone.col || -1)) drawDoric(s, zc, h, broken, idx);
     }
     // v0.48.2: a toppling column that is still mostly upright, and Zeus's bolt striking it, are drawn
     // here, at their own depth among the colonnade, so the nearer columns pass in front of them
@@ -732,7 +733,8 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     const a = b.ang + (b.wobble ? 0.03 * Math.sin(t * 60) : 0);
     const ax = Math.sin(a), ay = Math.cos(a);   // along the column
     const px = -Math.cos(a), py = Math.sin(a);  // across it, outward
-    const at = (u, w) => [-COL_X0 + ax * u + px * w, ay * u + py * w];
+    const m = -(b.colSide || -1); // drawn for the left colonnade, mirrored for the right one (v0.49)
+    const at = (u, w) => [m * (-COL_X0 + ax * u + px * w), ay * u + py * w];
     const za = b.z0 + 0.1, zb = za + COL_D;      // its 0.3 m depth, centred in the obstacle
     const zz = Math.max(za, BASE);
     const p3 = ([x, y], z) => P(x, y, z);
@@ -744,7 +746,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     // under it, stretching across the lane as it falls, darker once it lies there
     const fallK = Math.min(1, a / (Math.PI / 2)), reach = Math.sin(a) * L;
     ctx.fillStyle = `rgba(70,58,40,${((0.1 + 0.2 * fallK) * (1 - fogK(zz))).toFixed(3)})`;
-    path([P(-COL_X0 - 0.06, 0, zz), P(-COL_X0 + reach + 0.12, 0, zz), P(-COL_X0 + reach + 0.12, 0, zb + 0.18), P(-COL_X0 - 0.06, 0, zb + 0.18)]);
+    path([P(m * (-COL_X0 - 0.06), 0, zz), P(m * (-COL_X0 + reach + 0.12), 0, zz), P(m * (-COL_X0 + reach + 0.12), 0, zb + 0.18), P(m * (-COL_X0 - 0.06), 0, zb + 0.18)]);
     ctx.fill();
     if (a < Math.PI / 4) { // standing: the lane side, in shade, as on the colonnade
       quad(F(0, 0), F(shaftTop, taper), p3(at(shaftTop, taper), zb), p3(at(0, 0), zb), fog(COL.columnShade, zz));
@@ -807,9 +809,9 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     const fade = flash === 2 ? 1 - (el - 0.21) / (BOLT_TIME - 0.21) * 0.7 : 1;
     const zc = o.z + 0.1 + COL_D / 2;
     const a = fallAmount(o) * Math.PI / 2, L = HM - FRIEZE;
-    const cw = (COL_X1 - COL_X0) / 2, tx = -COL_X0 + Math.sin(a) * L - Math.cos(a) * cw, ty = Math.cos(a) * L + Math.sin(a) * cw;
+    const m = -(o.col || -1), cw = (COL_X1 - COL_X0) / 2, tx = m * (-COL_X0 + Math.sin(a) * L - Math.cos(a) * cw), ty = Math.cos(a) * L + Math.sin(a) * cw;
     const end = P(tx, ty + 0.12, zc);
-    const start = P(-14, HM + 6, zc + 1.5); // out in the open sky, nearly at the column's own depth
+    const start = P(m * -14, HM + 6, zc + 1.5); // out in the open sky, nearly at the column's own depth
     const seed = Math.floor(o.len * 9973) + flash * 131;
     const s = Math.max(0.6, W / 390); // line widths follow the screen
     const bolt = (p, q, sd, rough, depth) => {
