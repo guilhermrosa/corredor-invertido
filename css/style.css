@@ -150,6 +150,10 @@ h2 { font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; }
 @media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
 .heart.gold { color: #d9a43c; text-shadow: 0 0 8px rgba(244, 196, 92, .9), 0 1px 6px rgba(255, 255, 255, .9); }
 .menu-link { color: var(--accent); }
-.boost { display: flex; align-items: center; gap: 8px; justify-content: center; margin-top: 5px; font: 700 14px/1 var(--body); color: #9a7520; text-shadow: 0 1px 6px rgba(255,255,255,.9); }
-.boost-track { width: 110px; height: 10px; border-radius: 5px; box-shadow: 0 0 6px rgba(255,255,255,.8); background: rgba(154,117,32,.25); overflow: hidden; }
-.boost-track i { display: block; height: 100%; background: #e2b04c; border-radius: 5px; }
+.boost { display: grid; justify-items: center; gap: 5px; margin-top: 8px; padding: 7px 12px 9px; border-radius: 14px; background: rgba(255, 250, 235, .82); box-shadow: 0 0 0 2px #e2b04c, 0 0 14px rgba(244, 196, 92, .7); font: 700 17px/1 var(--display); color: #8a6512; }
+.boost b { font: inherit; font-variant-numeric: tabular-nums; }
+.boost-track { width: min(52vw, 200px); height: 16px; border-radius: 8px; background: rgba(154, 117, 32, .22); overflow: hidden; }
+.boost-track i { display: block; height: 100%; background: linear-gradient(#f4c45c, #d9a43c); border-radius: 8px; }
+.boost.ending { animation: boost-blink .25s steps(2) infinite; }
+@keyframes boost-blink { 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .boost.ending { animation: none; } }

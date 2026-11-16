@@ -211,7 +211,11 @@ function frame(now) {
     $('dist').textContent = Math.floor(S.dist) + ' m';
     // Hermes' sandals: a gold bar under the hearts counts down the seconds left
     $('boost').hidden = !(S.hermes > 0);
-    if (S.hermes > 0) $('boostBar').style.width = (100 * S.hermes / HERMES_TIME).toFixed(1) + '%';
+    if (S.hermes > 0) {
+      $('boostBar').style.width = (100 * S.hermes / HERMES_TIME).toFixed(1) + '%';
+      $('boostSec').textContent = Math.ceil(S.hermes);
+      $('boost').classList.toggle('ending', S.hermes < 1.2);
+    }
     // and a soft tick on each of the last three seconds, so the end can be heard coming
     if (S.hermes > 0 && Math.ceil(S.hermes) < Math.ceil(hermesLeft) && Math.ceil(S.hermes) <= 3) audio.sfx('boostTick', { left: Math.ceil(S.hermes) });
     hermesLeft = S.hermes;
