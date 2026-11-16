@@ -57,8 +57,14 @@ export function sfx(type, data = {}) {
       lyre.pluck(deg(1), t + 0.09, 0.5, { sustain: 0, bright: 10, dur: 0.3 });
       break;
     }
-    case 'crack': { // Zeus strikes a column or a roof block: a bright crackle, then low thunder (v0.48)
+    case 'crack': { // a column or a roof block starts to give way
       const t = ac.currentTime + 0.01;
+      if (data.kind !== 'pillar') { // the roof block: just the stone cracking
+        lyre.pluck(deg(NOTES.length - 2), 0, 0.3, { sustain: 0, bright: 90, dur: 0.12 });
+        lyre.pluck(deg(NOTES.length - 3), t + 0.04, 0.25, { sustain: 0, bright: 90, dur: 0.12 });
+        break;
+      }
+      // the column is Zeus's wrath (v0.48): a bright crackle, then low thunder
       lyre.pluck(deg(NOTES.length - 1), t, 0.3, { sustain: 0, bright: 100, dur: 0.08 });
       lyre.pluck(deg(NOTES.length - 2), t + 0.03, 0.3, { sustain: 0, bright: 90, dur: 0.1 });
       lyre.pluck(deg(NOTES.length - 3), t + 0.06, 0.25, { sustain: 0, bright: 90, dur: 0.12 });

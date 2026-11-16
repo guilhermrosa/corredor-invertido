@@ -111,7 +111,7 @@ const emit = (type, data) => {
   }
   if (type === 'hermesHold') { if (!tut) stats.recordHermesHold(); return; }
   if (type === 'smash') { onSmash(S); shake = Math.max(shake, 0.25); buzz(25); renderLives(S.lives, false); if (!tut) stats.recordSmash(data.kind); return; }
-  if (type === 'crack') zeusFlash = 1; // Zeus's wrath: a white-blue flash as the lightning strikes
+  if (type === 'crack' && data.kind === 'pillar') zeusFlash = 1; // Zeus's wrath: a white-blue flash as the lightning strikes
   if (type === 'land') onLand(data.side);
   else if (type === 'thud') { onThud(data.z); shake = Math.max(shake, 0.12); }
   else if (type === 'milestone') onMilestone(data.metres);
@@ -198,7 +198,7 @@ function onDie({ cause, kind, metres }) {
     // falling through the roof is falling into the sky
     const intoSky = cause !== 'block' && S.fallHole && S.fallHole.side > 0;
     $('overCause').textContent = intoSky ? 'Caiu no céu'
-      : kind === 'pillar' || kind === 'drop' ? 'A ira de Zeus: ' + stats.KIND_LABEL[kind].toLowerCase() // the falling ones are his wrath
+      : kind === 'pillar' ? 'A ira de Zeus: ' + stats.KIND_LABEL[kind].toLowerCase() // the toppling column is his wrath
       : CAUSE_TEXT[cause] + (cause === 'block' ? ': ' + stats.KIND_LABEL[kind].toLowerCase() : '');
     $('overDist').textContent = metres + ' m';
     $('overBest').textContent = isRecord ? 'Novo recorde!' : `Recorde: ${best} m`;

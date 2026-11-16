@@ -573,7 +573,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     if (o.drop) {
       // hangs from the roof, wobbles, then drops to the floor
       const d = fallAmount(o) * (HM - OH) + (o.p && o.p < 0.27 ? 0.03 * Math.sin(t * 70) : 0);
-      items.push({ x0: -HW, x1: HW, y0: HM - OH - d, y1: HM - d, z0: o.z, z1: o.z + o.len, col: COL.lintel, kind: 'lintel', seed: o.len, zeus: zeusOf(o) });
+      items.push({ x0: -HW, x1: HW, y0: HM - OH - d, y1: HM - d, z0: o.z, z1: o.z + o.len, col: COL.lintel, kind: 'lintel', seed: o.len });
       continue;
     }
     const bh = o.h || OH;
@@ -642,7 +642,6 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     const alpha = clamp(0.12 + 0.88 * (b.z0 + 1.0) / 1.2, 0.12, 1);
     ctx.globalAlpha = alpha;
     drawObstacle(b, z0);
-    if (b.zeus && b.kind !== 'pillar') zeusArcs([P(b.x0, b.y0, z0), P(b.x1, b.y0, z0), P(b.x1, b.y1, z0), P(b.x0, b.y1, z0)], b.zeus);
     if (alpha < 1) { // keep an outline on faded obstacles so they still read as solid
       ctx.globalAlpha = Math.min(1, alpha + 0.3);
       path([P(b.x0, b.y0, z0), P(b.x1, b.y0, z0), P(b.x1, b.y1, z0), P(b.x0, b.y1, z0)]);
@@ -740,7 +739,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     if (b.zeus) zeusArcs([p3(at(0, -wide), z0), p3(at(L, -wide), z0), p3(at(L, Wd + wide), z0), p3(at(0, Wd + wide), z0)], b.zeus);
   }
 
-  // Zeus's wrath (v0.48): white-blue lightning crackling around a column or a roof block as it
+  // Zeus's wrath (v0.48; only the toppling column since v0.48.1): lightning crackling around it as it
   // gives way (from the `crack` until a little into the fall); a new random shape every frame
   function zeusArcs(pts, k) {
     const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length, cy = pts.reduce((a, p) => a + p[1], 0) / pts.length;
