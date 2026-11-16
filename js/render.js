@@ -738,15 +738,26 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     const p3 = ([x, y], z) => P(x, y, z);
     const F = (u, w) => p3(at(u, w), zz);
     // the side the camera sees: the lane side while standing, the top (outer side) once low
-    const e = a < Math.PI / 4 ? [at(0, 0), at(shaftTop, taper)] : [at(0, CW), at(shaftTop, CW - taper)];
-    quad(p3(e[0], zz), p3(e[1], zz), p3(e[1], zb), p3(e[0], zb), fog(COL.columnShade, zz));
+    const flutes = Q.flutes && zz < 22 ? [0.2, 0.4, 0.6, 0.8] : zz < 45 ? [0.35, 0.65] : [];
+    const fTop = shaftTop - 0.04;
+    if (a < Math.PI / 4) { // standing: the lane side, in shade, as on the colonnade
+      quad(F(0, 0), F(shaftTop, taper), p3(at(shaftTop, taper), zb), p3(at(0, 0), zb), fog(COL.columnShade, zz));
+    } else {
+      // v0.48.5 (user: lines and the blue details were missing): once low, the camera mostly sees its
+      // upper side, so it gets the shaft's flutes, the painted band and the capital's top as well
+      const D = (u, w, k) => p3(at(u, w), lerp(zz, zb, k));
+      quad(D(0, CW, 0), D(shaftTop, CW - taper, 0), D(shaftTop, CW - taper, 1), D(0, CW, 1), fog(COL.column, zz));
+      for (const q of flutes) line(D(0.04, CW, q), D(fTop, CW - taper * fTop / shaftTop, q), fog(COL.columnShade, zz), lw(zz) * 0.55);
+      quad(D(shaftTop, CW - taper, 0), D(eTop, CW + wide, 0), D(eTop, CW + wide, 1), D(shaftTop, CW - taper, 1), fog(COL.columnShade, zz)); // echinus
+      quad(D(eTop, CW + wide + 0.02, 0), D(L, CW + wide + 0.02, 0), D(L, CW + wide + 0.02, 1), D(eTop, CW + wide + 0.02, 1), fog(COL.column, zz)); // abacus
+      line(D(eTop, CW + wide + 0.02, 0), D(eTop, CW + wide + 0.02, 1), fog(COL.columnDark, zz), lw(zz) * 0.6);
+      line(D(shaftTop + 0.015, CW - taper, 0), D(shaftTop + 0.015, CW - taper, 1), fog(COL.frieze, zz), lw(zz) * 2.2); // painted band
+    }
     quad(F(0, 0), F(shaftTop, taper), F(shaftTop, CW - taper), F(0, CW), fog(COL.column, zz));                 // shaft
     poly([F(shaftTop, taper), F(eTop, -wide), F(eTop, CW + wide), F(shaftTop, CW - taper)], fog(COL.columnShade, zz)); // echinus
     quad(F(eTop, -wide - 0.02), F(L, -wide - 0.02), F(L, CW + wide + 0.02), F(eTop, CW + wide + 0.02), fog(COL.column, zz)); // abacus
     line(F(eTop, -wide - 0.02), F(eTop, CW + wide + 0.02), fog(COL.columnDark, zz), lw(zz) * 0.6);
     line(F(shaftTop + 0.015, taper), F(shaftTop + 0.015, CW - taper), fog(COL.frieze, zz), lw(zz) * 1.4); // painted band
-    const flutes = Q.flutes && zz < 22 ? [0.2, 0.4, 0.6, 0.8] : zz < 45 ? [0.35, 0.65] : [];
-    const fTop = shaftTop - 0.04;
     for (const q of flutes) line(F(0.04, CW * q), F(fTop, lerp(CW * q, lerp(taper, CW - taper, q), fTop / shaftTop)), fog(COL.columnShade, zz), lw(zz) * 0.55);
     if (b.zeus) zeusArcs([F(0, -wide), F(L, -wide), F(L, CW + wide), F(0, CW + wide)], b.zeus);
   }
