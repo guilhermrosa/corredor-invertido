@@ -12,7 +12,7 @@ import * as audio from './audio.js';
 import * as stats from './stats.js';
 import * as ach from './achievements.js';
 import { STEPS, createTutorial, startStep, progress } from './tutorial.js';
-import { fx, onLand, onThud, whileSliding, onHit, onInstantFlip, onFlipBlessing, whileBlessed, onMilestone, onPop, onBlessing, updateFx, clearFx } from './fx.js';
+import { fx, onLand, onThud, whileSliding, onHit, onInstantFlip, onFlipBlessing, whileBlessed, onMilestone, onPop, onBlessing, onSmash, updateFx, clearFx } from './fx.js';
 
 const $ = id => document.getElementById(id);
 const VERSION_LABEL = 'Versão ' + self.APP_VERSION; // from js/version.js
@@ -72,19 +72,21 @@ const emit = (type, data) => {
   if (!tut && type === 'slide') run.slides++;
   audio.sfx(type, data);
   if (type === 'hurt') return onHurt(data);
-  if (type === 'boost') { // Hermes' sandals
+  if (type === 'boost') { // a gift of the gods: Hermes' sandals or Athena's shield
     onFlipBlessing(S);
-    onBlessing('Hermes', 'Sandálias aladas', 'ande sobre os buracos');
+    if (data.god === 'athena') { onBlessing('Atena', 'Escudo', 'quebra o próximo muro'); renderLives(S.lives, false); }
+    else onBlessing('Hermes', 'Sandálias aladas', 'ande sobre os buracos');
     if (!tut) stats.recordBoost(data.god);
     return;
   }
   if (type === 'heal') {
     renderLives(S.lives, false);
     onFlipBlessing(S);
-    onBlessing('Atena', 'Coração dourado', '+1 vida');
+    onBlessing('Perséfone', 'Coração dourado', '+1 vida');
     stats.recordHeal(data.from, true);
     return;
   }
+  if (type === 'smash') { onSmash(S); shake = Math.max(shake, 0.25); buzz(25); renderLives(S.lives, false); if (!tut) stats.recordSmash(data.kind); return; }
   if (type === 'land') onLand(data.side);
   else if (type === 'thud') { onThud(data.z); shake = Math.max(shake, 0.12); }
   else if (type === 'milestone') onMilestone(data.metres);
@@ -122,6 +124,12 @@ function renderLives(lives, justLost = false) {
     g.className = 'heart gold pulse';
     g.textContent = '♥';
     el.appendChild(g);
+  }
+  if (S.aegis) { // Athena's shield, while carried
+    const a = document.createElement('span');
+    a.className = 'aegis-icon';
+    a.title = 'Escudo de Atena';
+    el.appendChild(a);
   }
   el.setAttribute('aria-label', (lives === 1 ? '1 vida restante' : `${lives} vidas restantes`) + (S.gold ? ', uma delas dourada' : ''));
 }

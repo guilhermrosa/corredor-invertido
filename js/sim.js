@@ -10,7 +10,7 @@ import {
   SLIDE_TIME, SLIDE_H, FAST_FALL, PORTAL_GAP, PORTAL_FROM, FLIP_V, LIVES, INVULN_TIME,
   SINK_TIME, SINK_DEPTH, SINK_G, SINK_SLOW,
   FALL_FROM, FALL_LEAD, TOPPLE_TIME, DROP_TIME, FALL_WOBBLE,
-  HEART_FROM, HEART_CHANCE, HEART_LIFT, HERMES_FROM, HERMES_CHANCE, HERMES_TIME,
+  HEART_FROM, HEART_CHANCE, HEART_LIFT, HERMES_FROM, HERMES_CHANCE, HERMES_TIME, AEGIS_FROM, AEGIS_CHANCE,
   SPEED_START, speedAt, clamp,
 } from './config.js';
 import { sequenceChance, pickSequence } from './sequences.js';
@@ -87,6 +87,7 @@ export function createSim(opts = {}) {
     maxLives: opts.lives ?? (opts.scripted ? 1 : LIVES), // the ordinary lives (red hearts)
     gold: false, // holding a golden heart: one extra life, taken first by a hit
     hermes: 0, // seconds left of Hermes' sandals: holes and missing surfaces hold the hero
+    aegis: false, // carrying Athena's shield: the next wall he runs into is smashed instead
     invuln: 0, // seconds of protection left after losing a life
     dist: 0, speed: SPEED_START, py: 0, vy: 0, grav: -1, grounded: true, buffer: 0,
     obs: [], nextZ: 24, lastSide: 0, sameRun: 0,
@@ -223,12 +224,15 @@ function spawn(S) {
     if (ob.fixedSide) { S.lastSide = ob.side; S.sameRun = 0; }
     S.obs.push(ob);
     S.nextZ = ob.z + ob.len + sp * 0.55 + 1.6 + Math.random() * sp * 0.6;
-    // a golden heart (Athena's blessing) in the free stretch after it, unless one is held or on its way
+    // a golden heart (Persephone's blessing) in the free stretch after it, unless one is held or on its way
     if (far > HEART_FROM && !S.scripted && !S.gold && !S.obs.some(o => o.type === 'heart') && Math.random() < HEART_CHANCE) {
       S.obs.push({ type: 'heart', z: (ob.z + ob.len + S.nextZ) / 2 - 0.25, len: 0.5, side: Math.random() < 0.5 ? -1 : 1 });
     } else if (far > HERMES_FROM && !S.scripted && S.hermes <= 0 && !S.obs.some(o => o.type === 'sandals') && Math.random() < HERMES_CHANCE) {
       // Hermes' winged sandals, in the same kind of free stretch
       S.obs.push({ type: 'sandals', z: (ob.z + ob.len + S.nextZ) / 2 - 0.25, len: 0.5, side: Math.random() < 0.5 ? -1 : 1 });
+    } else if (far > AEGIS_FROM && !S.scripted && !S.aegis && !S.obs.some(o => o.type === 'aegis') && Math.random() < AEGIS_CHANCE) {
+      // Athena's shield, in the same kind of free stretch
+      S.obs.push({ type: 'aegis', z: (ob.z + ob.len + S.nextZ) / 2 - 0.25, len: 0.5, side: Math.random() < 0.5 ? -1 : 1 });
     }
   }
 }
@@ -372,15 +376,16 @@ export function update(S, dt, emit, opts = {}) {
   const pb = playerBox(S);
   // golden hearts are taken by touching them, protected or not
   for (const o of S.obs) {
-    if ((o.type !== 'heart' && o.type !== 'sandals') || o.taken) continue;
+    if ((o.type !== 'heart' && o.type !== 'sandals' && o.type !== 'aegis') || o.taken) continue;
     const cy = o.side < 0 ? HEART_LIFT : HM - HEART_LIFT;
     if (o.z < PL && o.z + o.len > 0 && pb.y0 < cy + 0.25 && pb.y1 > cy - 0.25) {
       o.taken = true;
       if (o.type === 'sandals') { S.hermes = HERMES_TIME; emit('boost', { god: 'hermes', seconds: HERMES_TIME }); continue; }
+      if (o.type === 'aegis') { S.aegis = true; emit('boost', { god: 'athena' }); continue; }
       if (!S.gold) {
         S.gold = true;
         S.lives++;
-        emit('heal', { lives: S.lives, from: 'athena' });
+        emit('heal', { lives: S.lives, from: 'persephone' });
       }
     }
   }
@@ -397,9 +402,22 @@ export function update(S, dt, emit, opts = {}) {
     if (o.spent) continue;
     if (o.type === 'block' || o.type === 'portal') {
       const hb = blockHitbox(o);
-      if (hb && hb.z0 < PL - HIT.player && hb.z1 > HIT.player && pb.y0 < hb.y1 && pb.y1 > hb.y0) { hit(S, emit, 'block', o); return; }
+      if (hb && hb.z0 < PL - HIT.player && hb.z1 > HIT.player && pb.y0 < hb.y1 && pb.y1 > hb.y0) {
+        if (S.aegis && smashable(o)) { // Athena's shield breaks the wall, and is spent
+          S.aegis = false; o.spent = true; o.smashed = true;
+          emit('smash', { kind: obstacleKind(o) });
+          continue;
+        }
+        hit(S, emit, 'block', o); return;
+      }
     }
   }
+}
+
+// What Athena's shield can break: the tall things (walls, lintels, portals, dropped blocks),
+// not the low ones he should jump.
+export function smashable(o) {
+  return o.type === 'portal' || (o.type === 'block' && !o.h);
 }
 
 // The hole under a grounded player's middle, on the surface he runs on, if any.

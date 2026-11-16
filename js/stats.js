@@ -27,7 +27,7 @@ function empty() {
     best: 0,
     deaths: {},                       // kind -> count (what ended runs)
     hurts: {},                        // kind -> count (lives lost, run went on)
-    heals: { regen: 0, athena: 0 },   // lives won back: after 400 m clean, or a golden heart
+    heals: { regen: 0, persephone: 0 }, // lives won back: after 400 m clean, or a golden heart (Athena's until v0.47)
     buckets: BUCKETS.map(() => 0),    // runs ending in each distance range
     actions: { jump: 0, flip: 0, slide: 0 },
     recent: [],                       // last runs, newest first: { at, metres, seconds, kind }
@@ -75,12 +75,18 @@ export function recordRun({ metres, seconds, kind }) {
 
 export function recordHeal(from, healed) {
   if (!healed) return;
-  data.heals = data.heals || { regen: 0, athena: 0 };
+  data.heals = data.heals || { regen: 0, persephone: 0 };
   data.heals[from] = (data.heals[from] || 0) + 1;
   save();
 }
 
 // boosters taken, by god (v0.46: Hermes' sandals)
+export function recordSmash(kind) {
+  data.smashes = data.smashes || {}; // walls broken by Athena's shield, by kind
+  data.smashes[kind] = (data.smashes[kind] || 0) + 1;
+  save();
+}
+
 export function recordBoost(god) {
   data.boosts = data.boosts || {};
   data.boosts[god] = (data.boosts[god] || 0) + 1;

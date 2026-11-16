@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createSim, update, press, flipUp, slide } from '../js/sim.js';
 import { STEPS, createTutorial, startStep } from '../js/tutorial.js';
-import { SINK_TIME, SINK_DEPTH } from '../js/config.js';
+import { SINK_TIME, SINK_DEPTH, LOWH } from '../js/config.js';
 import { makeRun, solve } from './solver.js';
 
 const DT = 1 / 120;
@@ -115,6 +115,31 @@ test("Hermes' sandals: holes hold the hero for a few seconds, then they don't", 
   for (let i = 0; i < 120 * 8 && !S.dead; i++) update(S, DT, t => events.push(t), { live: true });
   assert.ok(events.includes('boostEnd'));
   assert.ok(events.includes('slip'), 'after the boost a hole works again');
+});
+
+test("Athena's shield breaks the next wall, once; it does not help with low walls or holes", () => {
+  const run = (obs) => {
+    const S = createSim({ scripted: true, lives: 1 });
+    S.obs.push({ type: 'aegis', side: -1, z: 1, len: 0.5 }, ...obs);
+    const events = [];
+    for (let i = 0; i < 120 * 2 && !S.dead; i++) update(S, DT, t => events.push(t), { live: true });
+    return { S, events };
+  };
+  // a tall ruined wall on his side: smashed, he runs on, the shield is gone
+  let r = run([{ type: 'block', side: -1, z: 8, len: 1 }]);
+  assert.ok(r.events.includes('boost') && r.events.includes('smash') && !r.S.dead && !r.S.aegis);
+  // two walls: the second one hits
+  r = run([{ type: 'block', side: -1, z: 8, len: 1 }, { type: 'block', side: -1, z: 16, len: 1 }]);
+  assert.ok(r.S.dead, 'one wall only');
+  // a fallen portal: smashed too
+  r = run([{ type: 'portal', side: -1, z: 8, len: 1 }]);
+  assert.ok(r.events.includes('smash') && !r.S.dead);
+  // a low wall: still a hit, and he keeps the shield until then
+  r = run([{ type: 'block', side: -1, h: LOWH, z: 8, len: 1 }]);
+  assert.ok(r.S.dead && !r.events.includes('smash'));
+  // a hole: still a fall
+  r = run([{ type: 'hole', side: -1, z: 8, len: 3 }]);
+  assert.ok(r.events.includes('slip') && !r.events.includes('smash'));
 });
 
 test('random play never throws', () => {

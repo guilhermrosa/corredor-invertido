@@ -7,7 +7,7 @@
 
 import { HM, HW, PH, PL, OH, HIT, RUIN_DIP, PORTAL_GAP, HEART_LIFT, HERMES_TIME, clamp, lerp, mix, rgb, COL } from './config.js';
 import { blockHitbox, holeKillZone, playerBox, fallAmount } from './sim.js';
-import { drawAxolotl } from './hero.js';
+import { drawAxolotl, drawShieldFace } from './hero.js';
 
 const CAM_Z = -4.4, NEAR = 0.6, BASE = CAM_Z + NEAR;
 let FAR = 75; // draw distance; set per frame from the quality level
@@ -524,7 +524,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   // 3. boxes: obstacles + the hero, far to near
   const items = [];
   for (const o of S.obs) {
-    if (o.z > FAR) continue;
+    if (o.z > FAR || o.smashed) continue; // a wall broken by Athena's shield is gone
     if (o.type === 'portal') {
       items.push({
         x0: -HW, x1: HW, z0: o.z, z1: o.z + o.len, col: COL.ruin, kind: 'portal', side: o.side, seed: o.len,
@@ -534,6 +534,10 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     }
     if (o.type === 'heart') {
       if (!o.taken) items.push({ kind: 'heart', z0: o.z, z1: o.z + o.len, side: o.side, x0: 0, x1: 0, y0: 0, y1: 0 });
+    }
+    if (o.type === 'aegis') {
+      if (!o.taken) items.push({ kind: 'aegis', z0: o.z, z1: o.z + o.len, side: o.side, x0: 0, x1: 0, y0: 0, y1: 0 });
+      continue;
     }
     if (o.type === 'sandals') {
       if (!o.taken) items.push({ kind: 'sandals', z0: o.z, z1: o.z + o.len, side: o.side, x0: 0, x1: 0, y0: 0, y1: 0 });
@@ -604,13 +608,14 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       ctx.translate(feet[0], feet[1]);
       ctx.scale(u, onCeil ? -u : u);
       const wings = S.hermes > 0 ? (S.hermes < 1.2 ? 0.5 + 0.5 * Math.sin(t * 18) : 1) : 0;
-      drawAxolotl(ctx, S.dist * 2.1, !S.grounded, S.slide > 0, S.camT, wings); // gold follows the inverted gravity
+      drawAxolotl(ctx, S.dist * 2.1, !S.grounded, S.slide > 0, S.camT, wings, S.aegis); // gold follows the inverted gravity
       ctx.restore();
       if (clipFall) ctx.restore();
       continue;
     }
     if (b.kind === 'heart') { drawHeart(b); continue; }
     if (b.kind === 'sandals') { drawSandals(b); continue; }
+    if (b.kind === 'aegis') { drawAegis(b); continue; }
     // obstacles fade out once they pass the hero, so they never cover the camera
     const alpha = clamp(0.12 + 0.88 * (b.z0 + 1.0) / 1.2, 0.12, 1);
     ctx.globalAlpha = alpha;
@@ -763,6 +768,26 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   }
 
   // Golden heart (Athena's blessing): floats and turns over its surface, with a gold glow.
+  // Athena's shield on the path: a round hoplite shield facing the hero, turning slowly like a coin
+  function drawAegis(b) {
+    const zc = (b.z0 + b.z1) / 2;
+    if (zc <= BASE + 0.3) return;
+    const bob = Math.sin(t * 3 + b.z0) * 0.06;
+    const y = b.side < 0 ? HEART_LIFT + bob : HM - HEART_LIFT - bob;
+    const [x, yy] = P(0, y, zc);
+    const r = 0.36 * f / (zc - CAM_Z), fk = fogK(zc);
+    const glow = ctx.createRadialGradient(x, yy, r * 0.2, x, yy, r * 2.3);
+    glow.addColorStop(0, `rgba(244,196,92,${0.55 * (1 - fk)})`);
+    glow.addColorStop(1, 'rgba(244,196,92,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath(); ctx.arc(x, yy, r * 2.3, 0, Math.PI * 2); ctx.fill();
+    ctx.save();
+    ctx.translate(x, yy);
+    ctx.scale(Math.max(0.3, Math.abs(Math.cos(t * 1.8 + b.z0))) * r, (b.side < 0 ? 1 : -1) * r);
+    drawShieldFace(ctx, fk);
+    ctx.restore();
+  }
+
   function drawHeart(b) {
     const zc = (b.z0 + b.z1) / 2;
     if (zc <= BASE + 0.3) return;

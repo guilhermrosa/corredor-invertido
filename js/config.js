@@ -58,6 +58,12 @@ export const HEART_LIFT = 0.55;   // height of the heart's centre above its surf
 export const HERMES_FROM = 250;
 export const HERMES_CHANCE = 0.06; // per regular obstacle spawned
 export const HERMES_TIME = 6;      // seconds
+// Athena's shield (v0.47): carried in his hand until it smashes the next wall he runs into
+// (a ruined wall, a fallen lintel, a fallen portal or a dropped roof block), then it is gone.
+// It does not help with holes, voids, low walls, drums or a toppled column. From AEGIS_FROM m,
+// about one every 800 m, only while none is held or on its way.
+export const AEGIS_FROM = 300;
+export const AEGIS_CHANCE = 0.06;  // per regular obstacle spawned
 
 // Falling obstacles (from FALL_FROM m): a column of the left colonnade that topples across
 // the path (then jump it, or flip away), and a roof block that drops to the floor (flip up).

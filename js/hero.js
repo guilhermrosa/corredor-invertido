@@ -189,9 +189,32 @@ function wing(ctx, x, y, side, alpha, phase) {
 
 // phase: running cycle in radians; air: true while jumping or flipping; sliding: belly slide;
 // blessing: 0..1, how much of the divine gold shows (the hero's inverted gravity)
-export function drawAxolotl(ctx, phase, air, sliding = false, blessing = 0, sandals = 0) {
+// Athena's shield, face on, in a unit circle: a gold rim, a blue field with a cream ring and a
+// gold boss. fog (0..1) fades it toward the haze for the far pickup.
+export function drawShieldFace(ctx, fog = 0) {
+  const m = (a, b) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * fog)).join(',')})`, hz = [214, 228, 234];
+  ctx.beginPath(); ctx.arc(0, 0, 1, 0, Math.PI * 2); ctx.fillStyle = m([226, 176, 76], hz); ctx.fill();
+  ctx.lineWidth = 0.09; ctx.strokeStyle = m([150, 104, 30], hz); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, 0.8, 0, Math.PI * 2); ctx.fillStyle = m([70, 108, 168], hz); ctx.fill();
+  ctx.beginPath(); ctx.arc(0, 0, 0.56, 0, Math.PI * 2); ctx.lineWidth = 0.1; ctx.strokeStyle = m([246, 240, 226], hz); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, 0.26, 0, Math.PI * 2); ctx.fillStyle = m([244, 196, 92], hz); ctx.fill();
+  ctx.lineWidth = 0.06; ctx.strokeStyle = m([150, 104, 30], hz); ctx.stroke();
+  ctx.beginPath(); ctx.arc(-0.07, -0.08, 0.08, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fill();
+}
+
+// the shield on his left arm, turned a little toward the camera
+function shield(ctx, x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(-0.15);
+  ctx.scale(0.13, 0.2);
+  drawShieldFace(ctx);
+  ctx.restore();
+}
+
+export function drawAxolotl(ctx, phase, air, sliding = false, blessing = 0, sandals = 0, aegis = false) {
   bless = Math.max(0, Math.min(1, blessing));
-  if (sliding) { drawSlide(ctx, phase); if (sandals > 0) for (const side of [-1, 1]) wing(ctx, side * 0.17, -0.06, side, sandals, phase); return; }
+  if (sliding) { drawSlide(ctx, phase); if (sandals > 0) for (const side of [-1, 1]) wing(ctx, side * 0.17, -0.06, side, sandals, phase); if (aegis) shield(ctx, -0.3, -0.16); return; }
   halo(ctx, 0, -0.76, 0.78); // behind everything else
   const s = air ? 0 : Math.sin(phase);
   const k = (s + 1) / 2;            // 1: left leg kicked back / right arm raised; 0: the mirror pose
@@ -225,7 +248,7 @@ export function drawAxolotl(ctx, phase, air, sliding = false, blessing = 0, sand
 
   // arms: short and thick, one raised beside the head with an open hand, the other low
   const arms = [-1, 1].map(side => {
-    const up = air ? 0.75 : (side < 0 ? 1 - k : k);
+    const up = aegis && side < 0 ? 0.3 : air ? 0.75 : (side < 0 ? 1 - k : k); // the shield arm stays low
     const sh = [side * 0.11, -0.56];
     const elbow = [side * 0.21, lerp(-0.46, -0.63, up)];
     const hd = [side * lerp(0.27, 0.26, up), lerp(-0.37, -0.75, up)];
@@ -316,5 +339,6 @@ export function drawAxolotl(ctx, phase, air, sliding = false, blessing = 0, sand
     }
   }
   if (sandals > 0) for (const L of legs.filter(l => l.kick >= 0.5)) wing(ctx, L.foot[0], L.foot[1] - 0.03, L.side, sandals, phase);
+  if (aegis) shield(ctx, arms[0].hd[0] - 0.05, arms[0].hd[1]);
   ctx.restore();
 }

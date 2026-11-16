@@ -59,6 +59,21 @@ export function onHit(S) {
   }
 }
 
+// Athena's shield breaks a wall: a burst of stone chips ahead of him, and a few gold sparks
+export function onSmash(S) {
+  fx.hitStop = 0.07;
+  const yMid = S.py + PH / 2;
+  for (let i = 0; i < 34; i++) {
+    const gold = i % 6 === 0;
+    add({
+      x: (Math.random() - 0.5) * 1.6, y: yMid + (Math.random() - 0.5) * 1.2, z: 1.2 + Math.random(),
+      vx: (Math.random() - 0.5) * 6, vy: (Math.random() - 0.5) * 5, vz: 4 + Math.random() * 6,
+      g: S.grav, life: 0.5 + Math.random() * 0.5, age: 0, size: gold ? 0.04 : 0.06 + Math.random() * 0.09,
+      col: gold ? [244, 196, 92] : i % 3 ? COL.ruin : COL.wall,
+    });
+  }
+}
+
 // instant camera mode: a quick light fade hides the cut
 export function onInstantFlip() { fx.flipFade = 0.16; }
 

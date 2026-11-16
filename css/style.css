@@ -162,6 +162,7 @@ h2 { font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; }
 .toast span { font-size: 12.5px; color: var(--muted); }
 @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
 @media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
+.aegis-icon { width: 15px; height: 15px; align-self: center; margin-left: 4px; border-radius: 50%; background: radial-gradient(circle, #f4c45c 0 22%, #466ca8 24% 52%, #f6f0e2 54% 62%, #466ca8 64% 78%, #e2b04c 80%); box-shadow: 0 0 0 1px #96681e, 0 0 8px rgba(244, 196, 92, .9); }
 .heart.gold { color: #d9a43c; text-shadow: 0 0 8px rgba(244, 196, 92, .9), 0 1px 6px rgba(255, 255, 255, .9); }
 .menu-link { color: var(--accent); }
 .boost { flex: 0 0 100%; box-sizing: border-box; display: grid; justify-items: center; gap: 6px; margin-top: 2px; padding: 7px 12px 9px; border-radius: 14px; background: rgba(255, 250, 235, .82); box-shadow: 0 0 0 2px #e2b04c, 0 0 14px rgba(244, 196, 92, .7); font: 700 17px/1 var(--display); color: #8a6512; }
