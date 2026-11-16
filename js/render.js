@@ -89,7 +89,7 @@ const zeusOf = o => (o.p > 0 && o.p < 0.5 ? 1 - o.p / 0.5 * 0.6 : 0);
 let backCache = null;
 export function invalidateBackdrop() { backCache = null; }
 if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (!document.hidden) backCache = null; });
-function drawBackdrop(ctx, W, H, t, Q, storm = 0, zeus = 0, ease = 0) {
+function drawBackdrop(ctx, W, H, t, Q, storm = 0, zeus = 0) {
   const R = Math.hypot(W, H);
   const key = W + 'x' + H;
   if (!backCache || backCache.key !== key || backCache.lost || backCache.c.isContextLost?.()) {
@@ -111,26 +111,15 @@ function drawBackdrop(ctx, W, H, t, Q, storm = 0, zeus = 0, ease = 0) {
     for (let i = 0; i < 12; i++) {
       const x = ((hash(i * 7 + 1) * 2.4 - 1.2) * W + t * 9 * (0.5 + hash(i))) % (W * 2.6) - W * 1.3;
       const y = -H * (0.03 + 0.13 * hash(i * 3 + 2)), r = W * (0.12 + 0.08 * hash(i * 5 + 3)); // low, in the strip of sky under the roof
-      // v0.50.7 (user): when the hero takes to the roof and the camera rolls, the storm (and Zeus in it)
-      // goes over to the other side of the horizon with him, where he can still see it
-      for (const [m, w] of [[1, 1 - ease], [-1, ease]]) {
-        if (w <= 0) continue;
-        ctx.fillStyle = `rgba(${i % 2 ? '58,66,84' : '72,80,98'},${(0.85 * storm * w).toFixed(3)})`;
-        ctx.beginPath();
-        ctx.ellipse(m * x, m * y, r * 2, r * 0.7, 0, 0, Math.PI * 2);
-        ctx.ellipse(m * (x - r * 1.2), m * (y + r * 0.2), r * 1.3, r * 0.55, 0, 0, Math.PI * 2);
-        ctx.ellipse(m * (x + r), m * (y - r * 0.3), r * 1.2, r * 0.75, 0, 0, Math.PI * 2);
-        ctx.fill();
-      }
+      ctx.fillStyle = `rgba(${i % 2 ? '58,66,84' : '72,80,98'},${(0.85 * storm).toFixed(3)})`;
+      ctx.beginPath();
+      ctx.ellipse(x, y, r * 2, r * 0.7, 0, 0, Math.PI * 2);
+      ctx.ellipse(x - r * 1.2, y + r * 0.2, r * 1.3, r * 0.55, 0, 0, Math.PI * 2);
+      ctx.ellipse(x + r, y - r * 0.3, r * 1.2, r * 0.75, 0, 0, Math.PI * 2);
+      ctx.fill();
     }
   }
-  if (zeus > 0) {
-    // v0.50.6/7 (user's idea): when the hero runs on the roof the camera rolls over and Zeus would end up
-    // under the clouds; he goes over to the other side of the horizon with his storm, fading out and
-    // back in, still standing the world's way up (so upside down on the rolled screen), in sight
-    if (ease < 1) drawZeus(ctx, W, H, t, zeus * (1 - ease));
-    if (ease > 0) drawZeus(ctx, W, H, t, zeus * ease, true);
-  }
+  if (zeus > 0) drawZeus(ctx, W, H, t, zeus);
   // drifting clouds
   ctx.fillStyle = rgb(COL.cloud, 0.92 * (1 - storm * 0.8));
   for (const c of CLOUDS) {
@@ -156,8 +145,8 @@ function drawBackdrop(ctx, W, H, t, Q, storm = 0, zeus = 0, ease = 0) {
 
 // Zeus in the storm (v0.50): a huge figure of dark cloud rising behind the sea on the left, with a
 // beard of cloud, eyes of white light and a thunderbolt raised in his right hand; `k` 0..1 fades him in
-function drawZeus(ctx, W, H, t, k, other = false) {
-  const r = W * 0.075, x = other ? W * 0.36 : -W * 0.36, base = other ? H * 0.02 + r * 4.4 : H * 0.03, bob = Math.sin(t * 0.8) * r * 0.05;
+function drawZeus(ctx, W, H, t, k) {
+  const r = W * 0.075, x = -W * 0.36, base = H * 0.03, bob = Math.sin(t * 0.8) * r * 0.05;
   const body = `rgba(36,44,62,${(0.85 * k).toFixed(3)})`, rim = `rgba(150,180,230,${(0.35 * k).toFixed(3)})`;
   ctx.save();
   ctx.translate(x, base + bob);
@@ -308,7 +297,10 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   ctx.rotate(roll);
   ctx.save();
   ctx.translate(Math.tan(yaw) * f, -Math.tan(pitch) * f / Math.cos(yaw)); // the backdrop is infinitely far: it only pans
-  drawBackdrop(ctx, W, H, t, Q, storm, zeus, ease);
+  // v0.50.8 (user): in Zeus's fight, while the hero runs on the clouds, the sky (with its storm and
+  // Zeus) is simply mirrored to where the sea would show, so it stays in view
+  if (zeus > 0 && ease > 0.5) ctx.scale(-1, -1); // turned with the camera: the sky shows as it does from the floor
+  drawBackdrop(ctx, W, H, t, Q, storm, zeus);
   ctx.restore();
 
   // 1. the stoa, slice by slice, far to near: floor, roof, painted band, columns
