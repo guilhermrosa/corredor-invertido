@@ -15,9 +15,9 @@ let FAR = 75; // draw distance; set per frame from the quality level
 // Quality levels, picked automatically on slow devices (main.js) or in Opções.
 // dpr caps the canvas resolution, the biggest cost on weak phones.
 export const QUALITY = {
-  high:   { dpr: 2,   far: 75, glints: 46, coffers: true,  flutes: true,  lines: 26 },
-  medium: { dpr: 1.5, far: 58, glints: 20, coffers: true,  flutes: false, lines: 16 },
-  low:    { dpr: 1,   far: 42, glints: 0,  coffers: false, flutes: false, lines: 10 },
+  high:   { dpr: 2,   far: 75, glints: 46, coffers: true,  flutes: true,  lines: 26, nature: 34 },
+  medium: { dpr: 1.5, far: 58, glints: 20, coffers: true,  flutes: false, lines: 16, nature: 22 },
+  low:    { dpr: 1,   far: 42, glints: 0,  coffers: false, flutes: false, lines: 10, nature: 0 },
 };
 // Chase view turned a little to the left (the user preferred this to the stronger
 // three-quarter view of v0.12–0.13: yaw 0.36, pitch 0.28, x 0.6, anchor 0.46 / 0.64).
@@ -60,8 +60,49 @@ const CLOUDS = [
   { x: 0.65, y: -0.28, s: 0.9, v: 0.3 },
 ];
 
+// The backdrop is infinitely far: it only pans and turns with the camera. Its still parts (sky,
+// sea, sun, mountains, the headland) are painted once into a cached image and reused every frame
+// (v0.42.1: repainting them each frame was a large share of the frame time on slow phones);
+// clouds and sun glints stay live on top.
+let backCache = null;
 function drawBackdrop(ctx, W, H, t, Q) {
   const R = Math.hypot(W, H);
+  const key = W + 'x' + H;
+  if (!backCache || backCache.key !== key) {
+    const k = Math.min(1.25, devicePixelRatio || 1); // soft scenery: no need for full resolution
+    const cv = document.createElement('canvas');
+    cv.width = Math.ceil(2 * R * k); cv.height = Math.ceil(2 * R * k);
+    const c = cv.getContext('2d');
+    c.scale(k, k); c.translate(R, R);
+    paintStillBackdrop(c, W, H, R);
+    backCache = { key, cv };
+  }
+  ctx.drawImage(backCache.cv, -R, -R, 2 * R, 2 * R);
+  // drifting clouds
+  ctx.fillStyle = rgb(COL.cloud, 0.92);
+  for (const c of CLOUDS) {
+    const span = W * 2;
+    const x = ((c.x * W + t * c.v * 6) % span + span) % span - W;
+    const y = c.y * H, r = Math.min(W, H) * 0.05 * c.s;
+    ctx.beginPath();
+    ctx.ellipse(x, y, r * 2.2, r * 0.8, 0, 0, Math.PI * 2);
+    ctx.ellipse(x - r * 1.1, y + r * 0.15, r * 1.3, r * 0.6, 0, 0, Math.PI * 2);
+    ctx.ellipse(x + r * 0.9, y - r * 0.35, r * 1.2, r * 0.75, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // sun glints on the water
+  for (let i = 0; i < Q.glints; i++) {
+    const gx = (hash(i) - 0.5) * W * 1.6;
+    const gy = Math.pow(hash(i + 50), 2) * H * 0.55 + 3;
+    const a = 0.35 + 0.35 * Math.sin(t * 2.2 + i * 1.7);
+    const w = 2 + gy / H * 10;
+    ctx.fillStyle = rgb(COL.cloud, a);
+    ctx.fillRect(gx - w / 2, gy, w, Math.max(1, w * 0.18));
+  }
+}
+
+function paintStillBackdrop(ctx, W, H, R) {
+
   // sky down to the horizon (local y = 0 is the horizon at any camera height)
   const sky = ctx.createLinearGradient(0, -R * 0.6, 0, 0);
   sky.addColorStop(0, rgb(COL.skyTop));
@@ -85,18 +126,6 @@ function drawBackdrop(ctx, W, H, t, Q) {
   ctx.fillRect(sx - sr * 5, sy - sr * 5, sr * 10, sr * 10);
   ctx.fillStyle = rgb(COL.sun);
   ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fill();
-  // drifting clouds
-  ctx.fillStyle = rgb(COL.cloud, 0.92);
-  for (const c of CLOUDS) {
-    const span = W * 2;
-    const x = ((c.x * W + t * c.v * 6) % span + span) % span - W;
-    const y = c.y * H, r = Math.min(W, H) * 0.05 * c.s;
-    ctx.beginPath();
-    ctx.ellipse(x, y, r * 2.2, r * 0.8, 0, 0, Math.PI * 2);
-    ctx.ellipse(x - r * 1.1, y + r * 0.15, r * 1.3, r * 0.6, 0, 0, Math.PI * 2);
-    ctx.ellipse(x + r * 0.9, y - r * 0.35, r * 1.2, r * 0.75, 0, 0, Math.PI * 2);
-    ctx.fill();
-  }
   // distant mountains along the horizon, two layers (v0.42, after the user's references)
   const ridge = (col, amp, seed, x0, x1) => {
     ctx.fillStyle = rgb(col);
@@ -124,15 +153,6 @@ function drawBackdrop(ctx, W, H, t, Q) {
     ctx.beginPath();
     ctx.ellipse(cx, cb - ch / 2, ch * 0.13, ch / 2, 0, 0, Math.PI * 2);
     ctx.fill();
-  }
-  // sun glints on the water
-  for (let i = 0; i < Q.glints; i++) {
-    const gx = (hash(i) - 0.5) * W * 1.6;
-    const gy = Math.pow(hash(i + 50), 2) * H * 0.55 + 3;
-    const a = 0.35 + 0.35 * Math.sin(t * 2.2 + i * 1.7);
-    const w = 2 + gy / H * 10;
-    ctx.fillStyle = rgb(COL.cloud, a);
-    ctx.fillRect(gx - w / 2, gy, w, Math.max(1, w * 0.18));
   }
 }
 
@@ -208,7 +228,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       const jc = fog(COL.joint, a);
       if (z0 >= a && z0 <= b) line(P(-HW, 0, z0), P(HW, 0, z0), jc, lw(z0) * 0.8);
       // slabs in staggered rows: one or two joints along the lane, shifted every row
-      for (const fx of alt ? [-0.33, 0.33] : [0]) line(P(fx * HW * 2, 0, a), P(fx * HW * 2, 0, b), jc, lw(a) * 0.6);
+      if (a < 40) for (const fx of alt ? [-0.33, 0.33] : [0]) line(P(fx * HW * 2, 0, a), P(fx * HW * 2, 0, b), jc, lw(a) * 0.6);
     }
     for (const [a, b] of solidParts(S.obs, 1, za, zb)) {
       quad(P(-EDGE, HM, a), P(EDGE, HM, a), P(EDGE, HM, b), P(-EDGE, HM, b), fog(COL.ceiling, a));
@@ -219,29 +239,31 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       // Doric frieze under the roof edge: narrow grooved triglyphs between wider plain metopes
       for (const s of [-1, 1]) {
         const x = s * (HW + 0.05);
-        for (const [u0, u1, col] of [[0, 0.7, COL.friezeAlt], [0.7, 1, COL.frieze], [1, 1.7, COL.friezeAlt], [1.7, 2, COL.frieze]]) {
+        quad(P(x, HM - FRIEZE, a), P(x, HM - FRIEZE, b), P(x, HM, b), P(x, HM, a), fog(COL.friezeAlt, a));
+        for (const [u0, u1, col] of [[0.7, 1, COL.frieze], [1.7, 2, COL.frieze]]) {
           const ha = Math.max(a, z0 + u0), hb = Math.min(b, z0 + u1);
           if (hb <= ha) continue;
           quad(P(x, HM - FRIEZE, ha), P(x, HM - FRIEZE, hb), P(x, HM, hb), P(x, HM, ha), fog(col, ha));
-          if (col === COL.frieze && Q.flutes) { // the triglyph's two grooves
+          if (col === COL.frieze && Q.flutes && ha < 20) { // the triglyph's two grooves, near only
             for (const g of [0.33, 0.66]) { const gz = ha + (hb - ha) * g; line(P(x, HM - FRIEZE + 0.04, gz), P(x, HM - 0.06, gz), fog(COL.columnDark, gz), lw(gz) * 0.5); }
           }
         }
-        line(P(x, HM - FRIEZE, a), P(x, HM - FRIEZE, b), fog(COL.columnDark, a), lw(a) * 0.6); // architrave line
+        if (a < 30) line(P(x, HM - FRIEZE, a), P(x, HM - FRIEZE, b), fog(COL.columnDark, a), lw(a) * 0.6); // architrave line
       }
     }
     // nature: tufts of grass (some with flowers) in the slab joints near the lane edges and at the
     // feet of the columns; never in the middle of the lane, so they never look like an obstacle
-    if (z0 + 1 > BASE && z0 < FAR * 0.75) {
+    // v0.42.1: rarer (the user asked to dose it) and drawn only within Q.nature metres
+    if (Q.nature && z0 + 1 > BASE && z0 < Q.nature) {
       for (const s of [-1, 1]) {
-        const spots = [[s * (COL_X0 - 0.06), z0 + 0.75, 0.75], [s * HW * (0.62 + 0.3 * hash(idx * 5 + s)), z0 + 2 * hash(idx * 9 + s), 0.35]];
+        const spots = [[s * (COL_X0 - 0.06), z0 + 0.75, 0.22], [s * HW * (0.62 + 0.3 * hash(idx * 5 + s)), z0 + 2 * hash(idx * 9 + s), 0.08]];
         for (const [tx, tz, chance] of spots) {
           if (tz < BASE + 0.3 || hash(idx * 13 + s * 7 + tx) > chance || missingAt(S.obs, -1, tz)) continue;
           tuft(tx, tz, 0.16 + 0.16 * hash(idx * 3 + tx), idx * 31 + s, t);
         }
         // a vine hanging from the roof edge, swaying a little
         const vz = z0 + 0.4 + hash(idx * 17 + s) * 1.2;
-        if (hash(idx * 11 + s * 5) < 0.3 && vz > BASE + 0.5 && !missingAt(S.obs, 1, vz)) vine(s * (HW + 0.02), vz, 0.5 + 0.9 * hash(idx * 19 + s), idx * 7 + s, t);
+        if (hash(idx * 11 + s * 5) < 0.1 && vz > BASE + 0.5 && !missingAt(S.obs, 1, vz)) vine(s * (HW + 0.02), vz, 0.5 + 0.9 * hash(idx * 19 + s), idx * 7 + s, t);
       }
     }
 
@@ -258,12 +280,12 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
 
   // A tuft of grass: thin blades leaning out of a joint; some carry a wild flower.
   function tuft(x, z, h, seed, t) {
-    const n = Q.flutes ? 5 : 3, sway = Math.sin(t * 2 + seed) * 0.03;
+    const n = 3, sway = Math.sin(t * 2 + seed) * 0.03;
     for (let i = 0; i < n; i++) {
       const bx = x + (i - (n - 1) / 2) * 0.05, lean = (hash(seed + i) - 0.5) * 0.18 + sway;
       const bh = h * (0.6 + 0.5 * hash(seed * 3 + i));
       const col = i % 3 === 0 ? COL.grassDark : i % 3 === 1 ? COL.grass : COL.grassLight;
-      poly([P(bx - 0.025, 0, z), P(bx + 0.025, 0, z), P(bx + lean, bh, z)], fog(col, z));
+      path([P(bx - 0.025, 0, z), P(bx + 0.025, 0, z), P(bx + lean, bh, z)]); ctx.fillStyle = fog(col, z); ctx.fill();
     }
     if (hash(seed * 7) < 0.45) {
       const fc = COL.flowers[Math.floor(hash(seed * 11) * COL.flowers.length)];
@@ -292,6 +314,12 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   // slab (abacus). Broken columns end in a jagged top and keep their flutes.
   function drawDoric(s, zc, h, broken, idx) {
     const x0 = s * COL_X0, x1 = s * COL_X1, taper = 0.035;
+    if (zc > 30 && !broken) { // far away the details vanish: a plain shaft with a capital block is enough
+      quad(P(x0, 0, zc), P(x0, 0, zc + COL_D), P(x0, h, zc + COL_D), P(x0, h, zc), fog(COL.columnShade, zc));
+      quad(P(x0, 0, zc), P(x1, 0, zc), P(x1, h, zc), P(x0, h, zc), fog(COL.column, zc));
+      quad(P(x0 - s * 0.06, h - 0.2, zc), P(x1 + s * 0.06, h - 0.2, zc), P(x1 + s * 0.06, h, zc), P(x0 - s * 0.06, h, zc), fog(COL.columnShade, zc));
+      return;
+    }
     const capH = broken ? 0 : 0.2;                       // echinus + abacus
     const shaftTop = h - capH;
     const t0 = x0 + s * taper, t1 = x1 - s * taper;      // shaft edges at the top
@@ -315,7 +343,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     }
     // flutes, following the taper
     const fc = fog(COL.columnShade, zc);
-    const flutes = Q.flutes ? [0.2, 0.4, 0.6, 0.8] : [0.35, 0.65];
+    const flutes = Q.flutes && zc < 22 ? [0.2, 0.4, 0.6, 0.8] : zc < 45 ? [0.35, 0.65] : []; // detail only where it can be seen
     const fTop = shaftTop - (broken ? 0.2 : 0.04);
     for (const q of flutes) line(P(lerp(x0, x1, q), 0.04, zc), P(lerp(lerp(x0, x1, q), lerp(t0, t1, q), fTop / shaftTop), fTop, zc), fc, lw(zc) * 0.55);
   }
@@ -543,18 +571,6 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
 
   function drawObstacle(b, z0) {
     if (b.kind === 'pillar') { drawPillar(b, z0); return; }
-    drawObstacleBody(b, z0);
-    // a dark outline around the front face, so light stone reads against the light scenery
-    ctx.lineJoin = 'round';
-    const ow = lw(z0) * 1.3, oc = fog(COL.outline, z0);
-    if (b.kind === 'ruin') {
-      const steps = 7, pts = [P(b.x0, b.y0, z0), P(b.x1, b.y0, z0)];
-      for (let i = steps; i >= 0; i--) pts.push(P(b.x0 + (b.x1 - b.x0) * i / steps, b.y1 - RUIN_DIP * hash(b.seed * 13 + i), z0));
-      path(pts);
-    } else path([P(b.x0, b.y0, z0), P(b.x1, b.y0, z0), P(b.x1, b.y1, z0), P(b.x0, b.y1, z0)]);
-    ctx.strokeStyle = oc; ctx.lineWidth = ow; ctx.stroke();
-  }
-  function drawObstacleBody(b, z0) {
     const face = fog(b.col, z0);
     const lid = fog(mix(b.col, COL.cloud, 0.45), z0);
     const dark = fog(mix(b.col, COL.edge, 0.55), z0);

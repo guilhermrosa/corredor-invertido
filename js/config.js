@@ -80,20 +80,19 @@ export const COL = {
   sun: [255, 246, 222], cloud: [252, 253, 255], island: [150, 170, 160],
   // v0.41.1: light marble again (the user found the v0.41 gold too old-looking and the brown
   // obstacles unpleasant: these ruins are not that ancient), with the painted blue back (triglyphs
-  // and a band on each capital). Obstacles stay light but get a dark outline so they still read.
+  // and a band on each capital). v0.42.1: obstacles back to their original colours, no outline.
   marble: [238, 234, 224], marble2: [228, 223, 211], joint: [194, 187, 172], stylobate: [218, 210, 192],
   ceiling: [230, 224, 209], beam: [212, 203, 184],
   column: [248, 245, 237], columnShade: [204, 196, 180], columnDark: [168, 158, 140],
   frieze: [44, 82, 146], friezeAlt: [238, 231, 213], // blue triglyphs and plain metopes
-  wall: [216, 202, 172],     // low wall (mureta), jump: warm sandstone blocks
-  ruin: [206, 190, 158],     // tall ruined wall on the floor, flip
-  lintel: [224, 212, 184],   // fallen beam hanging from the roof, flip, with blue triglyphs
-  outline: [92, 82, 70],
+  wall: [222, 203, 165],     // low wall (mureta), jump
+  ruin: [201, 168, 120],     // tall ruined wall on the floor, flip
+  lintel: [214, 196, 160],   // fallen beam hanging from the roof, flip, with blue triglyphs
   // nature (v0.42): grass and weeds in the joints, vines from the roof, wild flowers, cypresses
   grass: [126, 166, 88], grassDark: [86, 128, 64], grassLight: [168, 198, 110], vine: [88, 138, 70],
   flowers: [[244, 204, 62], [238, 132, 56], [214, 74, 62], [156, 116, 204], [250, 248, 240]],
   cypress: [52, 92, 64], hills: [138, 156, 150], hillsFar: [176, 192, 196], rock: [196, 186, 168],
-  shallows: [78, 184, 190],     // dark outline around obstacles, so light stone reads on light stone
+  shallows: [78, 184, 190],
   edge: [150, 122, 84],      // broken edge around holes
   haz: [230, 90, 70],        // hit flash
   ink: [29, 42, 51],
