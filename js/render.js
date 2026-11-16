@@ -740,6 +740,12 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     // the side the camera sees: the lane side while standing, the top (outer side) once low
     const flutes = Q.flutes && zz < 22 ? [0.2, 0.4, 0.6, 0.8] : zz < 45 ? [0.35, 0.65] : [];
     const fTop = shaftTop - 0.04;
+    // v0.48.6 (user: some shading, nothing exaggerated, helps it read): a soft shadow on the floor
+    // under it, stretching across the lane as it falls, darker once it lies there
+    const fallK = Math.min(1, a / (Math.PI / 2)), reach = Math.sin(a) * L;
+    ctx.fillStyle = `rgba(70,58,40,${((0.1 + 0.12 * fallK) * (1 - fogK(zz))).toFixed(3)})`;
+    path([P(-COL_X0 - 0.06, 0, zz), P(-COL_X0 + reach + 0.12, 0, zz), P(-COL_X0 + reach + 0.12, 0, zb + 0.18), P(-COL_X0 - 0.06, 0, zb + 0.18)]);
+    ctx.fill();
     if (a < Math.PI / 4) { // standing: the lane side, in shade, as on the colonnade
       quad(F(0, 0), F(shaftTop, taper), p3(at(shaftTop, taper), zb), p3(at(0, 0), zb), fog(COL.columnShade, zz));
     } else {
@@ -747,6 +753,10 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       // upper side, so it gets the shaft's flutes, the painted band and the capital's top as well
       const D = (u, w, k) => p3(at(u, w), lerp(zz, zb, k));
       quad(D(0, CW, 0), D(shaftTop, CW - taper, 0), D(shaftTop, CW - taper, 1), D(0, CW, 1), fog(COL.column, zz));
+      // a round shaft: its far half turns away from the light
+      ctx.fillStyle = rgb(COL.columnShade, 0.45 * (1 - fogK(zz)));
+      path([D(0, CW, 0.55), D(shaftTop, CW - taper, 0.55), D(shaftTop, CW - taper, 1), D(0, CW, 1)]);
+      ctx.fill();
       for (const q of flutes) line(D(0.04, CW, q), D(fTop, CW - taper * fTop / shaftTop, q), fog(COL.columnShade, zz), lw(zz) * 0.55);
       quad(D(shaftTop, CW - taper, 0), D(eTop, CW + wide, 0), D(eTop, CW + wide, 1), D(shaftTop, CW - taper, 1), fog(COL.columnShade, zz)); // echinus
       quad(D(eTop, CW + wide + 0.02, 0), D(L, CW + wide + 0.02, 0), D(L, CW + wide + 0.02, 1), D(eTop, CW + wide + 0.02, 1), fog(COL.column, zz)); // abacus
