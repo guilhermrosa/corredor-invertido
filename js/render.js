@@ -743,7 +743,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     // v0.48.6 (user: some shading, nothing exaggerated, helps it read): a soft shadow on the floor
     // under it, stretching across the lane as it falls, darker once it lies there
     const fallK = Math.min(1, a / (Math.PI / 2)), reach = Math.sin(a) * L;
-    ctx.fillStyle = `rgba(70,58,40,${((0.1 + 0.12 * fallK) * (1 - fogK(zz))).toFixed(3)})`;
+    ctx.fillStyle = `rgba(70,58,40,${((0.1 + 0.2 * fallK) * (1 - fogK(zz))).toFixed(3)})`;
     path([P(-COL_X0 - 0.06, 0, zz), P(-COL_X0 + reach + 0.12, 0, zz), P(-COL_X0 + reach + 0.12, 0, zb + 0.18), P(-COL_X0 - 0.06, 0, zb + 0.18)]);
     ctx.fill();
     if (a < Math.PI / 4) { // standing: the lane side, in shade, as on the colonnade
@@ -769,6 +769,22 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     line(F(eTop, -wide - 0.02), F(eTop, CW + wide + 0.02), fog(COL.columnDark, zz), lw(zz) * 0.6);
     line(F(shaftTop + 0.015, taper), F(shaftTop + 0.015, CW - taper), fog(COL.frieze, zz), lw(zz) * 1.4); // painted band
     for (const q of flutes) line(F(0.04, CW * q), F(fTop, lerp(CW * q, lerp(taper, CW - taper, q), fTop / shaftTop)), fog(COL.columnShade, zz), lw(zz) * 0.55);
+    // v0.48.7 (user: lying down it is the colour of the floor and hard to see; "maybe a slightly darker
+    // outline"): a soft mid-tone outline that fades in as it falls (none while it stands among the others)
+    const ink = Math.max(0, Math.min(1, (fallK - 0.2) / 0.4)) * (1 - fogK(zz));
+    if (ink > 0) {
+      ctx.save();
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = `rgba(118,100,74,${(0.75 * ink).toFixed(3)})`;
+      ctx.lineWidth = Math.max(1, lw(zz) * 1.1);
+      const sil = [[0, 0], [shaftTop, taper], [eTop, -wide - 0.02], [L, -wide - 0.02], [L, CW + wide + 0.02], [eTop, CW + wide + 0.02], [shaftTop, CW - taper], [0, CW]];
+      path(sil.map(([u, w]) => F(u, w))); ctx.stroke(); // the near end's silhouette
+      if (a >= Math.PI / 4) { // and the upper side's far edge
+        ctx.beginPath(); const p0 = p3(at(0, CW), zb), p1 = p3(at(shaftTop, CW - taper), zb), p2 = p3(at(L, CW + wide + 0.02), zb);
+        ctx.moveTo(...F(0, CW)); ctx.lineTo(...p0); ctx.lineTo(...p1); ctx.lineTo(...p2); ctx.lineTo(...F(L, CW + wide + 0.02)); ctx.stroke();
+      }
+      ctx.restore();
+    }
     if (b.zeus) zeusArcs([F(0, -wide), F(L, -wide), F(L, CW + wide), F(0, CW + wide)], b.zeus);
   }
 
