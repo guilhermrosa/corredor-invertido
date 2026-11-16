@@ -295,34 +295,54 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   }
 
   // Floor mosaic, drawn one slice (2 m) at a time; `part` is the slice's place in the 4-slice carpet.
+  // v0.45.2, after the user's mosaic references: a cream ground framed by thin blue lines, a
+  // continuous Greek-key (meander) band along both sides, a terracotta inner line, and in the
+  // middle a medallion: a blue ring around an eight-petal terracotta flower.
   function mosaic(z0, za, zb, part, S) {
     if (S.obs.some(o => o.type === 'hole' && o.side < 0 && o.z < z0 + 2 && o.z + o.len > z0)) return; // no carpet over a gap
-    const X = HW * 0.86, B = 0.16; // half width and border width
-    const a = Math.max(za, z0 + (part === 0 ? 0.3 : 0)), b = Math.min(zb, z0 + 2 - (part === 3 ? 0.3 : 0));
+    const X = HW * 0.88, BW = 0.3;              // half width, meander band width
+    const start = z0 - part * 2 + 0.3, end = start + 7.4; // the whole carpet, in this frame
+    const a = Math.max(za, start), b = Math.min(zb, end);
     if (b <= a) return;
+    const blue = fog(COL.tessera, a), red = fog(COL.tessera2, a);
     quad(P(-X, 0, a), P(X, 0, a), P(X, 0, b), P(-X, 0, b), fog(COL.mosaic, a));
-    const keyCol = fog(COL.tessera, a);
-    for (const s of [-1, 1]) { // long borders with a simple key pattern
-      quad(P(s * X, 0, a), P(s * (X - B), 0, a), P(s * (X - B), 0, b), P(s * X, 0, b), keyCol);
-      for (let k = 0; k < 4; k++) {
-        const ka = z0 + k * 0.5 + 0.12, kb = ka + 0.22;
-        if (ka < a || kb > b) continue;
-        quad(P(s * (X - 0.04), 0, ka), P(s * (X - B + 0.04), 0, ka), P(s * (X - B + 0.04), 0, kb), P(s * (X - 0.04), 0, kb), fog(COL.mosaic, ka));
-        quad(P(s * (X - 0.04), 0, ka + 0.06), P(s * (X - 0.1), 0, ka + 0.06), P(s * (X - 0.1), 0, kb), P(s * (X - 0.04), 0, kb), keyCol);
+    const strokeLine = (pts, col, w) => {
+      ctx.strokeStyle = col; ctx.lineWidth = w; ctx.lineJoin = 'miter'; ctx.lineCap = 'butt';
+      ctx.beginPath(); pts.forEach((p, k) => (k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.stroke();
+    };
+    const lwz = Math.max(0.8, 0.045 * f / (a - CAM_Z)); // a tessera line about 4.5 cm wide
+    for (const s of [-1, 1]) {
+      const xo = s * X, xi = s * (X - BW);
+      strokeLine([P(xo, 0, a), P(xo, 0, b)], blue, lwz * 0.8);                 // outer frame
+      strokeLine([P(s * (X - BW - 0.08), 0, a), P(s * (X - BW - 0.08), 0, b)], red, lwz * 0.7); // inner red line
+      // the meander: one key every U metres, drawn as one continuous line
+      const U = 0.42, k0 = Math.ceil((a - start) / U), k1 = Math.floor((b - start) / U);
+      const at = (u, v) => P(xo - s * (0.05 + v * (BW - 0.1)), 0, start + u);  // v: 0 outer → 1 inner
+      for (let k = k0; k < k1; k++) {
+        const u = k * U;
+        strokeLine([at(u, 0), at(u, 1), at(u + U * 0.75, 1), at(u + U * 0.75, 0.28), at(u + U * 0.3, 0.28), at(u + U * 0.3, 0.62), at(u + U * 0.52, 0.62)], blue, lwz);
+        strokeLine([at(u, 0), at(u + U, 0)], blue, lwz);
       }
     }
-    for (const [edge, on] of [[z0 + 0.3, part === 0], [z0 + 1.7, part === 3]]) { // the carpet's ends
-      if (!on || edge - 0.01 < a - 0.2) continue;
-      const e0 = part === 0 ? edge : edge - B, e1 = e0 + B;
-      quad(P(-X, 0, e0), P(X, 0, e0), P(X, 0, e1), P(-X, 0, e1), keyCol);
+    for (const e of [start, end]) { // the carpet's ends: a double blue line
+      if (e < a - 0.01 || e > b + 0.01) continue;
+      for (const d of [0, e === start ? 0.12 : -0.12]) strokeLine([P(-X, 0, e + d), P(X, 0, e + d)], blue, lwz * 0.8);
     }
-    if (part === 2 && z0 > a - 0.1) { // a star at the centre
-      const cz = z0, pts = [];
-      for (let i = 0; i < 16; i++) { const r = i % 2 ? 0.42 : 0.95, ang = i / 16 * Math.PI * 2; pts.push(P(Math.cos(ang) * r, 0, cz + Math.sin(ang) * r)); }
-      poly(pts, fog(COL.tessera2, cz));
-      const inner = [];
-      for (let i = 0; i < 12; i++) { const ang = i / 12 * Math.PI * 2; inner.push(P(Math.cos(ang) * 0.3, 0, cz + Math.sin(ang) * 0.3)); }
-      poly(inner, fog(COL.tessera, cz));
+    const cz = start + 3.7; // the medallion, at the carpet's centre
+    if (part === 1) { // drawn with the nearest slice it covers, so no later slice paints over it
+      const ring = r => { const pts = []; for (let k = 0; k < 28; k++) { const g = k / 28 * Math.PI * 2; pts.push(P(Math.cos(g) * r, 0, cz + Math.sin(g) * r * 1.6)); } return pts; };
+      poly(ring(0.98), blue);
+      poly(ring(0.86), fog(COL.mosaic, cz));
+      for (let k = 0; k < 8; k++) { // eight petals
+        const g = k / 8 * Math.PI * 2, c = Math.cos(g), sn = Math.sin(g), pts = [];
+        for (let m = 0; m <= 8; m++) {
+          const t = m / 8, r = 0.12 + 0.62 * t, w = 0.16 * Math.sin(Math.PI * t);
+          pts.push([c * r - sn * w, sn * r + c * w]);
+        }
+        for (let m = 7; m > 0; m--) { const t = m / 8, r = 0.12 + 0.62 * t, w = 0.16 * Math.sin(Math.PI * t); pts.push([c * r + sn * w, sn * r - c * w]); }
+        poly(pts.map(([x, y]) => P(x, 0, cz + y * 1.6)), red);
+      }
+      poly(ring(0.14).map(p => p), blue);
     }
   }
   // A black-figure vase (amphora): terracotta body, black neck and foot, a black band with figures.
