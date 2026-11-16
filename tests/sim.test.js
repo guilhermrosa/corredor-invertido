@@ -104,6 +104,19 @@ test('controls: a tap in the air never flips; swipe up flips once per time in th
   assert.equal(G.grav, 1);
 });
 
+test("Hermes' sandals: holes hold the hero for a few seconds, then they don't", () => {
+  const S = createSim({ scripted: true, lives: 1 });
+  S.obs.push({ type: 'sandals', side: -1, z: 1, len: 0.5 }, { type: 'hole', side: -1, z: 6, len: 3 });
+  const events = [];
+  for (let i = 0; i < 120 * 2; i++) update(S, DT, t => events.push(t), { live: true });
+  assert.ok(events.includes('boost'));
+  assert.ok(!events.includes('slip') && !S.dead, 'ran over the hole');
+  S.obs.push({ type: 'hole', side: -1, z: 4 + S.speed * 5, len: 3 }); // still holding when it arrives? no: reached after the boost ends
+  for (let i = 0; i < 120 * 8 && !S.dead; i++) update(S, DT, t => events.push(t), { live: true });
+  assert.ok(events.includes('boostEnd'));
+  assert.ok(events.includes('slip'), 'after the boost a hole works again');
+});
+
 test('random play never throws', () => {
   for (let r = 0; r < 50; r++) {
     const S = createSim({ lives: 3 });

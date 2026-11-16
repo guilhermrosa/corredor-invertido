@@ -52,6 +52,12 @@ export const INVULN_TIME = 1.6; // seconds of protection after losing a life
 export const HEART_FROM = 100;
 export const HEART_CHANCE = 0.09; // per regular obstacle spawned (about one every 600 m)
 export const HEART_LIFT = 0.55;   // height of the heart's centre above its surface
+// Hermes' winged sandals (v0.46, the first booster): for HERMES_TIME seconds the hero runs over
+// holes and missing surfaces as if they were solid. From HERMES_FROM m, about one every 800 m,
+// never while active or while one is already on its way.
+export const HERMES_FROM = 250;
+export const HERMES_CHANCE = 0.06; // per regular obstacle spawned
+export const HERMES_TIME = 6;      // seconds
 
 // Falling obstacles (from FALL_FROM m): a column of the left colonnade that topples across
 // the path (then jump it, or flip away), and a roof block that drops to the floor (flip up).

@@ -166,11 +166,27 @@ function drawSlide(ctx, phase) {
   }
 }
 
+// Hermes' sandals (v0.46): a small gold wing at the ankle, beating; `alpha` blinks as it runs out.
+function wing(ctx, x, y, side, alpha, phase) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(x + side * 0.05, y);
+  ctx.rotate(side * (0.6 + Math.sin(phase * 3) * 0.25));
+  for (let k = 0; k < 3; k++) {
+    ctx.beginPath();
+    ctx.ellipse(side * (0.07 + k * 0.04), -0.04 - k * 0.035, 0.1 - k * 0.015, 0.03, side * (0.2 + k * 0.25), 0, Math.PI * 2);
+    ctx.fillStyle = k % 2 ? '#fff0c8' : '#f4c45c';
+    ctx.fill();
+    ctx.strokeStyle = '#96681e'; ctx.lineWidth = 0.008; ctx.stroke();
+  }
+  ctx.restore();
+}
+
 // phase: running cycle in radians; air: true while jumping or flipping; sliding: belly slide;
 // blessing: 0..1, how much of the divine gold shows (the hero's inverted gravity)
-export function drawAxolotl(ctx, phase, air, sliding = false, blessing = 0) {
+export function drawAxolotl(ctx, phase, air, sliding = false, blessing = 0, sandals = 0) {
   bless = Math.max(0, Math.min(1, blessing));
-  if (sliding) { drawSlide(ctx, phase); return; }
+  if (sliding) { drawSlide(ctx, phase); if (sandals > 0) for (const side of [-1, 1]) wing(ctx, side * 0.17, -0.06, side, sandals, phase); return; }
   halo(ctx, 0, -0.76, 0.78); // behind everything else
   const s = air ? 0 : Math.sin(phase);
   const k = (s + 1) / 2;            // 1: left leg kicked back / right arm raised; 0: the mirror pose
@@ -278,6 +294,7 @@ export function drawAxolotl(ctx, phase, air, sliding = false, blessing = 0) {
   ctx.strokeStyle = C.shade; ctx.lineWidth = 0.014; // a soft line where the head meets the neck
   ctx.beginPath(); ctx.ellipse(0, -0.68, 0.17, 0.07, 0, Math.PI * 0.15, Math.PI * 0.85); ctx.stroke();
 
+  if (sandals > 0) for (const L of legs.filter(l => l.kick < 0.5)) wing(ctx, L.foot[0], L.foot[1] - 0.02, L.side, sandals, phase);
   // the kicked-back leg is nearest the camera: short and thick, the sole and toes showing
   for (const L of legs.filter(l => l.kick >= 0.5)) {
     limb(ctx, [L.hip, L.knee, L.foot], 0.11);
@@ -293,5 +310,6 @@ export function drawAxolotl(ctx, phase, air, sliding = false, blessing = 0) {
       ctx.stroke();
     }
   }
+  if (sandals > 0) for (const L of legs.filter(l => l.kick >= 0.5)) wing(ctx, L.foot[0], L.foot[1] - 0.03, L.side, sandals, phase);
   ctx.restore();
 }

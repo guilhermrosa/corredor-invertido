@@ -23,7 +23,7 @@
 
   <div class="hud" id="hud" hidden>
     <button class="chip-btn" id="btnPause" type="button" aria-label="Pausar">❚❚ Pausa</button>
-    <div class="score"><b id="dist">0 m</b><small id="bestHud">recorde 0 m</small><div class="lives" id="lives" role="img" aria-label="2 vidas restantes"></div></div>
+    <div class="score"><b id="dist">0 m</b><small id="bestHud">recorde 0 m</small><div class="lives" id="lives" role="img" aria-label="2 vidas restantes"></div><div class="boost" id="boost" hidden aria-label="Sandálias de Hermes ativas"><span>Hermes</span><span class="boost-track"><i id="boostBar"></i></span></div></div>
     <button class="chip-btn" id="btnSound" type="button">Som: ligado</button>
   </div>
 
@@ -48,6 +48,7 @@
         <li><i style="--c:var(--frieze)"></i>Pórtico caído (deslize)</li>
         <li><i style="--c:var(--marble-col, #f6f4ee)"></i>Coluna que tomba ou bloco que despenca (reaja rápido)</li>
         <li><i class="hole"></i>Laje quebrada (pule)</li>
+        <li><i style="--c:#f4c45c"></i>Sandália de Hermes (ande sobre os buracos por alguns segundos)</li>
         <li><i style="--c:var(--sky)"></i>Sem teto ou sem chão (fique do outro lado)</li>
       </ul>
       <div class="actions">

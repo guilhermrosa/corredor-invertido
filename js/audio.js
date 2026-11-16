@@ -70,6 +70,13 @@ export function sfx(type, data = {}) {
     case 'thud':
       lyre.pluck(deg(0), 0, 0.7, { sustain: 5, bright: 5, dur: 0.35 });
       break;
+    case 'boost': // a gift of the gods: a quick, bright run up the strings
+      lyre.strum([deg(4), deg(7), deg(9), deg(11), deg(NOTES.length - 1)], 0.035, 0.42, { sustain: 40 });
+      break;
+    case 'boostEnd': // the gift fades: two soft falling notes
+      lyre.pluck(deg(9), 0, 0.3, { sustain: 10, dur: 0.3 });
+      lyre.pluck(deg(7), ac.currentTime + 0.09, 0.26, { sustain: 10, dur: 0.3 });
+      break;
     case 'heal': // a life comes back: a bright rising arpeggio
       lyre.strum([deg(7), deg(9), deg(11), deg(NOTES.length - 1)], 0.05, 0.42, { sustain: 50 });
       break;

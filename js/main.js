@@ -1,7 +1,7 @@
 // Entry point: game loop, game flow (runs, tutorial, pause, game over), menus, keys and offline support.
 // Options live in options.js, touch gestures in input.js, the stats and achievements panels in panels.js.
 
-import { COL, rgb } from './config.js';
+import { COL, rgb, HERMES_TIME } from './config.js';
 import { createSim, update, press, flipUp, slide } from './sim.js';
 import { drawTunnel, QUALITY } from './render.js';
 import { store } from './store.js';
@@ -71,6 +71,12 @@ const emit = (type, data) => {
   if (!tut && type === 'slide') run.slides++;
   audio.sfx(type, data);
   if (type === 'hurt') return onHurt(data);
+  if (type === 'boost') { // Hermes' sandals
+    onFlipBlessing(S);
+    onPop('Sandálias de Hermes: ande sobre os buracos');
+    if (!tut) stats.recordBoost(data.god);
+    return;
+  }
   if (type === 'heal') {
     renderLives(S.lives, false);
     onFlipBlessing(S);
@@ -121,6 +127,7 @@ function renderLives(lives, justLost = false) {
 
 function onDie({ cause, kind, metres }) {
   renderLives(0, true);
+  $('boost').hidden = true; // a gift of the gods ends with the run
   state = 'dead';
   deadAt = performance.now();
   audio.stopMusic();
@@ -201,6 +208,9 @@ function frame(now) {
 
   if (state === 'play' && !tut) {
     $('dist').textContent = Math.floor(S.dist) + ' m';
+    // Hermes' sandals: a gold bar under the hearts counts down the seconds left
+    $('boost').hidden = !(S.hermes > 0);
+    if (S.hermes > 0) $('boostBar').style.width = (100 * S.hermes / HERMES_TIME).toFixed(1) + '%';
     achCheckIn -= dt;
     if (achCheckIn <= 0) { achCheckIn = 0.5; checkAchievements(Math.floor(S.dist)); }
   }
@@ -313,7 +323,7 @@ function toMenu() {
   audio.stopMusic();
   S = createSim();
   clearFx();
-  for (const id of ['over', 'hud', 'pause', 'stats', 'options', 'achPanel', 'countdown', 'tutHint', 'pop']) $(id).hidden = true;
+  for (const id of ['over', 'hud', 'pause', 'stats', 'options', 'achPanel', 'countdown', 'tutHint', 'pop', 'boost']) $(id).hidden = true;
   $('menu').hidden = false;
   refreshMenu();
 }

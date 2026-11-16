@@ -80,6 +80,13 @@ export function recordHeal(from, healed) {
   save();
 }
 
+// boosters taken, by god (v0.46: Hermes' sandals)
+export function recordBoost(god) {
+  data.boosts = data.boosts || {};
+  data.boosts[god] = (data.boosts[god] || 0) + 1;
+  save();
+}
+
 export function recordHurt(kind) {
   data.hurts[kind] = (data.hurts[kind] || 0) + 1;
   save();

@@ -498,6 +498,18 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     ctx.restore();
     // a dark broken lip on the near edge, so gaps read from afar
     if (o.z - 0.2 > BASE) quad(P(-w, sy, o.z - 0.2), P(w, sy, o.z - 0.2), P(w, sy, o.z), P(-w, sy, o.z), fog(COL.edge, o.z));
+    // Hermes' sandals: a path of gold light over the gaps on the hero's side, so he can see they hold
+    if (S.hermes > 0 && o.side === S.grav) {
+      const fade = S.hermes < 1.2 ? 0.5 + 0.5 * Math.sin(t * 18) : 1; // blinks as it runs out
+      const bw = HW * 0.6, ga = Math.max(o.z, BASE), gb = o.z + o.len;
+      if (gb > ga) {
+        ctx.globalAlpha = 0.88 * fade; // nearly opaque, so the sea below doesn't turn it green
+        quad(P(-bw, sy, ga), P(bw, sy, ga), P(bw, sy, gb), P(-bw, sy, gb), rgb([250, 222, 140]));
+        ctx.globalAlpha = 0.8 * fade;
+        for (const e of [-bw, bw]) line(P(e, sy, ga), P(e, sy, gb), rgb([255, 226, 150]), lw(ga) * 1.2);
+        ctx.globalAlpha = 1;
+      }
+    }
   }
 
   // 3. boxes: obstacles + the hero, far to near
@@ -513,6 +525,9 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     }
     if (o.type === 'heart') {
       if (!o.taken) items.push({ kind: 'heart', z0: o.z, z1: o.z + o.len, side: o.side, x0: 0, x1: 0, y0: 0, y1: 0 });
+    }
+    if (o.type === 'sandals') {
+      if (!o.taken) items.push({ kind: 'sandals', z0: o.z, z1: o.z + o.len, side: o.side, x0: 0, x1: 0, y0: 0, y1: 0 });
       continue;
     }
     if (o.type !== 'block') continue;
@@ -560,12 +575,14 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       if (S.invuln > 0 && Math.floor(S.invuln * 10) % 2) ctx.globalAlpha = 0.35; // blink while protected
       ctx.translate(feet[0], feet[1]);
       ctx.scale(u, onCeil ? -u : u);
-      drawAxolotl(ctx, S.dist * 2.1, !S.grounded, S.slide > 0, S.camT); // gold follows the inverted gravity
+      const wings = S.hermes > 0 ? (S.hermes < 1.2 ? 0.5 + 0.5 * Math.sin(t * 18) : 1) : 0;
+      drawAxolotl(ctx, S.dist * 2.1, !S.grounded, S.slide > 0, S.camT, wings); // gold follows the inverted gravity
       ctx.restore();
       if (clipFall) ctx.restore();
       continue;
     }
     if (b.kind === 'heart') { drawHeart(b); continue; }
+    if (b.kind === 'sandals') { drawSandals(b); continue; }
     // obstacles fade out once they pass the hero, so they never cover the camera
     const alpha = clamp(0.12 + 0.88 * (b.z0 + 1.0) / 1.2, 0.12, 1);
     ctx.globalAlpha = alpha;
@@ -666,6 +683,41 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     line(p3(at(eTop, -wide - 0.02), z0), p3(at(eTop, Wd + wide + 0.02), z0), fog(COL.columnDark, z0), lw(z0) * 0.6);
   }
 
+
+  // Hermes' winged sandal (v0.46): floats over its surface with a gold glow, wing beating.
+  function drawSandals(b) {
+    const zc = (b.z0 + b.z1) / 2;
+    if (zc <= BASE + 0.3) return;
+    const bob = Math.sin(t * 3 + b.z0) * 0.06;
+    const y = b.side < 0 ? HEART_LIFT + bob : HM - HEART_LIFT - bob;
+    const [x, yy] = P(0, y, zc);
+    const r = 0.5 * f / (zc - CAM_Z), fk = fogK(zc);
+    const glow = ctx.createRadialGradient(x, yy, r * 0.2, x, yy, r * 2.2);
+    glow.addColorStop(0, `rgba(244,196,92,${0.55 * (1 - fk)})`);
+    glow.addColorStop(1, 'rgba(244,196,92,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath(); ctx.arc(x, yy, r * 2.2, 0, Math.PI * 2); ctx.fill();
+    ctx.save();
+    ctx.translate(x, yy);
+    ctx.scale(r, (b.side < 0 ? 1 : -1) * r); // upright for the hero on either surface
+    const gold = rgb(mix([244, 196, 92], COL.haze, fk)), dark = rgb(mix([150, 104, 30], COL.haze, fk)), light = rgb(mix([255, 240, 200], COL.haze, fk));
+    // the wing, beating, behind the sandal
+    const beat = Math.sin(t * 9 + b.z0) * 0.25;
+    ctx.save(); ctx.translate(-0.35, 0.05); ctx.rotate(-0.35 + beat);
+    for (let k = 0; k < 4; k++) {
+      ctx.beginPath(); ctx.ellipse(-0.15 - k * 0.1, -0.25 - k * 0.14, 0.45 - k * 0.06, 0.13, -0.5 - k * 0.15, 0, Math.PI * 2);
+      ctx.fillStyle = k % 2 ? light : gold; ctx.fill(); ctx.lineWidth = 0.05; ctx.strokeStyle = dark; ctx.stroke();
+    }
+    ctx.restore();
+    // the sandal: a sole seen from the side, straps over it
+    ctx.beginPath();
+    ctx.moveTo(-0.75, 0.35); ctx.quadraticCurveTo(-0.85, 0.15, -0.55, 0.12);
+    ctx.lineTo(0.55, 0.12); ctx.quadraticCurveTo(0.9, 0.18, 0.8, 0.38); ctx.closePath();
+    ctx.fillStyle = gold; ctx.fill(); ctx.lineWidth = 0.08; ctx.strokeStyle = dark; ctx.stroke();
+    ctx.lineWidth = 0.1; ctx.strokeStyle = dark;
+    for (const [x0, x1] of [[-0.45, -0.1], [0, 0.35], [-0.3, 0.2]]) { ctx.beginPath(); ctx.moveTo(x0, 0.14); ctx.quadraticCurveTo((x0 + x1) / 2, -0.35, x1, 0.14); ctx.stroke(); }
+    ctx.restore();
+  }
 
   // Golden heart (Athena's blessing): floats and turns over its surface, with a gold glow.
   function drawHeart(b) {

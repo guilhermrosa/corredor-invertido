@@ -10,7 +10,7 @@ import {
   SLIDE_TIME, SLIDE_H, FAST_FALL, PORTAL_GAP, PORTAL_FROM, FLIP_V, LIVES, INVULN_TIME,
   SINK_TIME, SINK_DEPTH, SINK_G, SINK_SLOW,
   FALL_FROM, FALL_LEAD, TOPPLE_TIME, DROP_TIME, FALL_WOBBLE,
-  HEART_FROM, HEART_CHANCE, HEART_LIFT,
+  HEART_FROM, HEART_CHANCE, HEART_LIFT, HERMES_FROM, HERMES_CHANCE, HERMES_TIME,
   SPEED_START, speedAt, clamp,
 } from './config.js';
 import { sequenceChance, pickSequence } from './sequences.js';
@@ -86,6 +86,7 @@ export function createSim(opts = {}) {
     lives: opts.lives ?? (opts.scripted ? 1 : LIVES),
     maxLives: opts.lives ?? (opts.scripted ? 1 : LIVES), // the ordinary lives (red hearts)
     gold: false, // holding a golden heart: one extra life, taken first by a hit
+    hermes: 0, // seconds left of Hermes' sandals: holes and missing surfaces hold the hero
     invuln: 0, // seconds of protection left after losing a life
     dist: 0, speed: SPEED_START, py: 0, vy: 0, grav: -1, grounded: true, buffer: 0,
     obs: [], nextZ: 24, lastSide: 0, sameRun: 0,
@@ -225,6 +226,9 @@ function spawn(S) {
     // a golden heart (Athena's blessing) in the free stretch after it, unless one is held or on its way
     if (far > HEART_FROM && !S.scripted && !S.gold && !S.obs.some(o => o.type === 'heart') && Math.random() < HEART_CHANCE) {
       S.obs.push({ type: 'heart', z: (ob.z + ob.len + S.nextZ) / 2 - 0.25, len: 0.5, side: Math.random() < 0.5 ? -1 : 1 });
+    } else if (far > HERMES_FROM && !S.scripted && S.hermes <= 0 && !S.obs.some(o => o.type === 'sandals') && Math.random() < HERMES_CHANCE) {
+      // Hermes' winged sandals, in the same kind of free stretch
+      S.obs.push({ type: 'sandals', z: (ob.z + ob.len + S.nextZ) / 2 - 0.25, len: 0.5, side: Math.random() < 0.5 ? -1 : 1 });
     }
   }
 }
@@ -346,7 +350,7 @@ export function update(S, dt, emit, opts = {}) {
     if (S.grounded) {
       if (S.buffer > 0) jump(S, emit); // a buffered tap still jumps the hole
       else {
-        const h = opts.live && S.invuln <= 0 && holeUnder(S);
+        const h = opts.live && S.invuln <= 0 && S.hermes <= 0 && holeUnder(S); // Hermes' sandals: holes hold
         if (h) { startSink(S, h); emit('slip', { side: S.grav }); }
       }
     }
@@ -362,15 +366,17 @@ export function update(S, dt, emit, opts = {}) {
   S.camT += clamp((S.grav > 0 ? 1 : 0) - S.camT, -dt * 4.5, dt * 4.5); // full roll in about 0.22 s
 
   if (S.invuln > 0) S.invuln = Math.max(0, S.invuln - dt);
+  if (S.hermes > 0) { S.hermes = Math.max(0, S.hermes - dt); if (S.hermes === 0) emit('boostEnd', { god: 'hermes' }); }
   if (!opts.live) return;
   const mid = PL / 2;
   const pb = playerBox(S);
   // golden hearts are taken by touching them, protected or not
   for (const o of S.obs) {
-    if (o.type !== 'heart' || o.taken) continue;
+    if ((o.type !== 'heart' && o.type !== 'sandals') || o.taken) continue;
     const cy = o.side < 0 ? HEART_LIFT : HM - HEART_LIFT;
     if (o.z < PL && o.z + o.len > 0 && pb.y0 < cy + 0.25 && pb.y1 > cy - 0.25) {
       o.taken = true;
+      if (o.type === 'sandals') { S.hermes = HERMES_TIME; emit('boost', { god: 'hermes', seconds: HERMES_TIME }); continue; }
       if (!S.gold) {
         S.gold = true;
         S.lives++;

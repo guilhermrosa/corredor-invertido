@@ -12,7 +12,7 @@ function windowAt(metres) {
   S.scripted = false;
   update(S, 0, () => {}, {}); // spawns up to ~95 m ahead at this distance's speed
   S.scripted = true;          // then freeze: nothing new appears while solving
-  S.obs = S.obs.filter(o => o.type !== 'heart');
+  S.obs = S.obs.filter(o => o.type !== 'heart' && o.type !== 'sandals');
   return S;
 }
 
