@@ -274,8 +274,10 @@ function spawn(S) {
     // a gift of the gods in the free stretch after it: each kind rolls its own chance, in a random
     // order (v0.47.7: a fixed order heart → sandals → shield made the shield the rarest), and at most
     // one per spawn; none while one of that kind is held or on its way
-    const at = (ob.z + ob.len + S.nextZ) / 2 - 0.25, gside = Math.random() < 0.5 ? -1 : 1;
-    const gifts = [
+    // v0.50.7 (user: gifts right after portals and low walls went unseen): further from the obstacle
+    // (60% into the free stretch, it was the middle), and never right behind a portal, which hides it all
+    const at = ob.z + ob.len + (S.nextZ - ob.z - ob.len) * 0.6 - 0.25, gside = Math.random() < 0.5 ? -1 : 1;
+    const gifts = ob.type === 'portal' ? [] : [
       ['heart', far > HEART_FROM && !S.gold],
       ['sandals', far > HERMES_FROM && S.hermes <= 0],
       ['aegis', far > AEGIS_FROM && !S.aegis],
