@@ -89,12 +89,13 @@ const BOLT_TIME = 0.32;   // seconds the bolt shows after the crack (three flash
 const pillarItem = o => ({ colSide: o.col || -1, kind: 'pillar', z0: o.z, z1: o.z + o.len, x0: -HW, x1: HW, y0: 0, y1: OH, col: COL.column, ang: fallAmount(o) * Math.PI / 2, wobble: o.p && o.p < 0.27, zeus: zeusOf(o) });
 const zeusOf = o => (o.p > 0 && o.p < 0.5 ? 1 - o.p / 0.5 * 0.6 : 0);
 
-let backCache = null;
-export function invalidateBackdrop() { backCache = null; }
-if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (!document.hidden) backCache = null; });
+let backCaches = {}; // one per area (v0.53.4: at the cave mouth both are drawn in the same frame)
+export function invalidateBackdrop() { backCaches = {}; }
+if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (!document.hidden) backCaches = {}; });
 function drawBackdrop(ctx, W, H, t, Q, storm = 0, zeus = 0, flipStorm = false) {
   const R = Math.hypot(W, H);
   const key = W + 'x' + H + (UNDER ? 'u' : '');
+  let backCache = backCaches[UNDER ? 'u' : 's'];
   if (!backCache || backCache.key !== key || backCache.lost || backCache.c.isContextLost?.()) {
     const k = Math.min(1.25, devicePixelRatio || 1); // soft scenery: no need for full resolution
     const cv = document.createElement('canvas');
@@ -102,7 +103,7 @@ function drawBackdrop(ctx, W, H, t, Q, storm = 0, zeus = 0, flipStorm = false) {
     const c = cv.getContext('2d');
     c.scale(k, k); c.translate(R, R);
     paintStillBackdrop(c, W, H, R);
-    backCache = { key, cv, c, lost: false };
+    backCache = backCaches[UNDER ? 'u' : 's'] = { key, cv, c, lost: false };
     const cache = backCache;
     cv.addEventListener('contextlost', () => { cache.lost = true; });
     cv.addEventListener('contextrestored', () => { cache.lost = true; });
@@ -300,10 +301,14 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   FAR = Q.far;
   UNDER = (opts.area ?? (S.dist < UNDER_END ? 'under' : 'surface')) === 'under';
   COL = UNDER ? COL_UNDER : COL_SURFACE;
-  // the way out (v0.53): over the last 90 m below, daylight grows at the far end of the cave (the
-  // distance fades into light instead of dark); main.js flashes white as he comes out at UNDER_END
-  const exitK = UNDER && !opts.area ? clamp((S.dist - (UNDER_END - 90)) / 90, 0, 1) : 0;
-  if (exitK > 0) COL = { ...COL_UNDER, haze: mix(COL_UNDER.haze, [250, 244, 226], Math.pow(exitK, 1.3)) };
+  // the way out (v0.53.4): the cave mouth on cape Tainaron is a place at UNDER_END. While it is in
+  // view, what lies beyond it (the ruins in daylight, the sky and the sea) is drawn with the surface's
+  // look, seen only through its opening; the dark lifts over the last 40 m
+  const baseUnder = UNDER;
+  const mouthZ = baseUnder && !opts.area ? UNDER_END - S.dist : -1;
+  const mouthOn = mouthZ > BASE && mouthZ < FAR + 2;
+  const exitK = mouthZ > 0 ? clamp(1 - mouthZ / 40, 0, 1) : 0;
+  const setArea = under => { UNDER = under; COL = under ? COL_UNDER : COL_SURFACE; };
   // opts.fixedCamera: the screen never turns. The camera stays at mid-height and upright,
   // so the floor is always at the bottom and the hero runs upside down along the roof.
   const fixedCam = !!opts.fixedCamera;
@@ -368,6 +373,42 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   // v0.51 (user): only Zeus and his storm clouds get it; the rest of the backdrop stays as it is
   drawBackdrop(ctx, W, H, t, Q, storm, zeus, zeus > 0 && ease > 0.5);
   ctx.restore();
+  // the cave mouth's opening, as a path at its depth: a wide, rough arch reaching below the floor
+  const opening = () => {
+    const pts = [];
+    for (let i = 0; i < 28; i++) {
+      const g = i / 28 * Math.PI * 2, c = Math.cos(g), sn = Math.sin(g);
+      const r = 1 + 0.09 * (hash(i * 7 + 3) - 0.5);
+      const x = Math.sign(c) * Math.pow(Math.abs(c), 0.55) * (EDGE + 0.25) * r;
+      const y = sn > 0 ? HM * 0.5 + Math.pow(sn, 0.8) * (HM * 0.5 + 0.1) * r : HM * 0.5 + sn * (HM * 0.5 + 1.6);
+      pts.push(P(x, y, mouthZ));
+    }
+    path(pts);
+  };
+  const beyondOn = () => { ctx.save(); opening(); ctx.clip(); setArea(false); };
+  const beyondOff = () => { ctx.restore(); setArea(baseUnder); };
+  // the rock around the opening, with a rim lit by the daylight outside and a few teeth on its lip
+  function drawMouth() {
+    ctx.save();
+    ctx.beginPath(); ctx.rect(-4 * W, -4 * H, 9 * W, 9 * H);
+    const pts = [];
+    for (let i = 0; i < 28; i++) {
+      const g = i / 28 * Math.PI * 2, c = Math.cos(g), sn = Math.sin(g), r = 1 + 0.09 * (hash(i * 7 + 3) - 0.5);
+      pts.push(P(Math.sign(c) * Math.pow(Math.abs(c), 0.55) * (EDGE + 0.25) * r, sn > 0 ? HM * 0.5 + Math.pow(sn, 0.8) * (HM * 0.5 + 0.1) * r : HM * 0.5 + sn * (HM * 0.5 + 1.6), mouthZ));
+    }
+    ctx.moveTo(pts[0][0], pts[0][1]); for (const q of pts.slice(1)) ctx.lineTo(q[0], q[1]); ctx.closePath();
+    ctx.fillStyle = rgb([26, 34, 40]); ctx.fill('evenodd');
+    ctx.restore();
+    ctx.save();
+    path(pts); ctx.strokeStyle = 'rgba(255,236,190,0.55)'; ctx.lineWidth = Math.max(2, lw(mouthZ) * 3); ctx.stroke();
+    ctx.restore();
+    for (let i = 0; i < 7; i++) { // stalactites on the upper lip
+      const x = (i / 6 - 0.5) * EDGE * 1.7, top = HM - 0.05, len = 0.4 + 0.6 * hash(i * 13 + 5), w = 0.18 + 0.12 * hash(i * 3);
+      poly([P(x - w, top + 0.3, mouthZ), P(x + w, top + 0.3, mouthZ), P(x + 0.05, top - len, mouthZ)], rgb([30, 38, 44]));
+    }
+  }
+  if (mouthOn) { beyondOn(); paintBack(); beyondOff(); }
+  let inBeyond = false, mouthDrawn = !mouthOn;
 
   // 1. the stoa, slice by slice, far to near: floor, roof, painted band, columns
   const seg = 2, off = S.dist % seg, n = Math.floor(S.dist / seg);
@@ -377,6 +418,12 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     const za = Math.max(BASE, z0), zb = z0 + seg;
     if (zb <= za) continue;
     const idx = k + n, alt = idx & 1;
+    if (mouthOn) {
+      const far = za >= mouthZ;
+      if (far && !inBeyond && !mouthDrawn) { beyondOn(); inBeyond = true; }
+      if (!far && inBeyond) { beyondOff(); inBeyond = false; }
+      if (!far && !mouthDrawn) { drawMouth(); mouthDrawn = true; }
+    }
 
     for (const [a, b] of solidParts(S.obs, -1, za, zb)) {
       // running lane in marble slabs, a darker step (stylobate) under the columns
@@ -700,16 +747,26 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     for (const q of flutes) line(P(lerp(x0, x1, q), 0.04, zc), P(lerp(lerp(x0, x1, q), lerp(t0, t1, q), fTop / shaftTop), fTop, zc), fc, lw(zc) * 0.55);
   }
 
+  if (inBeyond) { beyondOff(); inBeyond = false; }
+  if (!mouthDrawn) { drawMouth(); mouthDrawn = true; }
+
   // 2. holes and the broken slab edges of open stretches
+  // beyond the cave mouth (v0.53.4) they are drawn in the surface's look, through its opening
   for (const o of S.obs) {
-    if (o.type !== 'hole' || o.z > FAR) continue;
+    const far = mouthOn && o.z >= mouthZ;
+    if (far) beyondOn();
+    drawHole(o);
+    if (far) beyondOff();
+  }
+  function drawHole(o) {
+    if (o.type !== 'hole' || o.z > FAR) return;
     const z0 = Math.max(o.z, BASE), z1 = o.z + o.len;
-    if (z1 <= z0) continue;
+    if (z1 <= z0) return;
     const sy = o.side < 0 ? 0 : HM;
     const dy = o.side < 0 ? -SLAB : SLAB;
     const w = o.open ? EDGE : HW;
     const mouth = [P(-w, sy, z0), P(w, sy, z0), P(w, sy, z1), P(-w, sy, z1)];
-    if (o.side > 0 && inArena(o.z)) { cloudTear(o, z0, z1, w); continue; } // v0.51: a gap in Zeus's cloud roof
+    if (o.side > 0 && inArena(o.z)) { cloudTear(o, z0, z1, w); return; } // v0.51: a gap in Zeus's cloud roof
     ctx.save();
     path(mouth);
     ctx.clip();
@@ -739,7 +796,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
         for (let k = 0; k < Math.min(10, o.len * 2); k++) { // sparks rising out of the gap
           const sz = o.z + hash(k * 7 + o.len) * o.len, sx = (hash(k * 13 + o.len) - 0.5) * 2 * w * 0.8;
           const up = ((t * 0.6 + hash(k * 3)) % 1), sp = P(sx, sy - Math.sign(sy - HM / 2 || -1) * up * 0.4, sz);
-          if (sz <= BASE) continue;
+          if (sz <= BASE) return;
           ctx.globalAlpha = fade * (1 - up) * 0.9;
           ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(sp[0], sp[1], Math.max(1, 0.03 * f / (sz - CAM_Z)), 0, Math.PI * 2); ctx.fill();
         }
@@ -796,8 +853,14 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   items.push({ x0: -0.36, x1: 0.36, y0: S.py, y1: S.py + PH, z0: 0, z1: PL, player: true });
   items.sort((a, b) => b.z1 - a.z1);
   for (const b of items) {
+    const far = !b.player && mouthOn && b.z0 >= mouthZ;
+    if (far) beyondOn();
+    drawItem(b);
+    if (far) beyondOff();
+  }
+  function drawItem(b) {
     const z0 = Math.max(b.z0, BASE);
-    if (b.z1 <= z0) continue;
+    if (b.z1 <= z0) return;
     const clipFall = b.player && (S.falling || S.sink > 0) && S.fallHole;
     if (clipFall) {
       const h = S.fallHole, sy = h.side < 0 ? 0 : HM, hz0 = Math.max(h.z, BASE), w = h.open ? EDGE : HW;
@@ -844,11 +907,11 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       drawAxolotl(ctx, S.dist * 2.1, !S.grounded, S.slide > 0, S.camT, wings, S.aegis); // gold follows the inverted gravity
       ctx.restore();
       if (clipFall) ctx.restore();
-      continue;
+      return;
     }
-    if (b.kind === 'heart') { drawHeart(b); continue; }
-    if (b.kind === 'sandals') { drawSandals(b); continue; }
-    if (b.kind === 'aegis') { drawAegis(b); continue; }
+    if (b.kind === 'heart') { drawHeart(b); return; }
+    if (b.kind === 'sandals') { drawSandals(b); return; }
+    if (b.kind === 'aegis') { drawAegis(b); return; }
     // obstacles fade out once they pass the hero, so they never cover the camera
     const alpha = clamp(0.12 + 0.88 * (b.z0 + 1.0) / 1.2, 0.12, 1);
     ctx.globalAlpha = alpha;
@@ -872,12 +935,6 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   }
 
   // the underworld is darker (v0.53): the light falls off away from the hero
-  if (exitK > 0) { // the cave mouth's light, spilling toward him
-    const vx = Math.tan(yaw) * f, r = Math.hypot(W, H) * (0.15 + 0.45 * exitK);
-    const g = ctx.createRadialGradient(vx, 0, 0, vx, 0, r);
-    g.addColorStop(0, `rgba(255,248,226,${(0.75 * exitK).toFixed(3)})`); g.addColorStop(1, 'rgba(255,248,226,0)');
-    ctx.fillStyle = g; ctx.fillRect(vx - r, -r, 2 * r, 2 * r);
-  }
   if (UNDER) {
     const c = P(0, S.py + PH / 2, 0.3), r = Math.hypot(W, H);
     const g = ctx.createRadialGradient(c[0], c[1], r * 0.08, c[0], c[1], r * 0.55);

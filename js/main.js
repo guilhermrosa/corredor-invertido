@@ -305,7 +305,7 @@ function frame(now) {
   drawTunnel(ctx, S, W, H, { debug, fx, quality: quality(), fixedCamera: opt.camera === 'fixed', area: tut ? 'surface' : undefined });
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   if (zeusFlash > 0 && state !== 'menu') { ctx.fillStyle = `rgba(215,232,255,${(zeusFlash * zeusFlash * 0.35).toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
-  if (exitFlash > 0) { ctx.fillStyle = `rgba(255,250,232,${(exitFlash * exitFlash * 0.9).toFixed(3)})`; ctx.fillRect(0, 0, W, H); } // daylight at the cave mouth
+  if (exitFlash > 0) { ctx.fillStyle = `rgba(255,250,232,${(exitFlash * exitFlash * 0.4).toFixed(3)})`; ctx.fillRect(0, 0, W, H); } // daylight at the cave mouth
   if (flash > 0) { ctx.fillStyle = rgb(COL.haz, flash * 0.45); ctx.fillRect(0, 0, W, H); }
   if (fx.flipFade > 0) { ctx.fillStyle = rgb(COL.cloud, fx.flipFade / 0.16 * 0.55); ctx.fillRect(0, 0, W, H); }
   const below = !tut && S.dist < UNDER_END; // the underworld (v0.53): darker scene, light HUD text
