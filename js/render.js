@@ -448,7 +448,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     if (!(idx & 1) && zc > BASE && !missingAt(S.obs, -1, zc + COL_D / 2)) {
       const ruin = inArena(zc); // Zeus's arena: the colonnade in ruins, low stumps under the open storm
       const broken = ruin || missingAt(S.obs, 1, zc + COL_D / 2);
-      const h = ruin ? HM * (0.12 + 0.28 * hash(idx * 3)) : broken ? HM * (0.3 + 0.4 * hash(idx)) : HM - FRIEZE;
+      const h = ruin ? HM * (0.12 + 0.28 * hash(idx * 3)) : broken ? HM * (0.3 + 0.4 * hash(idx)) : UNDER ? HM : HM - FRIEZE; // v0.53.1: the cave's columns reach the roof
       // a toppling column takes the place of the left column near it
       // a toppling column takes the place of the colonnade's column at its spot, on its side
       const gone = S.obs.find(o => o.topple && Math.abs(o.z - zc) < 2.2);
@@ -640,6 +640,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     for (let i = 0; i <= n; i++) {
       const y = h * i / n, k = i / n;
       let w = broken ? 0.24 * (1 - k) + 0.01 : 0.1 + 0.16 * Math.pow(Math.abs(k - 0.55) / 0.55, 1.4);
+      if (!broken && k > 0.8) w += Math.pow((k - 0.8) / 0.2, 2) * 0.12; // v0.53.1: it spreads where it meets the roof (no gap above)
       w *= 0.85 + 0.3 * hash(idx * 17 + i + s);
       const dx = (hash(idx * 29 + i * 3 + s) - 0.5) * 0.05;
       L.push([xc + dx - w, y]); Rr.push([xc + dx + w, y]);
