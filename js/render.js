@@ -1409,6 +1409,38 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
 
   // Obstacles in the underworld (v0.53), same boxes and hitboxes: low ones are a heap of boulders,
   // tall ones a cluster of stalagmites (on the floor) or stalactites (from the roof), jagged at the tip
+  // The cave's portal (v0.53.3): a rough slab of rock fallen across the passage, resting on two
+  // heaps of boulders at the lane's edges, with the low gap to slide through on its side (same box)
+  function cavePortal(b, z0) {
+    const { x0, x1, y0, y1 } = b, W2 = x1 - x0;
+    const sy = b.side < 0 ? 0 : HM, gy = b.side < 0 ? PORTAL_GAP : HM - PORTAL_GAP, dir = b.side < 0 ? 1 : -1;
+    const far = b.side < 0 ? y1 : y0, lwz = lw(z0);
+    const face = fog(b.col, z0), dark = fog(mix(b.col, COL.edge, 0.55), z0), shade = fog(mix(b.col, COL.edge, 0.3), z0);
+    quad(P(x0, sy, z0), P(x1, sy, z0), P(x1, sy, b.z1), P(x0, sy, b.z1), fog(mix(COL.edge, COL.ink, 0.15), z0)); // the dark gap
+    for (const [da, db, k] of [[x0, x0 + 0.34, 0], [x1 - 0.34, x1, 1]]) { // a heap of two or three boulders under each end
+      const pts = [P(da, sy, z0)];
+      for (let i = 0; i <= 6; i++) {
+        const u = i / 6, bump = 0.06 * Math.sin(u * Math.PI * 3 + k) * (1 - Math.abs(u - 0.5));
+        pts.push(P(lerp(da, db, u) + (i === 0 ? -0.03 : i === 6 ? 0.03 : 0), gy + dir * bump, z0));
+      }
+      pts.push(P(db, sy, z0));
+      poly(pts, shade);
+      for (const r of [0.38, 0.72]) line(P(da + 0.03, lerp(sy, gy, r), z0), P(db - 0.03, lerp(sy, gy, r) + dir * 0.03 * (k ? 1 : -1), z0), dark, lwz * 0.8);
+    }
+    // the slab: a rough rock, thicker in the middle, jagged along its far edge
+    const pts = [], Hs = far - gy;
+    for (let i = 0; i <= 8; i++) pts.push(P(x0 + W2 * i / 8, gy - dir * 0.03 * Math.sin(i * 1.7 + b.seed), z0));
+    for (let j = 1; j < 5; j++) pts.push(P(x1 + 0.06 * Math.sin(j * 2.1 + b.seed) - 0.04, gy + Hs * j / 5, z0)); // rough right end
+    for (let i = 8; i >= 0; i--) pts.push(P(x0 + W2 * i / 8, far - dir * (0.08 + 0.32 * hash(b.seed * 7 + i)), z0));
+    for (let j = 4; j > 0; j--) pts.push(P(x0 - 0.06 * Math.sin(j * 1.9 + b.seed) + 0.04, gy + Hs * j / 5, z0)); // and left end
+    poly(pts, face);
+    line(P(x0, gy + dir * 0.04, z0), P(x1, gy + dir * 0.04, z0), dark, lwz * 1.2); // its underside's edge
+    for (let i = 1; i < 4; i++) { // cracks
+      const x = x0 + W2 * (i / 4 + (hash(b.seed * 3 + i) - 0.5) * 0.12);
+      line(P(x, gy + dir * 0.1, z0), P(x + 0.06, lerp(gy, far, 0.55), z0), dark, lwz * 0.7);
+    }
+  }
+
   function caveRock(b, z0) {
     const { x0, x1, y0, y1 } = b, onFloor = y0 < 0.05;
     const sy = onFloor ? y0 : y1, fy = onFloor ? y1 : y0, dir = onFloor ? 1 : -1, Hh = y1 - y0;
@@ -1441,7 +1473,8 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     if (b.kind === 'pillar') { drawPillar(b, z0); return; }
     if (b.kind === 'hail') { hailBlock(b, z0); return; } // v0.51: what falls from his storm is charged cloud
     if (b.y1 >= HM - 0.01 && b.y0 > 0.05 && inArena(b.z0)) { cloudBlock(b, z0); return; } // v0.51: on Zeus's cloud roof
-    if (UNDER && b.kind !== 'portal' && b.kind !== 'pillar') { caveRock(b, z0); return; }
+    if (UNDER && b.kind === 'portal') { cavePortal(b, z0); return; }
+    if (UNDER && b.kind !== 'pillar') { caveRock(b, z0); return; }
     const face = fog(b.col, z0);
     const lid = fog(mix(b.col, COL.cloud, 0.45), z0);
     const dark = fog(mix(b.col, COL.edge, 0.55), z0);
