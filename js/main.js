@@ -220,6 +220,7 @@ function bribeCharon() {
   obols -= price; store.set('obols', obols);
   run.continues = (run.continues || 0) + 1;
   stats.recordContinue(price);
+  checkAchievements(Math.floor(S.dist));
   // a short close-up (v0.52.1, user's idea): Xolo's hand drops the obols into Charon's bony palm
   state = 'paying';
   const shown = Math.min(price, 5);
@@ -374,7 +375,7 @@ function startTutorial() {
 // ---- achievements ----
 function runState(metres) {
   if (!run.hurt) run.cleanMetres = metres;
-  return { metres, cleanMetres: run.cleanMetres, flips: run.flips, slides: run.slides, gods: run.gods.size, zeus: run.zeusSurvived || 0 };
+  return { metres, cleanMetres: run.cleanMetres, flips: run.flips, slides: run.slides, gods: run.gods.size, zeus: run.zeusSurvived || 0, continues: run.continues || 0 };
 }
 function checkAchievements(metres) {
   for (const a of ach.evaluate(runState(metres), stats.get())) { toast(a); if (!tut) earn(1); }
