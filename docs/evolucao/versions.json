@@ -42,7 +42,7 @@
     "text": "Arrastar para baixo faz o axolote deslizar, e surgem os pórticos caídos, que só se passam deslizando.",
     "destaque": {
       "legenda": "Pórtico caído: só passa deslizando",
-      "ate": "o.type==='portal' && o.side===-1 && o.z>6 && o.z<11"
+      "ate": "o.type==='portal' && o.side===-1 && o.z>5 && o.z<9"
     }
   },
   {
@@ -76,16 +76,8 @@
     "text": "Colunas que tombam no caminho e blocos que despencam do teto, com aviso antes de cair. Na 0.27, a opção de câmera que nunca gira a tela.",
     "destaque": {
       "legenda": "Uma coluna tombando no caminho",
-      "ate": "o.topple && o.p>0.8 && o.p<0.95 && o.z>8 && o.z<18 && !S.obs.some(b => b !== o && b.type !== 'hole' && b.z > -1 && b.z < o.z + 2) && !S.obs.some(h => h.type === 'hole' && h.side === -1 && h.z < o.z && h.z + h.len > -4)",
-      "lado": "qualquer",
-      "set": {
-        "grav": -1,
-        "py": 0,
-        "vy": 0,
-        "camT": 0,
-        "grounded": true,
-        "slide": 0
-      }
+      "ate": "o.topple && o.p>0.72 && o.p<0.95 && o.z>8 && o.z<22",
+      "lado": "qualquer"
     }
   },
   {
@@ -107,7 +99,7 @@
     "text": "Coração dourado no caminho: uma vida extra, no máximo uma de cada vez.",
     "destaque": {
       "legenda": "O coração dourado no caminho",
-      "ate": "o.type==='heart' && o.side===-1 && o.z>5 && o.z<10"
+      "ate": "o.type==='heart' && o.z>4 && o.z<12"
     }
   },
   {
@@ -151,7 +143,7 @@
     "text": "Quarta etapa do visual: a mureta virou blocos de pedra com laje de arremate, a coluna caída um tambor dórico com caneluras, o muro em ruínas ganhou fiadas de blocos e uma rachadura, a viga caída tríglifos azuis com sulcos e cornija, o pórtico tambores canelados, e a coluna que tomba tem capitel dórico. Formatos e cores claras mantidos. Na 0.43.1, vasos 20% mais raros. Na 0.44.1, pedra dos obstáculos mais clara e menos amarelada, e a coluna que tomba igual às da colunata.",
     "destaque": {
       "legenda": "Muro e mureta no estilo novo",
-      "ate": "o.type==='block' && !o.topple && !o.drop && o.z>5 && o.z<9"
+      "ate": "o.type==='block' && !o.topple && !o.drop && o.side===-1 && o.z>5 && o.z<9"
     }
   },
   {
@@ -167,7 +159,7 @@
     "text": "O primeiro presente dos deuses: uma sandália alada dourada aparece de vez em quando no caminho (a partir de 250 m). Pegá-la dá 6 segundos andando sobre buracos e trechos sem chão: faíscas douradas marcam a beira dos vãos e o axolote ganha asinhas brancas nos tornozelos (visual refeito na 0.46.1), com uma barra no placar contando o tempo. Nas 0.45.2 a 0.45.5, nova estampa dos tapetes de mosaico.",
     "destaque": {
       "legenda": "As sandálias aladas no caminho",
-      "ate": "o.type==='sandals' && o.side===-1 && o.z>5 && o.z<9"
+      "ate": "o.type==='sandals' && o.side===-1 && o.z>4 && o.z<8"
     }
   },
   {
@@ -177,7 +169,8 @@
     "text": "Segundo presente dos deuses: o escudo de Atena, redondo, azul e dourado, que o axolote carrega na mão. Ao bater no próximo muro, viga, pórtico ou bloco caído, ele quebra o obstáculo e se gasta; buracos e muretas continuam valendo. O coração dourado passou a ser bênção de Perséfone (na 0.47.1, virou romã dourada, e as vidas no placar viraram romãs), e as bênçãos ganharam uma placa dourada no lugar do texto preto.",
     "destaque": {
       "legenda": "O escudo de Atena no caminho",
-      "ate": "o.type==='aegis' && o.z>5 && o.z<9"
+      "ate": "o.type==='aegis' && o.z>4 && o.z<12",
+      "lado": "qualquer"
     }
   },
   {
@@ -187,7 +180,7 @@
     "text": "Zeus entra como antagonista: a coluna que tomba agora é a ira dele, com raios azuis estalando em volta, um clarão na tela e um trovão na lira. Antes disso, na 0.47.x: escudo de Atena que aguenta duas batidas (racha na primeira), romãs no lugar dos corações, trechos que vêm depois de cada presente (o caminho de Hermes e a muralha de Atena) e os presentes nas estatísticas e conquistas.",
     "destaque": {
       "legenda": "Os raios de Zeus na coluna",
-      "ate": "o.topple && o.p>0.1 && o.p<0.45 && o.z>17 && o.z<26 && !S.obs.some(b => b !== o && b.type !== 'hole' && b.z > -1 && b.z < o.z + 2)",
+      "ate": "o.topple && o.p>0.1 && o.p<0.45 && o.z>17 && o.z<26",
       "lado": "qualquer"
     }
   },
@@ -198,16 +191,8 @@
     "text": "As colunas atingidas por Zeus agora caem dos dois lados do corredor, e um novo trecho, a Fúria de Zeus (a partir de 500 m), derruba quatro colunas seguidas, alternando os lados, com vigas no teto para ninguém se esconder lá em cima. Antes disso, na 0.48.x: o raio vem do céu e passa por trás das colunas da frente, a base da coluna explode, a coluna que cai ficou igual às outras (com caneluras, faixa azul, sombra e um contorno suave para não sumir no chão), e os arrastes ficaram mais difíceis de disparar sem querer.",
     "destaque": {
       "legenda": "Coluna atingida por Zeus tombando",
-      "ate": "o.topple && o.col===-1 && o.p>0.72 && o.p<0.95 && o.z>8 && o.z<22 && !S.obs.some(b => b !== o && b.type !== 'hole' && b.z > -1 && b.z < o.z + 2) && !S.obs.some(h => h.type === 'hole' && h.side === -1 && h.z < o.z && h.z + h.len > -4)",
-      "lado": "qualquer",
-      "set": {
-        "grav": -1,
-        "py": 0,
-        "vy": 0,
-        "camT": 0,
-        "grounded": true,
-        "slide": 0
-      }
+      "ate": "o.topple && o.col===-1 && o.p>0.72 && o.p<0.95 && o.z>8 && o.z<22",
+      "lado": "qualquer"
     }
   },
   {
@@ -256,7 +241,7 @@
     "destaque": {
       "legenda": "O mar visto por um buraco",
       "desde": 700,
-      "ate": "o.type==='hole' && !o.open && o.side===-1 && o.z>3 && o.z<6"
+      "ate": "o.type==='hole' && !o.open && o.side===-1 && o.z>3 && o.z<7"
     }
   },
   {

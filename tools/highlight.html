@@ -18,12 +18,20 @@ const S = createSim();
 const find = spec.ate ? new Function('o', 'S', 'return ' + spec.ate) : null;
 // only while he runs on a surface with the camera settled: on the floor by default, either with lado 'qualquer'
 const settled = () => S.grounded && !(S.slide > 0) && (spec.lado === 'qualquer' ? [0, 1].includes(S.camT || 0) : S.grav < 0 && (S.camT || 0) === 0);
-const ok = () => S.dist >= (spec.desde || 0) && settled() && (spec.metros ? S.dist >= spec.metros : find && S.obs.some(o => find(o, S)));
+// a clean picture: nothing just passed still fading over the camera, no floor missing under him, and
+// (unless livre: false) nothing standing between him and what the shot is about
+const solid = b => (b.type === 'block' || b.type === 'portal') && !b.spent;
+const markers = ['boss', 'storm', 'demeter'];
+const clean = o => !S.obs.some(b => solid(b) && b !== o && b.z < 0.6 && b.z + b.len > -4.5)
+  && !S.obs.some(h => h.type === 'hole' && h.side === (S.grav < 0 ? -1 : 1) && h.z < 1.5 && h.z + h.len > -3)
+  && (!o || spec.livre === false || markers.includes(o.type) || !S.obs.some(b => solid(b) && b !== o && b.z > 0 && b.z < o.z));
+const ok = () => S.dist >= (spec.desde || 0) && settled()
+  && (spec.metros ? S.dist >= spec.metros && clean(null) : find && S.obs.some(o => find(o, S) && clean(o)));
 for (let i = 0; i < 60 * 600 && !ok(); i++) update(S, 1 / 60, () => {}, { live: false, autopilot: true });
 for (let i = 0; i < (spec.depois || 0); i++) update(S, 1 / 60, () => {}, { live: false, autopilot: true });
 Object.assign(S, spec.set || {});
 const ctx = c.getContext('2d'); ctx.scale(2, 2);
 drawTunnel(ctx, S, 390, 780, { quality: 'high' });
-const hit = find && S.obs.find(o => find(o, S));
+const hit = find && S.obs.find(o => find(o, S) && clean(o));
 document.title = (ok() || spec.depois ? 'ok ' : 'not found ') + Math.round(S.dist) + (hit ? ' ' + JSON.stringify({ z: +hit.z.toFixed(1), p: hit.p, side: hit.side, col: hit.col, grav: S.grav }) : '');
 </script>
