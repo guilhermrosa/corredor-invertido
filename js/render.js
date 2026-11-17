@@ -5,10 +5,13 @@
 // Where a surface is missing (an "open" stretch in the simulation) nothing is drawn,
 // so the backdrop shows through: open sky above, the sea far below.
 
-import { HM, HW, PH, PL, OH, HIT, RUIN_DIP, PORTAL_GAP, HEART_LIFT, HERMES_TIME, TOPPLE_TIME, clamp, lerp, mix, rgb, COL } from './config.js';
+import { HM, HW, PH, PL, OH, HIT, RUIN_DIP, PORTAL_GAP, HEART_LIFT, HERMES_TIME, TOPPLE_TIME, clamp, lerp, mix, rgb, COL as COL_SURFACE, COL_UNDER, UNDER_END } from './config.js';
 import { blockHitbox, holeKillZone, playerBox, fallAmount } from './sim.js';
 import { drawAxolotl } from './hero.js';
 import { drawAegisFace } from './aegis.js';
+
+// The palette of the area being drawn (v0.53): the seaside ruins, or the underworld below them
+let COL = COL_SURFACE, UNDER = false;
 
 // the split pomegranate, in the HUD icon's 20-unit box (see POMEGRANATE in main.js); built on first use
 let POM = null;
@@ -91,7 +94,7 @@ export function invalidateBackdrop() { backCache = null; }
 if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (!document.hidden) backCache = null; });
 function drawBackdrop(ctx, W, H, t, Q, storm = 0, zeus = 0, flipStorm = false) {
   const R = Math.hypot(W, H);
-  const key = W + 'x' + H;
+  const key = W + 'x' + H + (UNDER ? 'u' : '');
   if (!backCache || backCache.key !== key || backCache.lost || backCache.c.isContextLost?.()) {
     const k = Math.min(1.25, devicePixelRatio || 1); // soft scenery: no need for full resolution
     const cv = document.createElement('canvas');
@@ -123,6 +126,7 @@ function drawBackdrop(ctx, W, H, t, Q, storm = 0, zeus = 0, flipStorm = false) {
     ctx.restore();
   }
   if (zeus > 0) { ctx.save(); if (flipStorm) ctx.scale(-1, 1); drawZeus(ctx, W, H, t, zeus); ctx.restore(); }
+  if (UNDER) { caveLife(ctx, W, H, t, Q); return; }
   // drifting clouds
   ctx.fillStyle = rgb(COL.cloud, 0.92 * (1 - storm * 0.8));
   for (const c of CLOUDS) {
@@ -184,7 +188,57 @@ function drawZeus(ctx, W, H, t, k) {
   ctx.restore();
 }
 
+// The underworld's living backdrop (v0.53): a light mist drifting on the river at the horizon,
+// glints of bioluminescence on the water and pale motes rising slowly, like souls
+function caveLife(ctx, W, H, t, Q) {
+  for (let i = 0; i < 5; i++) {
+    const x = ((hash(i * 3 + 1) * 2 - 1) * W + t * 4 * (0.6 + hash(i))) % (W * 2.4) - W * 1.2, r = W * (0.35 + 0.2 * hash(i * 7));
+    const g = ctx.createRadialGradient(x, H * 0.004, 0, x, H * 0.004, r);
+    g.addColorStop(0, rgb([150, 214, 208], 0.16)); g.addColorStop(1, rgb([150, 214, 208], 0));
+    ctx.fillStyle = g; ctx.save(); ctx.scale(1, 0.12); ctx.beginPath(); ctx.arc(x, H * 0.03, r, 0, Math.PI * 2); ctx.restore(); ctx.fill();
+  }
+  for (let i = 0; i < Q.glints; i++) {
+    const gx = (hash(i) - 0.5) * W * 1.6, gy = Math.pow(hash(i + 50), 2) * H * 0.55 + 3;
+    const a = 0.25 + 0.3 * Math.sin(t * 1.6 + i * 1.7), w = 2 + gy / H * 10;
+    ctx.fillStyle = rgb(COL.cloud, a); ctx.fillRect(gx - w / 2, gy, w, Math.max(1, w * 0.18));
+  }
+  for (let i = 0; i < 24; i++) {
+    const k = (t * 0.03 * (0.5 + hash(i * 5)) + hash(i * 9)) % 1;
+    const x = (hash(i * 13) - 0.5) * W * 1.8 + Math.sin(t * 0.7 + i) * W * 0.02, y = H * 0.1 - k * H * 0.5;
+    ctx.fillStyle = rgb([190, 250, 240], 0.5 * Math.sin(Math.PI * k));
+    ctx.beginPath(); ctx.arc(x, y, Math.max(1, W * 0.004), 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+// The underworld's still backdrop (v0.53), after Charon's scene: a dark cave vault with distant
+// stalactites hanging in layers, a soft teal-green light far away on the left, and the dark river
+function paintCave(ctx, W, H, R) {
+  const vault = ctx.createLinearGradient(0, -R * 0.6, 0, 0);
+  vault.addColorStop(0, rgb(COL.skyTop)); vault.addColorStop(0.75, rgb([16, 30, 36])); vault.addColorStop(1, rgb([34, 70, 74]));
+  ctx.fillStyle = vault; ctx.fillRect(-R, -R, 2 * R, R);
+  const light = ctx.createRadialGradient(-W * 0.35, -H * 0.06, 0, -W * 0.35, -H * 0.06, W * 0.9);
+  light.addColorStop(0, rgb([110, 214, 196], 0.38)); light.addColorStop(1, rgb([110, 214, 196], 0));
+  ctx.fillStyle = light; ctx.fillRect(-R, -R, 2 * R, R);
+  const teeth = (col, y0, len, step, seed) => { // a band of rock with stalactites hanging from it
+    ctx.fillStyle = rgb(col);
+    ctx.beginPath(); ctx.moveTo(-R, -R); ctx.lineTo(-R, y0);
+    for (let x = -R, i = 0; x < R; x += step, i++) {
+      const l = len * (0.3 + 0.7 * hash(seed + i)), w = step * (0.35 + 0.3 * hash(seed * 3 + i));
+      ctx.lineTo(x, y0); ctx.lineTo(x + w * 0.5, y0 + l); ctx.lineTo(x + w, y0);
+    }
+    ctx.lineTo(R, y0); ctx.lineTo(R, -R); ctx.closePath(); ctx.fill();
+  };
+  teeth([30, 52, 60], -H * 0.2, H * 0.14, W * 0.05, 11);
+  teeth([24, 40, 48], -H * 0.27, H * 0.17, W * 0.07, 23);
+  teeth([16, 26, 34], -H * 0.36, H * 0.2, W * 0.09, 37);
+  const river = ctx.createLinearGradient(0, 0, 0, R * 0.6);
+  river.addColorStop(0, rgb([40, 92, 98])); river.addColorStop(0.1, rgb(COL.seaDeep));
+  river.addColorStop(0.55, rgb(COL.sea)); river.addColorStop(1, rgb(COL.shallows));
+  ctx.fillStyle = river; ctx.fillRect(-R, 0, 2 * R, R);
+}
+
 function paintStillBackdrop(ctx, W, H, R) {
+  if (UNDER) { paintCave(ctx, W, H, R); return; }
 
   // sky down to the horizon (local y = 0 is the horizon at any camera height)
   const sky = ctx.createLinearGradient(0, -R * 0.6, 0, 0);
@@ -244,6 +298,8 @@ function paintStillBackdrop(ctx, W, H, R) {
 export function drawTunnel(ctx, S, W, H, opts = {}) {
   const Q = QUALITY[opts.quality] || QUALITY.high;
   FAR = Q.far;
+  UNDER = (opts.area ?? (S.dist < UNDER_END ? 'under' : 'surface')) === 'under';
+  COL = UNDER ? COL_UNDER : COL_SURFACE;
   // opts.fixedCamera: the screen never turns. The camera stays at mid-height and upright,
   // so the floor is always at the bottom and the hero runs upside down along the roof.
   const fixedCam = !!opts.fixedCamera;
@@ -328,6 +384,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     }
     for (const [a, b] of solidParts(S.obs, 1, za, zb)) {
       if (inArena(a)) { stormRoof(a, b, idx); continue; } // v0.50.1: over Zeus's arena the roof is his storm
+      if (UNDER) { caveRoof(a, b, z0, idx); continue; }
       quad(P(-EDGE, HM, a), P(EDGE, HM, a), P(EDGE, HM, b), P(-EDGE, HM, b), fog(COL.ceiling, a));
       if (Q.coffers && b - a > 0.9) { // coffer
         const ca = a + 0.3, cb = b - 0.3;
@@ -360,11 +417,12 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
         const spots = [[s * (COL_X0 - 0.06), z0 + 0.75, 0.22], [s * HW * (0.62 + 0.3 * hash(idx * 5 + s)), z0 + 2 * hash(idx * 9 + s), 0.08]];
         for (const [tx, tz, chance] of spots) {
           if (tz < BASE + 0.3 || hash(idx * 13 + s * 7 + tx) > chance || missingAt(S.obs, -1, tz)) continue;
-          tuft(tx, tz, 0.16 + 0.16 * hash(idx * 3 + tx), idx * 31 + s, t);
+          if (UNDER) asphodel(tx, tz, 0.3 + 0.25 * hash(idx * 3 + tx), idx * 31 + s, t);
+          else tuft(tx, tz, 0.16 + 0.16 * hash(idx * 3 + tx), idx * 31 + s, t);
         }
         // a vine hanging from the roof edge, swaying a little
         const vz = z0 + 0.4 + hash(idx * 17 + s) * 1.2;
-        if (hash(idx * 11 + s * 5) < 0.1 && vz > BASE + 0.5 && !missingAt(S.obs, 1, vz) && !inArena(vz)) vine(s * (HW + 0.02), vz, 0.5 + 0.9 * hash(idx * 19 + s), idx * 7 + s, t);
+        if (!UNDER && hash(idx * 11 + s * 5) < 0.1 && vz > BASE + 0.5 && !missingAt(S.obs, 1, vz) && !inArena(vz)) vine(s * (HW + 0.02), vz, 0.5 + 0.9 * hash(idx * 19 + s), idx * 7 + s, t);
       }
     }
 
@@ -372,11 +430,11 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     if (Q.nature && z0 + 2 > BASE && z0 < Q.nature + 6) {
       // a floor mosaic: an 8 m "carpet" of light tesserae with a blue Greek-key border and a star
       const blk = Math.floor(idx / 4), first = blk * 4;
-      if (hash(blk * 13 + 5) < 0.05) mosaic(z0, za, zb, idx - first, S, blk);
+      if (!UNDER && hash(blk * 13 + 5) < 0.05) mosaic(z0, za, zb, idx - first, S, blk);
       // a black-figure vase between two columns (some knocked over and broken), and loose stones
       if (idx & 1) for (const s of [-1, 1]) {
         const h = hash(idx * 23 + s * 3);
-        if (h < 0.04 && !missingAt(S.obs, -1, z0 + 1)) vase(s * (HW + 0.27), z0 + 1, idx * 3 + s, h < 0.012); // v0.43.1: 20% rarer (user)
+        if (h < 0.04 && !UNDER && !missingAt(S.obs, -1, z0 + 1)) vase(s * (HW + 0.27), z0 + 1, idx * 3 + s, h < 0.012); // v0.43.1: 20% rarer (user)
         else if (h > 0.9 && !missingAt(S.obs, -1, z0 + 0.6)) rubble(s * (HW + 0.2), z0 + 0.6, idx * 5 + s);
       }
     }
@@ -390,7 +448,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       // a toppling column takes the place of the left column near it
       // a toppling column takes the place of the colonnade's column at its spot, on its side
       const gone = S.obs.find(o => o.topple && Math.abs(o.z - zc) < 2.2);
-      for (const s of [-1, 1]) if (!gone || s !== (gone.col || -1)) drawDoric(s, zc, h, broken, idx);
+      for (const s of [-1, 1]) if (!gone || s !== (gone.col || -1)) (UNDER ? drawFlowstone : drawDoric)(s, zc, h, broken, idx);
     }
     // v0.48.2: a toppling column that is still mostly upright, and Zeus's bolt striking it, are drawn
     // here, at their own depth among the colonnade, so the nearer columns pass in front of them
@@ -539,6 +597,60 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       ctx.fillStyle = fog(i % 2 ? COL.vine : COL.grass, z);
       const p = pts[i], o = (i % 2 ? 1 : -1) * r * 0.9;
       ctx.beginPath(); ctx.ellipse(p[0] + o, p[1], r * 1.1, r * 0.7, 0.5 * (i % 2 ? 1 : -1), 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  // The underworld's roof (v0.53): bare rock, darker toward the edges, with small stalactites hanging
+  // from it outside the running lane (never over it, so they never read as obstacles)
+  function caveRoof(a, b, z0, idx) {
+    quad(P(-EDGE, HM, a), P(EDGE, HM, a), P(EDGE, HM, b), P(-EDGE, HM, b), fog(idx & 1 ? COL.ceiling : mix(COL.ceiling, COL.beam, 0.5), a));
+    for (const s of [-1, 1]) {
+      quad(P(s * HW, HM, a), P(s * EDGE, HM, a), P(s * EDGE, HM, b), P(s * HW, HM, b), fog(COL.beam, a));
+      if (a > 40) continue;
+      for (let k = 0; k < 2; k++) {
+        const z = z0 + 0.5 + k + 0.4 * hash(idx * 7 + k + s), x = s * (HW + 0.12 + 0.3 * hash(idx * 3 + k - s));
+        if (z < a || z > b || z < BASE + 0.3 || hash(idx * 5 + k * 3 + s) > 0.6) continue;
+        const len = 0.25 + 0.55 * hash(idx * 11 + k + s), w = 0.05 + 0.05 * hash(idx * 13 + k);
+        poly([P(x - w, HM, z), P(x + w, HM, z), P(x + w * 0.2, HM - len, z)], fog(mix(COL.columnShade, COL.column, 0.4), z));
+      }
+    }
+  }
+  // An asphodel (v0.53): the pale flower of the fields of the dead, a thin stem with a few white stars
+  function asphodel(x, z, h, seed, t) {
+    const sway = Math.sin(t * 1.5 + seed) * 0.03;
+    line(P(x, 0, z), P(x + sway, h, z), fog(COL.grassDark, z), lw(z) * 0.45);
+    const r = Math.max(0.8, 0.022 * f / (z - CAM_Z));
+    for (let i = 0; i < 6; i++) { // a loose spike of small pale six-petal stars along the top of the stem
+      const yy = h * (0.62 + 0.38 * i / 5), xx = x + sway * yy / h + (i % 2 ? 1 : -1) * 0.03 * (1 - i / 6);
+      const p = P(xx, yy, z);
+      ctx.fillStyle = fog(COL.flowers[i % COL.flowers.length], z);
+      ctx.beginPath();
+      for (let k = 0; k < 12; k++) { const g = k / 12 * Math.PI * 2, rr = k % 2 ? r * 0.45 : r; ctx.lineTo(p[0] + Math.cos(g) * rr, p[1] + Math.sin(g) * rr); }
+      ctx.closePath(); ctx.fill();
+    }
+  }
+  // A column of the cave (v0.53): where a stalactite has grown down into a stalagmite, a natural
+  // pillar wide at both ends with a narrow waist; where the roof is gone, only the stalagmite stands
+  function drawFlowstone(s, zc, h, broken, idx) {
+    const xc = s * (COL_X0 + COL_X1) / 2, n = 8, L = [], Rr = [];
+    for (let i = 0; i <= n; i++) {
+      const y = h * i / n, k = i / n;
+      let w = broken ? 0.24 * (1 - k) + 0.01 : 0.1 + 0.16 * Math.pow(Math.abs(k - 0.55) / 0.55, 1.4);
+      w *= 0.85 + 0.3 * hash(idx * 17 + i + s);
+      const dx = (hash(idx * 29 + i * 3 + s) - 0.5) * 0.05;
+      L.push([xc + dx - w, y]); Rr.push([xc + dx + w, y]);
+    }
+    const front = [...L, ...Rr.reverse()].map(([x, y]) => P(x, y, zc));
+    poly(front, fog(COL.column, zc));
+    const shade = L.map(([x, y], i) => [s < 0 ? x : x, y]); // the lane side in shade
+    const inner = L.map(([x, y], i) => [lerp(x, Rr[n - i][0], 0.4), y]);
+    const side = s < 0 ? Rr.slice().reverse() : L; // edge facing the lane
+    const mid = side.map(([x, y]) => [lerp(x, xc, 0.55), y]);
+    poly([...side, ...mid.reverse()].map(([x, y]) => P(x, y, zc)), fog(COL.columnShade, zc));
+    if (zc < 22) for (const q of [0.3, 0.7]) { // drip lines down the flowstone
+      const pts = L.map(([x, y], i) => P(lerp(x, Rr[n - i] ? Rr[n - i][0] : x, q), y, zc));
+      ctx.strokeStyle = fog(COL.columnDark, zc); ctx.lineWidth = lw(zc) * 0.45;
+      ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.stroke();
     }
   }
 
@@ -750,6 +862,14 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       if (p.z <= BASE + 0.2 || (p.deep && p.z < FAR + 2)) continue; // deep ones were drawn among the columns
       particle(p);
     }
+  }
+
+  // the underworld is darker (v0.53): the light falls off away from the hero
+  if (UNDER) {
+    const c = P(0, S.py + PH / 2, 0.3), r = Math.hypot(W, H);
+    const g = ctx.createRadialGradient(c[0], c[1], r * 0.08, c[0], c[1], r * 0.55);
+    g.addColorStop(0, 'rgba(4,10,14,0)'); g.addColorStop(1, 'rgba(4,10,14,0.62)');
+    ctx.fillStyle = g; ctx.fillRect(-4 * W, -4 * H, 9 * W, 9 * H);
   }
 
   // 5. speed lines streaming from the far end once the run gets fast
@@ -1274,10 +1394,41 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     ctx.restore();
   }
 
+  // Obstacles in the underworld (v0.53), same boxes and hitboxes: low ones are a heap of boulders,
+  // tall ones a cluster of stalagmites (on the floor) or stalactites (from the roof), jagged at the tip
+  function caveRock(b, z0) {
+    const { x0, x1, y0, y1 } = b, onFloor = y0 < 0.05;
+    const sy = onFloor ? y0 : y1, fy = onFloor ? y1 : y0, dir = onFloor ? 1 : -1, Hh = y1 - y0;
+    const tall = Hh > 1, face = fog(b.col, z0), dark = fog(mix(b.col, COL.edge, 0.55), z0);
+    const lid = fog(mix(b.col, COL.cloud, 0.12), z0);
+    if (onFloor && camY > y1 && !tall) quad(P(x0, y1 - 0.1, z0), P(x1, y1 - 0.1, z0), P(x1, y1 - 0.1, b.z1), P(x0, y1 - 0.1, b.z1), lid);
+    if (!onFloor && camY < y0 && !tall) quad(P(x0, y0 + 0.1, z0), P(x1, y0 + 0.1, z0), P(x1, y0 + 0.1, b.z1), P(x0, y0 + 0.1, b.z1), lid);
+    const pts = [P(x0, sy, z0)];
+    const n = tall ? 9 : 10, W2 = x1 - x0;
+    for (let i = 0; i <= n; i++) {
+      const x = x0 + W2 * i / n, hsh = hash(b.seed * 17 + i);
+      let reach;
+      if (tall) reach = i % 2 ? Hh * (0.88 + 0.12 * hsh) : Hh * (0.45 + 0.25 * hsh); // spikes and valleys
+      else reach = Hh * (0.72 + 0.28 * Math.abs(Math.sin(i * 1.3 + b.seed)) * (0.7 + 0.3 * hsh)); // round boulders
+      if (i === 0 || i === n) reach *= 0.55;
+      pts.push(P(x, sy + dir * reach, z0));
+    }
+    pts.push(P(x1, sy, z0));
+    poly(pts, face);
+    const lwz = lw(z0);
+    if (tall) { // a darker groove down each spike
+      for (let i = 1; i < n; i += 2) { const x = x0 + W2 * i / n; line(P(x, sy, z0), P(x, sy + dir * Hh * 0.7, z0), dark, lwz * 0.7); }
+    } else { // the boulders' outlines
+      for (let i = 1; i < 4; i++) { const x = x0 + W2 * i / 4 + (hash(b.seed * 5 + i) - 0.5) * 0.2; line(P(x, sy, z0), P(x, sy + dir * Hh * 0.62, z0), dark, lwz * 0.8); }
+    }
+    line(P(x0, sy + dir * 0.03, z0), P(x1, sy + dir * 0.03, z0), dark, lwz);
+  }
+
   function drawObstacle(b, z0) {
     if (b.kind === 'pillar') { drawPillar(b, z0); return; }
     if (b.kind === 'hail') { hailBlock(b, z0); return; } // v0.51: what falls from his storm is charged cloud
     if (b.y1 >= HM - 0.01 && b.y0 > 0.05 && inArena(b.z0)) { cloudBlock(b, z0); return; } // v0.51: on Zeus's cloud roof
+    if (UNDER && b.kind !== 'portal' && b.kind !== 'pillar') { caveRock(b, z0); return; }
     const face = fog(b.col, z0);
     const lid = fog(mix(b.col, COL.cloud, 0.45), z0);
     const dark = fog(mix(b.col, COL.edge, 0.55), z0);

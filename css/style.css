@@ -124,6 +124,7 @@ h2 { font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; }
 .stats-card th { font-weight: 600; color: var(--muted); }
 .stats-card .num { text-align: right; font-variant-numeric: tabular-nums; }
 .chip-btn { white-space: nowrap; }
+#stage.under .score b, #stage.under .score small { color: #e3efec; text-shadow: 0 1px 8px rgba(0, 0, 0, .85); }
 .score b.compact { font-size: 18px; white-space: nowrap; }
 .option-list { display: grid; gap: 8px; }
 .option-list .toggle { text-align: left; padding: 12px 14px; border-radius: 10px; color: var(--ink); background: #fff; }

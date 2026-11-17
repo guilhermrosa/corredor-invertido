@@ -128,6 +128,29 @@ export const COL = {
 };
 COL.bg = COL.haze;
 
+// The underworld (v0.53, user: "we flee the underworld but never run in it"): every run starts below,
+// in a cave by the river of the dead, and comes up to the seaside ruins at UNDER_END metres.
+export const UNDER_END = 600;
+// Its palette: the same keys as COL, in the look of Charon's scene (dark rock, teal-green light,
+// bioluminescent water); render.js swaps it in while the hero is below.
+export const COL_UNDER = {
+  ...COL,
+  haze: [12, 24, 30],                          // the dark the distance fades into
+  skyTop: [10, 16, 22], sea: [16, 92, 112], seaDeep: [10, 52, 70], shallows: [30, 140, 160],
+  sun: [150, 240, 220], cloud: [170, 240, 236],  // glints on the river, motes
+  marble: [50, 58, 64], marble2: [45, 53, 59], joint: [30, 36, 42], stylobate: [36, 42, 48],
+  ceiling: [30, 38, 46], beam: [24, 30, 38],
+  column: [74, 84, 90], columnShade: [48, 56, 64], columnDark: [30, 36, 44],
+  frieze: [60, 150, 150], friezeAlt: [52, 60, 68],
+  wall: [112, 116, 110], ruin: [100, 108, 110], lintel: [92, 102, 108],
+  grass: [150, 170, 160], grassDark: [96, 116, 108], grassLight: [196, 214, 204], vine: [70, 96, 90],
+  flowers: [[226, 230, 222], [206, 214, 210], [236, 240, 232]], // asphodels, pale
+  rock: [60, 70, 76], rubble: [84, 92, 96],
+  edge: [30, 40, 46],
+  ink: [200, 236, 232],
+};
+COL_UNDER.bg = COL_UNDER.haze;
+
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export const lerp = (a, b, t) => a + (b - a) * t;
 export const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];

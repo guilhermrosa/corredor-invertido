@@ -1,7 +1,7 @@
 // Entry point: game loop, game flow (runs, tutorial, pause, game over), menus, keys and offline support.
 // Options live in options.js, touch gestures in input.js, the stats and achievements panels in panels.js.
 
-import { COL, rgb, HERMES_TIME, HW, OBOL_EVERY, CHARON_PRICE } from './config.js';
+import { COL, rgb, HERMES_TIME, HW, OBOL_EVERY, CHARON_PRICE, UNDER_END } from './config.js';
 import { createSim, update, press, flipUp, slide, revive } from './sim.js';
 import { drawTunnel, QUALITY } from './render.js';
 import { store } from './store.js';
@@ -87,7 +87,7 @@ let obols = store.get('obols', 0);
 let pendingDeath = null;
 function earn(n) { if (n <= 0) return; obols += n; run.earned = (run.earned || 0) + n; store.set('obols', obols); }
 const charonPrice = () => CHARON_PRICE * 2 ** (run.continues || 0);          // last frame's S.hermes, for the countdown ticks
-let shake = 0, flash = 0, deadAt = 0, zeusFlash = 0;
+let shake = 0, flash = 0, deadAt = 0, zeusFlash = 0, wasBelow = null;
 let countdownLeft = 0;
 let debug = store.get('debug', false); // hitbox view: H key, or tap the version label 5 times
 
@@ -301,12 +301,14 @@ function frame(now) {
 
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   if (shake > 0) { const a = shake * 18; ctx.translate((Math.random() - 0.5) * a, (Math.random() - 0.5) * a); }
-  drawTunnel(ctx, S, W, H, { debug, fx, quality: quality(), fixedCamera: opt.camera === 'fixed' });
+  drawTunnel(ctx, S, W, H, { debug, fx, quality: quality(), fixedCamera: opt.camera === 'fixed', area: tut ? 'surface' : undefined });
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   if (zeusFlash > 0 && state !== 'menu') { ctx.fillStyle = `rgba(215,232,255,${(zeusFlash * zeusFlash * 0.35).toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
   if (flash > 0) { ctx.fillStyle = rgb(COL.haz, flash * 0.45); ctx.fillRect(0, 0, W, H); }
   if (fx.flipFade > 0) { ctx.fillStyle = rgb(COL.cloud, fx.flipFade / 0.16 * 0.55); ctx.fillRect(0, 0, W, H); }
-  if (state === 'menu') { ctx.fillStyle = rgb(COL.bg, 0.25); ctx.fillRect(0, 0, W, H); }
+  const below = !tut && S.dist < UNDER_END; // the underworld (v0.53): darker scene, light HUD text
+  if (below !== wasBelow) { wasBelow = below; $('stage').classList.toggle('under', below); }
+  if (state === 'menu') { ctx.fillStyle = below ? 'rgba(10,20,26,0.25)' : rgb(COL.bg, 0.25); ctx.fillRect(0, 0, W, H); }
   if (fx.popT > 0 && $('pop').textContent !== fx.popText) { $('pop').textContent = fx.popText; }
   $('pop').hidden = !(fx.popT > 0 && state === 'play');
   const showBless = fx.blessT > 0 && state === 'play';
