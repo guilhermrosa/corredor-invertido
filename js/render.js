@@ -960,8 +960,8 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     // v0.51.1 (user: the black tear was hard to see; picked lightning inside): the dark storm beyond, with
     // lightning flashing in it now and then (the whole gap lights up and a bolt forks across it)
     const sy = HM, fk = fogK(z0) * 0.7, seed = Math.floor(o.len * 100);
-    const flash = hash(seed + Math.floor(t * 5)) < 0.35;
-    ctx.fillStyle = rgb(mix(flash ? [96, 120, 170] : [26, 32, 48], COL.haze, fk));
+    const flash = true; // v0.51.2 (user): lightning all the time, a new shape every frame
+    ctx.fillStyle = rgb(mix(flash ? [80 + 30 * Math.random(), 104 + 30 * Math.random(), 160 + 20 * Math.random()] : [26, 32, 48], COL.haze, fk)); // flickering
     path([P(-w, sy, z0), P(w, sy, z0), P(w, sy, z1), P(-w, sy, z1)]); ctx.fill();
     if (flash) {
       ctx.save();
