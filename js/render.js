@@ -358,8 +358,10 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   ctx.save();
   ctx.translate(W * CAMERA.anchorX, H * CAMERA.anchorY);
   ctx.rotate(roll);
+  // the backdrop is infinitely far: it only pans (also redrawn inside holes, v0.53.2)
+  const paintBack = () => { ctx.save(); ctx.translate(Math.tan(yaw) * f, -Math.tan(pitch) * f / Math.cos(yaw)); drawBackdrop(ctx, W, H, t, Q, storm, zeus, zeus > 0 && ease > 0.5); ctx.restore(); };
   ctx.save();
-  ctx.translate(Math.tan(yaw) * f, -Math.tan(pitch) * f / Math.cos(yaw)); // the backdrop is infinitely far: it only pans
+  ctx.translate(Math.tan(yaw) * f, -Math.tan(pitch) * f / Math.cos(yaw));
   // v0.50.9 (user, after a preview): in Zeus's fight, while the hero runs on the clouds, the backdrop is
   // mirrored left to right, so on the rolled screen it is the floor's view turned upside down: the sea
   // on top, and below, seen through the clouds under his feet, the storm with Zeus hanging upside down
@@ -713,7 +715,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     ctx.clip();
     if (!o.open) {
       // a broken slab: what lies beyond is the sea below or the sky above
-      quad(...mouth, fog(o.side < 0 ? COL.sea : mix(COL.skyTop, COL.haze, 0.35), z0));
+      paintBack(); // v0.53.2 (user): through a broken slab you see the scenery itself, the river or sea below, the vault or sky above
       const side = fog(mix(COL.ruin, COL.edge, 0.4), z0);
       quad(P(-w, sy, z0), P(-w, sy + dy, z0), P(-w, sy + dy, z1), P(-w, sy, z1), side);
       quad(P(w, sy, z0), P(w, sy + dy, z0), P(w, sy + dy, z1), P(w, sy, z1), side);
