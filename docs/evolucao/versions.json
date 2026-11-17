@@ -239,9 +239,9 @@
     "title": "O fundo pelos buracos",
     "text": "Pelos buracos agora se vê o próprio cenário, e não uma cor lisa: o rio ou o mar lá embaixo, a abóbada da caverna ou o céu lá em cima.",
     "destaque": {
-      "legenda": "O mar visto por um buraco",
-      "desde": 700,
-      "ate": "o.type==='hole' && !o.open && o.side===-1 && o.z>3 && o.z<7"
+      "legenda": "O rio do submundo visto por um buraco",
+      "desde": 60,
+      "ate": "S.dist < 560 && o.type==='hole' && !o.open && o.side===-1 && o.len>2 && o.z>1.8 && o.z<4"
     }
   },
   {
