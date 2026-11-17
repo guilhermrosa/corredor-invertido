@@ -10,7 +10,7 @@ import {
   SLIDE_TIME, SLIDE_H, FAST_FALL, PORTAL_GAP, PORTAL_FROM, FLIP_V, LIVES, INVULN_TIME,
   SINK_TIME, SINK_DEPTH, SINK_G, SINK_SLOW,
   FALL_FROM, FALL_LEAD, TOPPLE_TIME, DROP_TIME, FALL_WOBBLE, TOPPLE_H,
-  UNDER_END, HEART_FROM, HEART_CHANCE, HEART_LIFT, HERMES_FROM, HERMES_CHANCE, HERMES_TIME, AEGIS_FROM, AEGIS_CHANCE, AEGIS_HITS,
+  UNDER_END, EXIT_CLEAR, HEART_FROM, HEART_CHANCE, HEART_LIFT, HERMES_FROM, HERMES_CHANCE, HERMES_TIME, AEGIS_FROM, AEGIS_CHANCE, AEGIS_HITS,
   BOSS_FROM, BOSS_GAP, BOSS_CHANCE, MARK_LEAD,
   SPEED_START, speedAt, clamp,
 } from './config.js';
@@ -189,6 +189,7 @@ function spawn(S) {
     const jd = S.speed * LAYOUT_AIR;
     const roll = Math.random();
     const far = S.dist + S.nextZ;
+    if (far > UNDER_END - EXIT_CLEAR[0] && far < UNDER_END + EXIT_CLEAR[1]) { S.nextZ = UNDER_END + EXIT_CLEAR[1] - S.dist; continue; } // the way out stays clear
 
     if (S.giftSeq) {
       // the stretch that follows a gift of the gods, taken or not (sequences.js)
@@ -296,6 +297,15 @@ function spawn(S) {
       break;
     }
   }
+  // v0.53.8: nothing laid before reaches into the clear stretch at the cave mouth either (a long wall,
+  // an open stretch, an authored set): open stretches are cut short there, anything else is dropped
+  const a = UNDER_END - EXIT_CLEAR[0], b = UNDER_END + EXIT_CLEAR[1];
+  if (S.dist < b) S.obs = S.obs.filter(o => {
+    const s0 = S.dist + o.z, s1 = s0 + o.len;
+    if (s1 <= a || s0 >= b) return true;
+    if (o.open && s0 < a) { o.len = a - s0; return true; }
+    return false;
+  });
 }
 
 function jump(S, emit) {

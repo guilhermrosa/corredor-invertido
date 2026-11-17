@@ -137,6 +137,9 @@ COL.bg = COL.haze;
 // The underworld (v0.53, user: "we flee the underworld but never run in it"): every run starts below,
 // in a cave by the river of the dead, and comes up to the seaside ruins at UNDER_END metres.
 export const UNDER_END = 600;
+// v0.53.8 (user: some obstacles at the way out could not be dodged): no obstacles from this many
+// metres before the cave mouth to this many after it
+export const EXIT_CLEAR = [25, 45];
 // Its palette: the same keys as COL, in the look of Charon's scene (dark rock, teal-green light,
 // bioluminescent water); render.js swaps it in while the hero is below.
 export const COL_UNDER = {
