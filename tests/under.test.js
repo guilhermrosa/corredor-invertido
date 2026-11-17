@@ -5,7 +5,7 @@ import { UNDER_END } from '../js/config.js';
 
 // The underworld (v0.53): every run starts below; no gifts of the gods and no toppling columns
 // (Zeus's wrath) there, and the sim says once when the hero comes up to the surface
-test('no gifts and no toppling columns below, one surface event', () => {
+test('below: no gifts, toppling columns, portals or missing floor; one surface event', () => {
   let reached = 0;
   for (let run = 0; run < 6; run++) {
     const S = createSim({ chances: { heart: 1, sandals: 1, aegis: 1, boss: 0 } });
@@ -21,6 +21,8 @@ test('no gifts and no toppling columns below, one surface event', () => {
         const at = S.dist + o.z;
         if (['heart', 'sandals', 'aegis'].includes(o.type)) { assert.ok(at >= UNDER_END, `${o.type} at ${at.toFixed(0)} m`); giftsAbove++; }
         if (o.topple) assert.ok(at >= UNDER_END, `toppling column at ${at.toFixed(0)} m`);
+        if (o.type === 'portal') assert.ok(at >= UNDER_END, `portal at ${at.toFixed(0)} m`);
+        if (o.open && o.side < 0) assert.ok(at >= UNDER_END - 1, `missing floor at ${at.toFixed(0)} m`);
       }
     }
     if (S.dist >= UNDER_END) { reached++; assert.equal(surface, 1); }

@@ -165,7 +165,7 @@ function jumpables(S, from, to, side, sp, jd, avoid = []) {
   const step = sp * (LAYOUT_AIR + 0.3) + 1;
   for (let oz = from; oz < to; oz += step + Math.random() * sp * 0.35) {
     if (avoid.some(t => oz + 2 > t.z - step && oz < t.z + t.len + step)) continue;
-    if (S.dist + oz > PORTAL_FROM && Math.random() < 0.2) {
+    if (S.dist + oz > PORTAL_FROM && S.dist + oz >= UNDER_END && Math.random() < 0.2) {
       const pl = 0.6 + Math.random() * 0.4;
       S.obs.push({ type: 'portal', z: oz, len: pl, side });
       oz += pl;
@@ -199,7 +199,10 @@ function spawn(S) {
       placeBoss(S, sp); // Zeus's wrath, the mini boss (v0.50)
       continue;
     }
-    if (Math.random() < sequenceChance(far)) {
+    // the underworld (v0.53.3, user: less variety below): only rocks to jump, holes, tall rocks to flip
+    // from, falling stalactites and stretches with no roof; no authored stretches, portals or missing floor
+    const below = far < UNDER_END;
+    if (!below && Math.random() < sequenceChance(far)) {
       // an authored stretch (sequences.js)
       const seq = pickSequence(far);
       if (seq) { placeSequence(S, seq, S.nextZ, sp, Math.random() < 0.5 ? -1 : 1); continue; }
@@ -207,7 +210,7 @@ function spawn(S) {
 
     if (far > 80 && roll < 0.18) {
       // Single-surface zone: one side is open sky; stay on the other and jump what comes.
-      const open = Math.random() < 0.5 ? -1 : 1;
+      const open = below ? 1 : Math.random() < 0.5 ? -1 : 1;
       const z = S.nextZ, len = 26 + Math.random() * 22, end = z + len;
       const plats = Math.random() < 0.6 ? (Math.random() < 0.4 ? 2 : 1) : 0;
       let hz = z;
@@ -259,7 +262,7 @@ function spawn(S) {
     // below (v0.53) no column topples, Zeus has no power there: a falling stalactite (drop) instead
     if (far > FALL_FROM && far > UNDER_END && r2 > 0.92) ob = { type: 'block', h: TOPPLE_H, topple: true, len: 0.5, fixedSide: -1, col: Math.random() < 0.5 ? -1 : 1 }; // col: which colonnade (v0.49: either)
     else if (far > FALL_FROM && r2 > 0.84) ob = { type: 'block', drop: true, len: 0.9 + Math.random() * 0.6, fixedSide: 1 };
-    else if (far > PORTAL_FROM && r2 < 0.15) ob = { type: 'portal', len: 0.6 + Math.random() * 0.4 };
+    else if (far > PORTAL_FROM && !below && r2 < 0.15) ob = { type: 'portal', len: 0.6 + Math.random() * 0.4 };
     else if (r2 < 0.3) ob = { type: 'hole', len: 1.8 + Math.random() * 1.8 };
     else if (r2 < 0.5 && far > 40) ob = { type: 'block', h: LOWH, len: 0.6 + Math.random() * 0.7 };
     else ob = { type: 'block', len: Math.random() < 0.18 ? 3 + Math.random() * 3 : 0.8 + Math.random() * 1.4 };
