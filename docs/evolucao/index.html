@@ -23,9 +23,12 @@
     time { color: var(--muted); font-size: 13px; }
     p.text { margin: 0 0 12px; max-width: 70ch; }
     .shots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; }
+    .shots.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     figure { margin: 0; }
     figure img { width: 100%; height: auto; aspect-ratio: 1 / 2; object-fit: cover; display: block; border-radius: 8px; border: 1px solid var(--line); background: #ccc; }
     figcaption { font-size: 12px; color: var(--muted); text-align: center; margin-top: 4px; }
+    figure.hl img { outline: 3px solid #c9a24a; outline-offset: -3px; }
+    figure.hl figcaption { color: #8a6a1e; font-weight: 600; }
     .back { margin: 0 0 8px; font-size: 15px; }
     footer { margin-top: 28px; color: var(--muted); font-size: 13px; }
   </style>
@@ -34,9 +37,9 @@
 <main>
   <p class="back"><a href="../../">← Voltar ao jogo</a></p>
   <h1>Evolução do Corredor <span>Invertido</span></h1>
-  <p class="lead">Como o jogo mudou de versão em versão. Cada versão foi aberta direto do histórico do projeto e jogada do mesmo jeito, com os mesmos obstáculos: o menu, um instante no chão e um instante depois de inverter para o teto. <a href="../../">Jogar a versão atual</a>.</p>
+  <p class="lead">Como o jogo mudou de versão em versão. Cada versão foi aberta direto do histórico do projeto e jogada do mesmo jeito, com os mesmos obstáculos: o menu, um instante no chão e um instante depois de inverter para o teto. Quando a novidade não aparece nesses primeiros metros, a versão ganha também um destaque (o primeiro print, com borda dourada): a mesma versão jogada sozinha até o momento em que a mudança aparece. <a href="../../">Jogar a versão atual</a>.</p>
   <ol id="list"></ol>
-  <footer>Prints gerados por <code>tools/capture-versions.cjs</code>. As versões entre as mostradas tiveram ajustes de controle, som ou correções sem mudança visual grande.</footer>
+  <footer>Prints gerados por <code>tools/capture-versions.cjs</code> e destaques por <code>tools/capture-highlights.cjs</code>. As versões entre as mostradas tiveram ajustes de controle, som ou correções sem mudança visual grande.</footer>
 </main>
 <script>
   const fmt = d => new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -46,9 +49,9 @@
       <li>
         <div class="head"><span class="ver">${esc(e.v)}</span><h2>${esc(e.title)}</h2><time datetime="${e.date}">${fmt(e.date)}</time></div>
         <p class="text">${esc(e.text)}</p>
-        <div class="shots">
-          ${[['menu', 'Menu'], ['chao', 'No chão'], ['teto', 'No teto']].map(([k, label]) =>
-            `<figure><img src="img/${e.v}-${k}.jpg" alt="Versão ${esc(e.v)}: ${label.toLowerCase()}" loading="lazy" width="390" height="780"><figcaption>${label}</figcaption></figure>`).join('')}
+        <div class="shots${e.destaque ? ' four' : ''}">
+          ${(e.destaque ? [['destaque', e.destaque.legenda]] : []).concat([['menu', 'Menu'], ['chao', 'No chão'], ['teto', 'No teto']]).map(([k, label]) =>
+            `<figure${k === 'destaque' ? ' class="hl"' : ''}><img src="img/${e.v}-${k}.jpg" alt="Versão ${esc(e.v)}: ${esc(label.toLowerCase())}" loading="lazy" width="390" height="780"><figcaption>${esc(label)}</figcaption></figure>`).join('')}
         </div>
       </li>`).join('');
   });

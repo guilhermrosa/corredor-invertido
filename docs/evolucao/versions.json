@@ -39,7 +39,11 @@
     "v": "0.13",
     "date": "2026-11-11",
     "title": "Deslizar",
-    "text": "Arrastar para baixo faz o axolote deslizar, e surgem os pórticos caídos, que só se passam deslizando."
+    "text": "Arrastar para baixo faz o axolote deslizar, e surgem os pórticos caídos, que só se passam deslizando.",
+    "destaque": {
+      "legenda": "Pórtico caído: só passa deslizando",
+      "ate": "o.type==='portal' && o.side===-1 && o.z>6 && o.z<11"
+    }
   },
   {
     "v": "0.16",
@@ -69,7 +73,20 @@
     "v": "0.26",
     "date": "2026-11-11",
     "title": "A ruína desaba",
-    "text": "Colunas que tombam no caminho e blocos que despencam do teto, com aviso antes de cair. Na 0.27, a opção de câmera que nunca gira a tela."
+    "text": "Colunas que tombam no caminho e blocos que despencam do teto, com aviso antes de cair. Na 0.27, a opção de câmera que nunca gira a tela.",
+    "destaque": {
+      "legenda": "Uma coluna tombando no caminho",
+      "ate": "o.topple && o.p>0.8 && o.p<0.95 && o.z>8 && o.z<18 && !S.obs.some(b => b !== o && b.type !== 'hole' && b.z > -1 && b.z < o.z + 2) && !S.obs.some(h => h.type === 'hole' && h.side === -1 && h.z < o.z && h.z + h.len > -4)",
+      "lado": "qualquer",
+      "set": {
+        "grav": -1,
+        "py": 0,
+        "vy": 0,
+        "camT": 0,
+        "grounded": true,
+        "slide": 0
+      }
+    }
   },
   {
     "v": "0.29",
@@ -87,7 +104,11 @@
     "v": "0.32",
     "date": "2026-11-12",
     "title": "Bênção de Atena",
-    "text": "Coração dourado no caminho: uma vida extra, no máximo uma de cada vez."
+    "text": "Coração dourado no caminho: uma vida extra, no máximo uma de cada vez.",
+    "destaque": {
+      "legenda": "O coração dourado no caminho",
+      "ate": "o.type==='heart' && o.side===-1 && o.z>5 && o.z<10"
+    }
   },
   {
     "v": "0.35",
@@ -117,13 +138,21 @@
     "v": "0.43",
     "date": "2026-11-16",
     "title": "Mosaicos, vasos e entulho",
-    "text": "Terceira etapa do visual: de vez em quando o corredor passa por um mosaico claro com borda de grega azul e uma estrela no centro; entre as colunas aparecem vasos de figuras negras (alguns tombados e quebrados) e pedras soltas. Na 0.42.1 a vegetação ficou mais rara, os obstáculos perderam os contornos e o desenho ficou mais leve."
+    "text": "Terceira etapa do visual: de vez em quando o corredor passa por um mosaico claro com borda de grega azul e uma estrela no centro; entre as colunas aparecem vasos de figuras negras (alguns tombados e quebrados) e pedras soltas. Na 0.42.1 a vegetação ficou mais rara, os obstáculos perderam os contornos e o desenho ficou mais leve.",
+    "destaque": {
+      "legenda": "Vasos de figuras negras entre as colunas",
+      "metros": 150
+    }
   },
   {
     "v": "0.44",
     "date": "2026-11-16",
     "title": "Obstáculos no mesmo estilo",
-    "text": "Quarta etapa do visual: a mureta virou blocos de pedra com laje de arremate, a coluna caída um tambor dórico com caneluras, o muro em ruínas ganhou fiadas de blocos e uma rachadura, a viga caída tríglifos azuis com sulcos e cornija, o pórtico tambores canelados, e a coluna que tomba tem capitel dórico. Formatos e cores claras mantidos. Na 0.43.1, vasos 20% mais raros. Na 0.44.1, pedra dos obstáculos mais clara e menos amarelada, e a coluna que tomba igual às da colunata."
+    "text": "Quarta etapa do visual: a mureta virou blocos de pedra com laje de arremate, a coluna caída um tambor dórico com caneluras, o muro em ruínas ganhou fiadas de blocos e uma rachadura, a viga caída tríglifos azuis com sulcos e cornija, o pórtico tambores canelados, e a coluna que tomba tem capitel dórico. Formatos e cores claras mantidos. Na 0.43.1, vasos 20% mais raros. Na 0.44.1, pedra dos obstáculos mais clara e menos amarelada, e a coluna que tomba igual às da colunata.",
+    "destaque": {
+      "legenda": "Muro e mureta no estilo novo",
+      "ate": "o.type==='block' && !o.topple && !o.drop && o.z>5 && o.z<9"
+    }
   },
   {
     "v": "0.45",
@@ -135,37 +164,71 @@
     "v": "0.46",
     "date": "2026-11-16",
     "title": "Sandálias de Hermes",
-    "text": "O primeiro presente dos deuses: uma sandália alada dourada aparece de vez em quando no caminho (a partir de 250 m). Pegá-la dá 6 segundos andando sobre buracos e trechos sem chão: faíscas douradas marcam a beira dos vãos e o axolote ganha asinhas brancas nos tornozelos (visual refeito na 0.46.1), com uma barra no placar contando o tempo. Nas 0.45.2 a 0.45.5, nova estampa dos tapetes de mosaico."
+    "text": "O primeiro presente dos deuses: uma sandália alada dourada aparece de vez em quando no caminho (a partir de 250 m). Pegá-la dá 6 segundos andando sobre buracos e trechos sem chão: faíscas douradas marcam a beira dos vãos e o axolote ganha asinhas brancas nos tornozelos (visual refeito na 0.46.1), com uma barra no placar contando o tempo. Nas 0.45.2 a 0.45.5, nova estampa dos tapetes de mosaico.",
+    "destaque": {
+      "legenda": "As sandálias aladas no caminho",
+      "ate": "o.type==='sandals' && o.side===-1 && o.z>5 && o.z<9"
+    }
   },
   {
     "v": "0.47",
     "date": "2026-11-16",
     "title": "Escudo de Atena",
-    "text": "Segundo presente dos deuses: o escudo de Atena, redondo, azul e dourado, que o axolote carrega na mão. Ao bater no próximo muro, viga, pórtico ou bloco caído, ele quebra o obstáculo e se gasta; buracos e muretas continuam valendo. O coração dourado passou a ser bênção de Perséfone (na 0.47.1, virou romã dourada, e as vidas no placar viraram romãs), e as bênçãos ganharam uma placa dourada no lugar do texto preto."
+    "text": "Segundo presente dos deuses: o escudo de Atena, redondo, azul e dourado, que o axolote carrega na mão. Ao bater no próximo muro, viga, pórtico ou bloco caído, ele quebra o obstáculo e se gasta; buracos e muretas continuam valendo. O coração dourado passou a ser bênção de Perséfone (na 0.47.1, virou romã dourada, e as vidas no placar viraram romãs), e as bênçãos ganharam uma placa dourada no lugar do texto preto.",
+    "destaque": {
+      "legenda": "O escudo de Atena no caminho",
+      "ate": "o.type==='aegis' && o.z>5 && o.z<9"
+    }
   },
   {
     "v": "0.48",
     "date": "2026-11-16",
     "title": "A ira de Zeus",
-    "text": "Zeus entra como antagonista: a coluna que tomba agora é a ira dele, com raios azuis estalando em volta, um clarão na tela e um trovão na lira. Antes disso, na 0.47.x: escudo de Atena que aguenta duas batidas (racha na primeira), romãs no lugar dos corações, trechos que vêm depois de cada presente (o caminho de Hermes e a muralha de Atena) e os presentes nas estatísticas e conquistas."
+    "text": "Zeus entra como antagonista: a coluna que tomba agora é a ira dele, com raios azuis estalando em volta, um clarão na tela e um trovão na lira. Antes disso, na 0.47.x: escudo de Atena que aguenta duas batidas (racha na primeira), romãs no lugar dos corações, trechos que vêm depois de cada presente (o caminho de Hermes e a muralha de Atena) e os presentes nas estatísticas e conquistas.",
+    "destaque": {
+      "legenda": "Os raios de Zeus na coluna",
+      "ate": "o.topple && o.p>0.1 && o.p<0.45 && o.z>17 && o.z<26 && !S.obs.some(b => b !== o && b.type !== 'hole' && b.z > -1 && b.z < o.z + 2)",
+      "lado": "qualquer"
+    }
   },
   {
     "v": "0.49",
     "date": "2026-11-16",
     "title": "Fúria de Zeus",
-    "text": "As colunas atingidas por Zeus agora caem dos dois lados do corredor, e um novo trecho, a Fúria de Zeus (a partir de 500 m), derruba quatro colunas seguidas, alternando os lados, com vigas no teto para ninguém se esconder lá em cima. Antes disso, na 0.48.x: o raio vem do céu e passa por trás das colunas da frente, a base da coluna explode, a coluna que cai ficou igual às outras (com caneluras, faixa azul, sombra e um contorno suave para não sumir no chão), e os arrastes ficaram mais difíceis de disparar sem querer."
+    "text": "As colunas atingidas por Zeus agora caem dos dois lados do corredor, e um novo trecho, a Fúria de Zeus (a partir de 500 m), derruba quatro colunas seguidas, alternando os lados, com vigas no teto para ninguém se esconder lá em cima. Antes disso, na 0.48.x: o raio vem do céu e passa por trás das colunas da frente, a base da coluna explode, a coluna que cai ficou igual às outras (com caneluras, faixa azul, sombra e um contorno suave para não sumir no chão), e os arrastes ficaram mais difíceis de disparar sem querer.",
+    "destaque": {
+      "legenda": "Coluna atingida por Zeus tombando",
+      "ate": "o.topple && o.col===-1 && o.p>0.72 && o.p<0.95 && o.z>8 && o.z<22 && !S.obs.some(b => b !== o && b.type !== 'hole' && b.z > -1 && b.z < o.z + 2) && !S.obs.some(h => h.type === 'hole' && h.side === -1 && h.z < o.z && h.z + h.len > -4)",
+      "lado": "qualquer",
+      "set": {
+        "grav": -1,
+        "py": 0,
+        "vy": 0,
+        "camT": 0,
+        "grounded": true,
+        "slide": 0
+      }
+    }
   },
   {
     "v": "0.50",
     "date": "2026-11-16",
     "title": "A ira de Zeus (mini chefe)",
-    "text": "De vez em quando, a partir de 1 km, Zeus desperta: a colunata vira ruínas abertas sob uma tempestade, ele surge entre as nuvens e ataca em ordem sorteada com raios marcados no chão ou no teto, blocos que despencam com o chão sumindo, e o chão ou o teto eletrificado; no fim, uma fúria de colunas e raios. Antes, na 0.49.1: lados aleatórios na Fúria de Zeus e a tempestade sobre ela."
+    "text": "De vez em quando, a partir de 1 km, Zeus desperta: a colunata vira ruínas abertas sob uma tempestade, ele surge entre as nuvens e ataca em ordem sorteada com raios marcados no chão ou no teto, blocos que despencam com o chão sumindo, e o chão ou o teto eletrificado; no fim, uma fúria de colunas e raios. Antes, na 0.49.1: lados aleatórios na Fúria de Zeus e a tempestade sobre ela.",
+    "destaque": {
+      "legenda": "Na tempestade de Zeus",
+      "ate": "o.type==='boss' && o.z < -25 && o.z + o.len > 25"
+    }
   },
   {
     "v": "0.52",
     "date": "2026-11-17",
     "title": "Caronte e os óbolos",
-    "text": "Ao morrer, Xolo volta ao barco de Caronte, no rio escuro do submundo. Com óbolos, ganhos a cada 750 m e por feitos como vencer a ira de Zeus, dá para subornar o barqueiro e voltar à corrida de onde caiu, cada vez mais caro. Antes, na 0.51: a arena de Zeus ganhou redemoinhos, nuvens carregadas e rasgos com relâmpagos no teto de nuvem."
+    "text": "Ao morrer, Xolo volta ao barco de Caronte, no rio escuro do submundo. Com óbolos, ganhos a cada 750 m e por feitos como vencer a ira de Zeus, dá para subornar o barqueiro e voltar à corrida de onde caiu, cada vez mais caro. Antes, na 0.51: a arena de Zeus ganhou redemoinhos, nuvens carregadas e rasgos com relâmpagos no teto de nuvem.",
+    "destaque": {
+      "legenda": "Caronte e o suborno",
+      "charon": true
+    }
   },
   {
     "v": "0.52.4",
@@ -189,18 +252,32 @@
     "v": "0.53.2",
     "date": "2026-11-17",
     "title": "O fundo pelos buracos",
-    "text": "Pelos buracos agora se vê o próprio cenário, e não uma cor lisa: o rio ou o mar lá embaixo, a abóbada da caverna ou o céu lá em cima."
+    "text": "Pelos buracos agora se vê o próprio cenário, e não uma cor lisa: o rio ou o mar lá embaixo, a abóbada da caverna ou o céu lá em cima.",
+    "destaque": {
+      "legenda": "O mar visto por um buraco",
+      "desde": 700,
+      "ate": "o.type==='hole' && !o.open && o.side===-1 && o.z>3 && o.z<6"
+    }
   },
   {
     "v": "0.53.4",
     "date": "2026-11-17",
     "title": "A boca da caverna",
-    "text": "A saída do submundo virou um lugar: no fim do túnel aparece a boca da caverna no cabo Tênaro, com dentes de pedra, e pela abertura já se veem as ruínas, o céu e o mar. Xolo sai correndo direto para a luz. Antes, na 0.53.3: o submundo ficou com menos tipos de obstáculo."
+    "text": "A saída do submundo virou um lugar: no fim do túnel aparece a boca da caverna no cabo Tênaro, com dentes de pedra, e pela abertura já se veem as ruínas, o céu e o mar. Xolo sai correndo direto para a luz. Antes, na 0.53.3: o submundo ficou com menos tipos de obstáculo.",
+    "destaque": {
+      "legenda": "A boca da caverna, perto da saída",
+      "desde": 570,
+      "ate": "S.dist < 590"
+    }
   },
   {
     "v": "0.54",
     "date": "2026-11-17",
     "title": "Os campos de Deméter",
-    "text": "Depois de 2,5 km, Xolo passa pelo propileu de Elêusis e entra nos campos de trigo de Deméter, que surge ao fundo, no céu. Ela ataca com trigo que brota, vinhas que fecham a passagem e raízes que racham o chão. As passagens entre áreas agora ficam sem teto, e a caverna ganhou vaga-lumes e uma boca de rocha mais trabalhada."
+    "text": "Depois de 2,5 km, Xolo passa pelo propileu de Elêusis e entra nos campos de trigo de Deméter, que surge ao fundo, no céu. Ela ataca com trigo que brota, vinhas que fecham a passagem e raízes que racham o chão. As passagens entre áreas agora ficam sem teto, e a caverna ganhou vaga-lumes e uma boca de rocha mais trabalhada.",
+    "destaque": {
+      "legenda": "Entrando nos campos de Deméter",
+      "ate": "o.type==='demeter' && o.z>26 && o.z<34"
+    }
   }
 ]

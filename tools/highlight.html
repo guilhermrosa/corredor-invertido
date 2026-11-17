@@ -1,0 +1,29 @@
+<!doctype html><meta charset="utf-8">
+<!-- Used by tools/capture-highlights.cjs: copied into an old version's files and opened there. It plays
+     that version's own sim with the menu's autopilot (no collisions) from a fixed seed until the
+     scene asked for in the URL shows up, then draws one frame with that version's renderer. -->
+<body style="margin:0;background:#000">
+<canvas id="c" style="width:390px;height:780px"></canvas>
+<script type="module">
+const q = new URLSearchParams(location.search);
+const spec = JSON.parse(q.get('spec'));
+let s = spec.seed || 20261112;
+Math.random = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+const { createSim, update } = await import('./js/sim.js');
+const { drawTunnel } = await import('./js/render.js');
+const c = document.getElementById('c');
+if (spec.mirror !== false) c.style.transform = 'scaleX(-1)'; // the game's default view
+c.width = 780; c.height = 1560;
+const S = createSim();
+const find = spec.ate ? new Function('o', 'S', 'return ' + spec.ate) : null;
+// only while he runs on a surface with the camera settled: on the floor by default, either with lado 'qualquer'
+const settled = () => S.grounded && !(S.slide > 0) && (spec.lado === 'qualquer' ? [0, 1].includes(S.camT || 0) : S.grav < 0 && (S.camT || 0) === 0);
+const ok = () => S.dist >= (spec.desde || 0) && settled() && (spec.metros ? S.dist >= spec.metros : find && S.obs.some(o => find(o, S)));
+for (let i = 0; i < 60 * 600 && !ok(); i++) update(S, 1 / 60, () => {}, { live: false, autopilot: true });
+for (let i = 0; i < (spec.depois || 0); i++) update(S, 1 / 60, () => {}, { live: false, autopilot: true });
+Object.assign(S, spec.set || {});
+const ctx = c.getContext('2d'); ctx.scale(2, 2);
+drawTunnel(ctx, S, 390, 780, { quality: 'high' });
+const hit = find && S.obs.find(o => find(o, S));
+document.title = (ok() || spec.depois ? 'ok ' : 'not found ') + Math.round(S.dist) + (hit ? ' ' + JSON.stringify({ z: +hit.z.toFixed(1), p: hit.p, side: hit.side, col: hit.col, grav: S.grav }) : '');
+</script>
