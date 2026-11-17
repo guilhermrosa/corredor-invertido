@@ -13,7 +13,7 @@ import * as stats from './stats.js';
 import * as ach from './achievements.js';
 import { STEPS, createTutorial, startStep, progress } from './tutorial.js';
 import { aegisSvg } from './aegis.js';
-import { fx, onLand, onThud, whileSliding, onHit, onInstantFlip, onFlipBlessing, whileBlessed, onMilestone, onPop, onBlessing, onWrath, onSmash, onColumnBreak, updateFx, clearFx } from './fx.js';
+import { fx, onLand, onThud, whileSliding, onHit, onInstantFlip, onFlipBlessing, whileBlessed, onMilestone, onPop, onBlessing, onWrath, onSurface, onSmash, onColumnBreak, updateFx, clearFx } from './fx.js';
 
 const $ = id => document.getElementById(id);
 const VERSION_LABEL = 'Versão ' + self.APP_VERSION; // from js/version.js
@@ -87,7 +87,7 @@ let obols = store.get('obols', 0);
 let pendingDeath = null;
 function earn(n) { if (n <= 0) return; obols += n; run.earned = (run.earned || 0) + n; store.set('obols', obols); }
 const charonPrice = () => CHARON_PRICE * 2 ** (run.continues || 0);          // last frame's S.hermes, for the countdown ticks
-let shake = 0, flash = 0, deadAt = 0, zeusFlash = 0, wasBelow = null;
+let shake = 0, flash = 0, deadAt = 0, zeusFlash = 0, wasBelow = null, exitFlash = 0;
 let countdownLeft = 0;
 let debug = store.get('debug', false); // hitbox view: H key, or tap the version label 5 times
 
@@ -118,6 +118,7 @@ const emit = (type, data) => {
   if (type === 'smash') { onSmash(S); shake = Math.max(shake, 0.25); buzz(25); renderLives(S.lives, false); if (!tut) stats.recordSmash(data.kind); return; }
   if (type === 'crack' && data.kind === 'pillar') zeusFlash = 1;
   if (type === 'strike') { zeusFlash = 1; shake = Math.max(shake, 0.15); }
+  if (type === 'surface') { if (!tut) { onSurface(); exitFlash = 1; } return audio.sfx('surface'); }
   if (type === 'bossStart') { if (!tut) { onWrath('Zeus desperta', 'sobreviva à tempestade'); run.zeus = true; stats.recordZeus('faced'); } return; }
   if (type === 'bossEnd') { if (!tut && !S.dead) { onWrath('Zeus se recolhe', 'você resistiu à tempestade'); run.zeusSurvived = (run.zeusSurvived || 0) + 1; stats.recordZeus('survived'); earn(1); } return; }
   if (type === 'break') { onColumnBreak(data.z, HW, data.col); shake = Math.max(shake, 0.1); } // Zeus's wrath: a white-blue flash as the lightning strikes
@@ -297,24 +298,25 @@ function frame(now) {
     if (p === 'next') { showHint('Muito bem!', ''); setTimeout(() => { if (tut) showStepHint(); }, 700); }
     else if (p === 'done') finishTutorial();
   }
-  if (!frozen) { shake = Math.max(0, shake - dt); flash = Math.max(0, flash - dt * 3); zeusFlash = Math.max(0, zeusFlash - dt * 6); }
+  if (!frozen) { shake = Math.max(0, shake - dt); flash = Math.max(0, flash - dt * 3); zeusFlash = Math.max(0, zeusFlash - dt * 6); exitFlash = Math.max(0, exitFlash - dt * 1.2); }
 
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   if (shake > 0) { const a = shake * 18; ctx.translate((Math.random() - 0.5) * a, (Math.random() - 0.5) * a); }
   drawTunnel(ctx, S, W, H, { debug, fx, quality: quality(), fixedCamera: opt.camera === 'fixed', area: tut ? 'surface' : undefined });
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   if (zeusFlash > 0 && state !== 'menu') { ctx.fillStyle = `rgba(215,232,255,${(zeusFlash * zeusFlash * 0.35).toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
+  if (exitFlash > 0) { ctx.fillStyle = `rgba(255,250,232,${(exitFlash * exitFlash * 0.9).toFixed(3)})`; ctx.fillRect(0, 0, W, H); } // daylight at the cave mouth
   if (flash > 0) { ctx.fillStyle = rgb(COL.haz, flash * 0.45); ctx.fillRect(0, 0, W, H); }
   if (fx.flipFade > 0) { ctx.fillStyle = rgb(COL.cloud, fx.flipFade / 0.16 * 0.55); ctx.fillRect(0, 0, W, H); }
   const below = !tut && S.dist < UNDER_END; // the underworld (v0.53): darker scene, light HUD text
-  if (below !== wasBelow) { wasBelow = below; $('stage').classList.toggle('under', below); }
+  if (below !== wasBelow) { wasBelow = below; $('stage').classList.toggle('under', below); audio.setArea(below ? 'under' : 'surface'); }
   if (state === 'menu') { ctx.fillStyle = below ? 'rgba(10,20,26,0.25)' : rgb(COL.bg, 0.25); ctx.fillRect(0, 0, W, H); }
   if (fx.popT > 0 && $('pop').textContent !== fx.popText) { $('pop').textContent = fx.popText; }
   $('pop').hidden = !(fx.popT > 0 && state === 'play');
   const showBless = fx.blessT > 0 && state === 'play';
   if (showBless && $('blessing').dataset.id !== String(fx.bless.id)) {
     $('blessing').dataset.id = fx.bless.id;
-    $('blessGod').textContent = fx.bless.kind === 'wrath' ? 'A ira de Zeus' : 'Bênção de ' + fx.bless.god;
+    $('blessGod').textContent = fx.bless.kind === 'wrath' ? 'A ira de Zeus' : fx.bless.kind === 'exit' ? 'Cabo Tênaro' : 'Bênção de ' + fx.bless.god;
     $('blessing').classList.toggle('wrath', fx.bless.kind === 'wrath');
     $('blessGift').textContent = fx.bless.gift;
     $('blessText').textContent = fx.bless.text;

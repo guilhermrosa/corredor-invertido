@@ -73,7 +73,8 @@ export const SEQUENCES = [
     // Fúria de Zeus (v0.49, user's idea: "several columns Zeus strikes one after another, needing more
     // reflex, falling from both sides, never both at once"). Lintels on the roof in between, so hiding
     // up there does not get you through: down on the floor, jump the columns in rhythm.
-    id: 'furia-de-zeus', from: 500, weight: 1, end: 3.3, storm: true, // storm: the sky darkens (v0.49.1)
+    id: 'furia-de-zeus', from: 650, // above ground only (v0.53: the underworld ends at 600 m)
+    weight: 1, end: 3.3, storm: true, // storm: the sky darkens (v0.49.1)
     items: [
       { t: 0, type: 'topple', side: 'any', len: 0.5 },
       { t: 0.45, type: 'tall', side: 'ceil', len: 1.2 },

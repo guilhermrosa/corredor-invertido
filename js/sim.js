@@ -10,7 +10,7 @@ import {
   SLIDE_TIME, SLIDE_H, FAST_FALL, PORTAL_GAP, PORTAL_FROM, FLIP_V, LIVES, INVULN_TIME,
   SINK_TIME, SINK_DEPTH, SINK_G, SINK_SLOW,
   FALL_FROM, FALL_LEAD, TOPPLE_TIME, DROP_TIME, FALL_WOBBLE, TOPPLE_H,
-  HEART_FROM, HEART_CHANCE, HEART_LIFT, HERMES_FROM, HERMES_CHANCE, HERMES_TIME, AEGIS_FROM, AEGIS_CHANCE, AEGIS_HITS,
+  UNDER_END, HEART_FROM, HEART_CHANCE, HEART_LIFT, HERMES_FROM, HERMES_CHANCE, HERMES_TIME, AEGIS_FROM, AEGIS_CHANCE, AEGIS_HITS,
   BOSS_FROM, BOSS_GAP, BOSS_CHANCE, MARK_LEAD,
   SPEED_START, speedAt, clamp,
 } from './config.js';
@@ -256,7 +256,8 @@ function spawn(S) {
     S.lastSide = side;
     const r2 = Math.random();
     let ob;
-    if (far > FALL_FROM && r2 > 0.92) ob = { type: 'block', h: TOPPLE_H, topple: true, len: 0.5, fixedSide: -1, col: Math.random() < 0.5 ? -1 : 1 }; // col: which colonnade (v0.49: either)
+    // below (v0.53) no column topples, Zeus has no power there: a falling stalactite (drop) instead
+    if (far > FALL_FROM && far > UNDER_END && r2 > 0.92) ob = { type: 'block', h: TOPPLE_H, topple: true, len: 0.5, fixedSide: -1, col: Math.random() < 0.5 ? -1 : 1 }; // col: which colonnade (v0.49: either)
     else if (far > FALL_FROM && r2 > 0.84) ob = { type: 'block', drop: true, len: 0.9 + Math.random() * 0.6, fixedSide: 1 };
     else if (far > PORTAL_FROM && r2 < 0.15) ob = { type: 'portal', len: 0.6 + Math.random() * 0.4 };
     else if (r2 < 0.3) ob = { type: 'hole', len: 1.8 + Math.random() * 1.8 };
@@ -277,7 +278,8 @@ function spawn(S) {
     // v0.50.7 (user: gifts right after portals and low walls went unseen): further from the obstacle
     // (60% into the free stretch, it was the middle), and never right behind a portal, which hides it all
     const at = ob.z + ob.len + (S.nextZ - ob.z - ob.len) * 0.6 - 0.25, gside = Math.random() < 0.5 ? -1 : 1;
-    const gifts = ob.type === 'portal' ? [] : [
+    // and no gifts in the underworld (v0.53, user): the gods help him only above
+    const gifts = ob.type === 'portal' || far < UNDER_END ? [] : [
       ['heart', far > HEART_FROM && !S.gold],
       ['sandals', far > HERMES_FROM && S.hermes <= 0],
       ['aegis', far > AEGIS_FROM && !S.aegis],
@@ -359,6 +361,7 @@ export function update(S, dt, emit, opts = {}) {
   const v = S.speed * (S.sink > 0 ? SINK_SLOW : 1) * dt;
   const before = S.dist;
   S.dist += v;
+  if (!S.scripted && before < UNDER_END && S.dist >= UNDER_END) emit('surface'); // out of the underworld (v0.53)
   S.nextZ -= v;
   for (const o of S.obs) o.z -= v;
   S.obs = S.obs.filter(o => o.z + o.len > -8);

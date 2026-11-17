@@ -118,6 +118,9 @@ export function sfx(type, data = {}) {
     case 'coin': // an obol drops into Charon's palm (v0.52.1): a short bright clink, a little higher each time
       lyre.pluck(deg(NOTES.length - 3 + ((data?.i ?? 0) % 3)), 0, 0.32, { sustain: 0, bright: 90, dur: 0.12 });
       break;
+    case 'surface': // out of the underworld (v0.53): a long bright run up the strings, all the way
+      lyre.strum([deg(0), deg(2), deg(4), deg(7), deg(9), deg(11), deg(NOTES.length - 1)], 0.06, 0.45, { sustain: 70 });
+      break;
     case 'heal': // a life comes back: a bright rising arpeggio
       lyre.strum([deg(7), deg(9), deg(11), deg(NOTES.length - 1)], 0.05, 0.42, { sustain: 50 });
       break;
@@ -149,6 +152,10 @@ export function sfx(type, data = {}) {
 
 // Background music: generative lyre melody over a bass on the downbeat.
 // `getTempo` is read every note, so the music speeds up with the run.
+// The music's mood by area (v0.53): below, the melody stays low, sparse and soft, over a drone
+let under = false;
+export function setArea(area) { under = area === 'under'; }
+
 export function startMusic(getTempo) {
   if (!ac || !musicOn) return;
   tempoFor = getTempo;
@@ -175,13 +182,14 @@ function schedule() {
       lyre.pluck(NOTES[bassDeg], nextT, 0.5, { to });
     }
     if (beat === 4 && bar % 2 === 1) lyre.pluck(NOTES[2], nextT, 0.3, { to });
+    if (under && beat === 4 && bar % 2 === 0) lyre.pluck(NOTES[0], nextT, 0.22, { to });
     const resolve = bar % 4 === 3 && beat >= 6;
     if (resolve) {
       if (beat === 6) lyre.pluck(NOTES[PER], nextT, 0.42, { to });
-    } else if (Math.random() > 0.32) {
+    } else if (Math.random() > (under ? 0.55 : 0.32)) {
       melody += [-2, -1, -1, 1, 1, 2][Math.floor(Math.random() * 6)];
-      melody = Math.max(PER - 2, Math.min(NOTES.length - 1, melody));
-      lyre.pluck(NOTES[melody], nextT, beat % 2 ? 0.3 : 0.38, { to });
+      melody = Math.max(under ? 1 : PER - 2, Math.min(under ? PER + 1 : NOTES.length - 1, melody));
+      lyre.pluck(NOTES[melody], nextT, (beat % 2 ? 0.3 : 0.38) * (under ? 0.75 : 1), { to });
     }
     nextT += eighth * (beat % 2 ? 0.9 : 1.1); // light swing
     step++;

@@ -135,6 +135,8 @@ let blessId = 0;
 export function onBlessing(god, gift, text, kind = 'gift') { fx.bless = { id: ++blessId, god, gift, text, kind }; fx.blessT = 2.4; fx.popT = 0; }
 // Zeus's wrath (v0.50): the same plaque in storm colours
 export function onWrath(title, text) { onBlessing('Zeus', title, text, 'wrath'); }
+// out of the underworld (v0.53): the plaque without a god, headed by the place
+export function onSurface() { onBlessing('', 'A superfície', 'Xolo escapou do submundo', 'exit'); }
 
 export function updateFx(dt, speed) {
   fx.flipFade = Math.max(0, fx.flipFade - dt);

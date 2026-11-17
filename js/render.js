@@ -300,6 +300,10 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   FAR = Q.far;
   UNDER = (opts.area ?? (S.dist < UNDER_END ? 'under' : 'surface')) === 'under';
   COL = UNDER ? COL_UNDER : COL_SURFACE;
+  // the way out (v0.53): over the last 90 m below, daylight grows at the far end of the cave (the
+  // distance fades into light instead of dark); main.js flashes white as he comes out at UNDER_END
+  const exitK = UNDER && !opts.area ? clamp((S.dist - (UNDER_END - 90)) / 90, 0, 1) : 0;
+  if (exitK > 0) COL = { ...COL_UNDER, haze: mix(COL_UNDER.haze, [250, 244, 226], Math.pow(exitK, 1.3)) };
   // opts.fixedCamera: the screen never turns. The camera stays at mid-height and upright,
   // so the floor is always at the bottom and the hero runs upside down along the roof.
   const fixedCam = !!opts.fixedCamera;
@@ -865,10 +869,16 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   }
 
   // the underworld is darker (v0.53): the light falls off away from the hero
+  if (exitK > 0) { // the cave mouth's light, spilling toward him
+    const vx = Math.tan(yaw) * f, r = Math.hypot(W, H) * (0.15 + 0.45 * exitK);
+    const g = ctx.createRadialGradient(vx, 0, 0, vx, 0, r);
+    g.addColorStop(0, `rgba(255,248,226,${(0.75 * exitK).toFixed(3)})`); g.addColorStop(1, 'rgba(255,248,226,0)');
+    ctx.fillStyle = g; ctx.fillRect(vx - r, -r, 2 * r, 2 * r);
+  }
   if (UNDER) {
     const c = P(0, S.py + PH / 2, 0.3), r = Math.hypot(W, H);
     const g = ctx.createRadialGradient(c[0], c[1], r * 0.08, c[0], c[1], r * 0.55);
-    g.addColorStop(0, 'rgba(4,10,14,0)'); g.addColorStop(1, 'rgba(4,10,14,0.62)');
+    g.addColorStop(0, 'rgba(4,10,14,0)'); g.addColorStop(1, `rgba(4,10,14,${(0.62 * (1 - 0.8 * exitK)).toFixed(3)})`);
     ctx.fillStyle = g; ctx.fillRect(-4 * W, -4 * H, 9 * W, 9 * H);
   }
 
