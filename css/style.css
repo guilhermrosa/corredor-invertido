@@ -206,9 +206,15 @@ h2 { font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; }
 #charon .hint b { color: #ffd36b; }
 #charon .btn:disabled { opacity: .5; cursor: default; }
 .charonScene { width: 100%; height: auto; border-radius: 10px; display: block; }
-.chBoat { animation: chBob 3.2s ease-in-out infinite; transform-origin: 160px 130px; }
-.chMist { animation: chMist 7s ease-in-out infinite alternate; }
-@keyframes chBob { 0%, 100% { transform: translateY(0) rotate(-.6deg); } 50% { transform: translateY(3px) rotate(.6deg); } }
-@keyframes chMist { from { transform: translateX(-8px); } to { transform: translateX(8px); } }
-@media (prefers-reduced-motion: reduce) { .chBoat, .chMist { animation: none; } }
+.chBoat { animation: chBob 3.4s ease-in-out infinite; transform-origin: 110px 190px; }
+.chFog { animation: chFog 8s ease-in-out infinite alternate; }
+.chBeam { animation: chBeam 6s ease-in-out infinite alternate; }
+.chGlints { animation: chGlint 2.6s ease-in-out infinite alternate; }
+.chLampGlow { animation: chLamp 1.7s ease-in-out infinite alternate; }
+@keyframes chBob { 0%, 100% { transform: translateY(0) rotate(-.8deg); } 50% { transform: translateY(2.5px) rotate(.8deg); } }
+@keyframes chFog { from { transform: translateX(-10px); } to { transform: translateX(6px); } }
+@keyframes chBeam { from { opacity: .7; } to { opacity: 1; } }
+@keyframes chGlint { from { opacity: .35; } to { opacity: .9; } }
+@keyframes chLamp { from { opacity: .75; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .chBoat, .chFog, .chBeam, .chGlints, .chLampGlow { animation: none; } }
 .obols { color: #a07a1e; }

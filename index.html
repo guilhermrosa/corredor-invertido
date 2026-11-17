@@ -76,35 +76,61 @@
 
   <div class="overlay charon" id="charon" hidden>
     <div class="card">
-      <svg class="charonScene" viewBox="0 0 320 180" aria-hidden="true">
+      <svg class="charonScene" viewBox="0 0 320 240" aria-hidden="true">
         <defs>
-          <radialGradient id="chGlow"><stop offset="0" stop-color="#ffe9a8" stop-opacity=".9"/><stop offset="1" stop-color="#ffcf5a" stop-opacity="0"/></radialGradient>
-          <linearGradient id="chRiver" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d2a33"/><stop offset="1" stop-color="#0b1116"/></linearGradient>
+          <linearGradient id="chBeamG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fe6d2" stop-opacity=".55"/><stop offset="1" stop-color="#5fd0c8" stop-opacity="0"/></linearGradient>
+          <linearGradient id="chWater" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0d3346"/><stop offset=".6" stop-color="#135f78"/><stop offset="1" stop-color="#1c86a0"/></linearGradient>
+          <radialGradient id="chLamp"><stop offset="0" stop-color="#ffe7a0" stop-opacity=".8"/><stop offset="1" stop-color="#ffcf5a" stop-opacity="0"/></radialGradient>
+          <filter id="chBlur" x="-30%" y="-60%" width="160%" height="220%"><feGaussianBlur stdDeviation="5"/></filter>
         </defs>
-        <rect width="320" height="180" fill="#121a21"/>
-        <path d="M0 70 Q60 52 120 66 T240 60 T320 68 V180 H0Z" fill="#18222a"/>
-        <rect y="112" width="320" height="68" fill="url(#chRiver)"/>
-        <g class="chMist" fill="#8fa3ad" opacity=".12"><ellipse cx="70" cy="114" rx="70" ry="5"/><ellipse cx="250" cy="118" rx="80" ry="6"/></g>
+        <rect width="320" height="240" fill="#0c151c"/>
+        <path d="M0 60 Q80 40 160 70 T320 50 V150 H0Z" fill="#111e27"/>
+        <polygon class="chBeam" points="58,0 112,0 186,150 30,150" fill="url(#chBeamG)" filter="url(#chBlur)"/>
+        <path d="M0 0 H320 V22 L308 52 L298 24 L286 40 L272 18 L262 70 L250 22 L236 34 L224 16 L214 58 L200 20 L186 30 L172 14 L162 46 L150 18 L136 26 L124 12 L112 30 L98 14 L86 44 L74 16 L62 28 L50 12 L38 38 L26 16 L14 30 L0 18Z" fill="#2c3a47"/>
+        <path d="M0 0 H320 V10 L312 30 L304 12 L292 64 L282 96 L274 60 L262 20 L248 40 L240 14 L226 28 L214 10 L198 48 L192 80 L184 44 L172 10 L160 22 L146 8 L134 36 L126 62 L118 30 L104 10 L92 20 L80 8 L66 40 L58 72 L50 36 L40 10 L28 24 L18 48 L12 86 L6 50 L0 34Z" fill="#202b36"/>
+        <path d="M0 146 Q90 136 170 142 T320 134 V152 H0Z" fill="#3e3d38"/>
+        <path d="M0 150 Q100 142 180 148 T320 140 V200 H0Z" fill="url(#chWater)"/>
+        <g class="chGlints" fill="#8ff0ff"><ellipse cx="40" cy="160" rx="7" ry="1"/><ellipse cx="150" cy="156" rx="9" ry="1"/><ellipse cx="250" cy="150" rx="8" ry="1"/><ellipse cx="205" cy="172" rx="10" ry="1.2"/><ellipse cx="18" cy="190" rx="9" ry="1.2"/><ellipse cx="290" cy="166" rx="7" ry="1"/></g>
+        <path d="M0 202 Q90 188 170 196 Q230 200 260 186 Q290 172 320 164 V240 H0Z" fill="#7c776b"/>
+        <path d="M0 214 Q120 204 220 214 T320 196 V240 H0Z" fill="#8d877a"/>
+        <path d="M228 240 Q262 206 320 176 V240Z" fill="#5d594f"/>
+        <g fill="#6c675c"><circle cx="40" cy="224" r="1.2"/><circle cx="96" cy="230" r="1"/><circle cx="150" cy="222" r="1.2"/><circle cx="62" cy="234" r="1"/><circle cx="182" cy="232" r="1"/></g>
         <g class="chBoat">
-          <line x1="236" y1="20" x2="196" y2="150" stroke="#5a4532" stroke-width="3" stroke-linecap="round"/>
-          <circle cx="132" cy="64" r="34" fill="url(#chGlow)"/>
-          <path d="M70 116 L250 116 Q244 136 206 140 L104 140 Q76 136 70 116Z" fill="#3b2c20"/>
-          <path d="M70 116 L250 116" stroke="#6b5440" stroke-width="2"/>
-          <path d="M60 106 Q66 116 74 118" stroke="#3b2c20" stroke-width="5" fill="none" stroke-linecap="round"/>
-          <path d="M196 116 Q194 66 214 44 Q228 32 238 46 Q252 70 246 116Z" fill="#20262c"/>
-          <path d="M214 46 Q226 38 234 50 Q232 62 222 64 Q212 62 214 46Z" fill="#05080a"/>
-          <circle cx="220" cy="54" r="1.4" fill="#cfe6ef"/><circle cx="228" cy="54" r="1.4" fill="#cfe6ef"/>
-          <path d="M200 76 Q218 70 234 78" stroke="#2c343b" stroke-width="7" fill="none" stroke-linecap="round"/>
-          <line x1="132" y1="58" x2="132" y2="116" stroke="#5a4532" stroke-width="2.5"/>
-          <path d="M132 58 Q150 52 160 60" stroke="#5a4532" stroke-width="2.5" fill="none"/>
-          <rect x="155" y="60" width="10" height="13" rx="2" fill="#ffd36b" stroke="#6b5440" stroke-width="1.5"/>
-          <g class="chXolo">
-            <path d="M104 116 Q102 98 112 92 Q122 98 120 116Z" fill="#d2483e"/>
-            <ellipse cx="112" cy="86" rx="11" ry="8" fill="#d2483e"/>
-            <path d="M101 82 l-7 -4 M101 86 l-8 0 M101 90 l-7 4 M123 82 l7 -4 M123 86 l8 0 M123 90 l7 4" stroke="#e8786c" stroke-width="2.2" stroke-linecap="round"/>
-          </g>
+          <ellipse cx="105" cy="196" rx="80" ry="5" fill="#0a2532" opacity=".6"/>
+          <path d="M44 172 Q36 150 30 140 Q24 134 30 130 Q38 128 40 138 L56 176Z" fill="#5a3c25"/>
+          <path d="M40 176 L178 176 Q172 192 140 196 L72 196 Q48 192 40 176Z" fill="#5a3c25"/>
+          <path d="M40 176 L178 176" stroke="#7d5838" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M60 186 L160 186" stroke="#4a301d" stroke-width="1"/>
+          <path d="M172 176 L172 136 Q174 126 186 128" stroke="#6b4a2c" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <circle class="chLampGlow" cx="188" cy="146" r="30" fill="url(#chLamp)"/>
+          <line x1="187" y1="128" x2="188" y2="138" stroke="#3a2a1c" stroke-width="1.2"/>
+          <path d="M182 138 H194 L192 154 H184Z" fill="#ffd36b" stroke="#4a3522" stroke-width="1.6"/>
+          <path d="M181 138 L188 133 L195 138" fill="#4a3522"/>
+          <path d="M78 176 Q76 140 88 126 Q98 120 110 126 Q122 140 120 176Z" fill="#0a0b0e"/>
+          <path d="M82 132 Q99 118 116 132 Q112 140 99 140 Q86 140 82 132Z" fill="#191c22"/>
+          <line x1="138" y1="70" x2="86" y2="214" stroke="#6b4a2c" stroke-width="3.2" stroke-linecap="round"/>
+          <path d="M112 136 Q118 132 119 124" stroke="#0a0b0e" stroke-width="7" fill="none" stroke-linecap="round"/>
+          <g stroke="#d8d1bd" stroke-width="1.5" stroke-linecap="round"><path d="M117 121 h6"/><path d="M117 118.5 h6.5"/><path d="M117.5 123.5 h5"/></g>
+          <ellipse cx="99" cy="112" rx="11" ry="12" fill="#d8d1bd"/>
+          <path d="M92 121 Q99 128 106 121 L105 126 Q99 130 93 126Z" fill="#c6bea8"/>
+          <ellipse cx="95" cy="111" rx="3.4" ry="3.8" fill="#14181d"/><ellipse cx="103.5" cy="111" rx="3.4" ry="3.8" fill="#14181d"/>
+          <circle cx="95" cy="111.5" r="1" fill="#7fe6d2"/><circle cx="103.5" cy="111.5" r="1" fill="#7fe6d2"/>
+          <path d="M98 116 l1.2 2.4 l1.2 -2.4Z" fill="#14181d"/>
+          <path d="M94 123.5 h10" stroke="#8b846f" stroke-width=".8"/>
         </g>
-        <g class="chRipples" stroke="#5f7a87" stroke-width="1" opacity=".5" fill="none"><path d="M40 150 q10 -3 20 0"/><path d="M262 158 q12 -3 24 0"/><path d="M150 166 q10 -3 20 0"/></g>
+        <g class="chXolo" transform="rotate(-8 205 208)">
+          <path d="M212 222 Q232 230 236 216 Q238 208 232 206" stroke="#c96a73" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <path d="M197 230 L196 216 Q195 202 205 198 Q215 202 214 216 L213 230Z" fill="#e0868e" stroke="#9c4048" stroke-width="1.4"/>
+          <path d="M205 202 V224" stroke="#c96a73" stroke-width="1"/>
+          <path d="M197 208 Q190 214 189 220" stroke="#e0868e" stroke-width="4" stroke-linecap="round" fill="none"/>
+          <path d="M213 208 Q220 200 222 194" stroke="#e0868e" stroke-width="4" stroke-linecap="round" fill="none"/>
+          <circle cx="222.5" cy="193" r="2.6" fill="#e0868e"/>
+          <path d="M199 230 v4 M211 230 v4" stroke="#e0868e" stroke-width="4" stroke-linecap="round"/>
+          <g stroke="#d06a76" stroke-width="2.4" stroke-linecap="round" fill="none"><path d="M195 186 l-11 -8"/><path d="M194 190 l-13 -1"/><path d="M195 194 l-11 6"/><path d="M215 186 l11 -8"/><path d="M216 190 l13 -1"/><path d="M215 194 l11 6"/></g>
+          <g stroke="#f0a0a8" stroke-width="1" stroke-linecap="round"><path d="M188 181 l-2 -3 M185 179 l-1 -3 M190 189 l-1 -3 M186 189 l-1 -3 M188 197 l-1 3 M185 199 l-2 3 M222 181 l2 -3 M225 179 l1 -3 M220 189 l1 -3 M224 189 l1 -3 M222 197 l1 3 M225 199 l2 3"/></g>
+          <ellipse cx="205" cy="190" rx="12" ry="9.5" fill="#e0868e" stroke="#9c4048" stroke-width="1.4"/>
+        </g>
+        <g class="chFog" filter="url(#chBlur)" fill="#c9d8de"><ellipse cx="290" cy="214" rx="60" ry="14" opacity=".22"/><ellipse cx="250" cy="232" rx="70" ry="12" opacity=".18"/><ellipse cx="310" cy="190" rx="40" ry="12" opacity=".16"/></g>
       </svg>
       <p class="eyebrow">O barqueiro do submundo</p>
       <h2>Caronte</h2>
