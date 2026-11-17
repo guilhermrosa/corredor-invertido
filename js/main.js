@@ -220,14 +220,26 @@ function bribeCharon() {
   obols -= price; store.set('obols', obols);
   run.continues = (run.continues || 0) + 1;
   stats.recordContinue(price);
-  revive(S);
-  pendingDeath = null;
-  $('charon').hidden = true;
-  renderLives(S.lives);
-  state = 'countdown';
-  countdownLeft = 1.8; // 3, 2, 1, then the run goes on from where he fell
-  $('countdown').hidden = false;
-  cvs.focus({ preventScroll: true });
+  // a short close-up (v0.52.1, user's idea): Xolo's hand drops the obols into Charon's bony palm
+  state = 'paying';
+  const shown = Math.min(price, 5);
+  document.querySelectorAll('#charon .chCoin').forEach((c, i) => { c.style.display = i < shown ? '' : 'none'; });
+  document.querySelector('#charon .chPayN').textContent = price;
+  $('charonWallet').textContent = 'Caronte aceita os óbolos.';
+  $('charon').classList.add('paying');
+  for (let i = 0; i < shown; i++) setTimeout(() => audio.sfx('coin', { i }), 450 + i * 240 + 360);
+  setTimeout(() => {
+    if (state !== 'paying') return;
+    $('charon').classList.remove('paying');
+    revive(S);
+    pendingDeath = null;
+    $('charon').hidden = true;
+    renderLives(S.lives);
+    state = 'countdown';
+    countdownLeft = 1.8; // 3, 2, 1, then the run goes on from where he fell
+    $('countdown').hidden = false;
+    cvs.focus({ preventScroll: true });
+  }, 450 + shown * 240 + 900);
 }
 function stayBelow() {
   if (state !== 'charon' || !pendingDeath) return;
@@ -430,6 +442,7 @@ function resume() {
 function toMenu() {
   if (tut) stats.flush();
   state = 'menu';
+  $('charon').classList.remove('paying');
   tut = null;
   audio.stopMusic();
   S = createSim();

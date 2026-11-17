@@ -115,6 +115,9 @@ export function sfx(type, data = {}) {
       lyre.pluck(deg(9), 0, 0.3, { sustain: 10, dur: 0.3 });
       lyre.pluck(deg(7), ac.currentTime + 0.09, 0.26, { sustain: 10, dur: 0.3 });
       break;
+    case 'coin': // an obol drops into Charon's palm (v0.52.1): a short bright clink, a little higher each time
+      lyre.pluck(deg(NOTES.length - 3 + ((data?.i ?? 0) % 3)), 0, 0.32, { sustain: 0, bright: 90, dur: 0.12 });
+      break;
     case 'heal': // a life comes back: a bright rising arpeggio
       lyre.strum([deg(7), deg(9), deg(11), deg(NOTES.length - 1)], 0.05, 0.42, { sustain: 50 });
       break;
