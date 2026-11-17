@@ -110,6 +110,9 @@ export function createSim(opts = {}) {
     lastBoss: -1e9, // where the last encounter with Zeus's wrath began (metres)
     zeusSeen: false, // v0.53.5: a column struck by Zeus has fallen in view (the boss waits for one)
   };
+  // practice (v0.54.2): start further on, or with Zeus's wrath right ahead
+  if (opts.startAt) { S.dist = opts.startAt; S.speed = speedAt(S.dist); }
+  if (opts.boss) { S.zeusSeen = true; placeBoss(S, Math.max(S.speed, 12)); }
   spawn(S);
   return S;
 }

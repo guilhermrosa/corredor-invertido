@@ -52,7 +52,13 @@ function load() {
   }
 }
 
+// practice runs (v0.54.2) count for nothing: while muted nothing is saved, and unmuting drops
+// whatever the practice run changed in memory
+let muted = false;
+export function mute(on) { if (muted && !on) data = load(); muted = on; }
+
 function save() {
+  if (muted) return;
   try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { /* ignore */ }
 }
 
