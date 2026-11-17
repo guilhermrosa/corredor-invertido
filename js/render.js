@@ -903,17 +903,16 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   // what hangs from the roof is a knot of dense storm cloud (same box, same hitbox), with lightning
   // glinting inside, and a gap in the roof is a tear in the clouds with the storm sky beyond
   function cloudBlock(b, z0, falling = false) {
-    // v0.51: no box faces and no outline (user: the rectangle broke it): only overlapping puffs filling
-    // the obstacle's box, a pale lit edge on them, and the shock crackling in the middle
+    if (!falling) return cloudMound(b, z0);
+    // the charged cloud that falls (v0.51): flat, wide, overlapping dark puffs, a pale lit edge, blue arcs
     const fk = fogK(z0), dark = mix([46, 54, 74], COL.haze, fk * 0.6), mid = mix([70, 80, 104], COL.haze, fk * 0.6);
     const u = f / (z0 - CAM_Z), seed = Math.floor(b.seed * 1000), cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2;
     const hgt = b.y1 - b.y0, wdt = b.x1 - b.x0, rows = Math.max(1, Math.round(hgt / 0.45));
     const puffs = [];
-    // v0.51 (user: less like a bunch of grapes): flatter, wider puffs that overlap and blend, over a soft base
     for (let r = 0; r < rows; r++) for (let k = 0; k < 4; k++) {
       const x = b.x0 + wdt * (k + 0.5) / 4 + (hash(seed + r * 9 + k) - 0.5) * 0.35;
       const y = b.y0 + hgt * (r + 0.5) / rows + (hash(seed + r * 5 + k * 3) - 0.5) * 0.1;
-      puffs.push([x, y, (0.42 + 0.16 * hash(seed + k * 7 + r)) * (falling ? 1.1 : 1)]);
+      puffs.push([x, y, (0.42 + 0.16 * hash(seed + k * 7 + r)) * 1.1]);
     }
     const [bx, by] = P(cx, cy, z0);
     ctx.fillStyle = rgb(dark, 0.55);
@@ -923,31 +922,67 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       ctx.fillStyle = rgb(hash(x * 13 + y) < 0.5 ? dark : mid, 0.7);
       ctx.beginPath(); ctx.ellipse(px, py, R * 1.35, R * 0.5, (hash(x * 7 + y) - 0.5) * 0.3, 0, Math.PI * 2); ctx.fill();
     }
-    ctx.strokeStyle = `rgba(160,190,240,${(0.45 * (1 - fk)).toFixed(3)})`; ctx.lineWidth = Math.max(1, u * 0.02);
-    for (const [x, y, rr] of puffs) { // a pale edge where the lightning light catches them
-      const [px, py] = P(x, y, z0), R = rr * u;
-      ctx.beginPath(); ctx.ellipse(px, py, R * 1.35, R * 0.5, (hash(x * 7 + y) - 0.5) * 0.3, 1.2 * Math.PI, 1.8 * Math.PI); ctx.stroke();
-    }
-    // the shock (user's pick): an electric spark crackling in its middle, a new shape each frame
     const core = [P(cx - 0.45, cy - hgt * 0.25, z0), P(cx + 0.45, cy - hgt * 0.25, z0), P(cx + 0.45, cy + hgt * 0.25, z0), P(cx - 0.45, cy + hgt * 0.25, z0)];
     zeusArcs(core, 0.9 * (1 - fk));
-    const [gx, gy] = P(cx, cy, z0), gr = 0.55 * u;
-    const g = ctx.createRadialGradient(gx, gy, 0, gx, gy, gr);
-    g.addColorStop(0, `rgba(220,235,255,${(0.75 * (1 - fk)).toFixed(3)})`); g.addColorStop(1, 'rgba(120,170,255,0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(gx, gy, gr, 0, Math.PI * 2); ctx.fill();
+  }
+  // v0.51.1 (user: the cloud jump obstacle looked like a bolt's mark and read badly; picked a column of
+  // wind): a whirlwind spinning in place, pale grey, a funnel narrow at its root on the cloud surface and
+  // wider at its free end, ring over ring with streaks circling it and a few bits of cloud caught in it
+  function cloudMound(b, z0) {
+    const fk = fogK(z0) * 0.7, u = f / (z0 - CAM_Z), seed = Math.floor(b.seed * 1000);
+    const root = b.y1 >= HM - 0.01 ? b.y1 : b.y0, tip = root === b.y1 ? b.y0 : b.y1, cx = (b.x0 + b.x1) / 2;
+    const half = (b.x1 - b.x0) / 2, n = 6, spin = t * 9 + seed;
+    const ring = (q) => ({ y: lerp(root, tip, q), r: lerp(0.18, half * 0.75, q) + 0.04 * Math.sin(spin * 0.7 + q * 9), x: cx + 0.08 * Math.sin(spin * 0.5 + q * 5) });
+    ctx.save();
+    ctx.lineCap = 'round';
+    for (let k = 0; k <= n; k++) { // the funnel's body: soft rings from the root up
+      const q = k / n, { y, r, x } = ring(q);
+      const [px, py] = P(x, y, z0), R = r * u;
+      ctx.fillStyle = rgb(mix([200, 208, 222], COL.haze, fk), 0.32);
+      ctx.beginPath(); ctx.ellipse(px, py, R, R * 0.28, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = rgb(mix([236, 240, 248], COL.haze, fk), 0.85); ctx.lineWidth = Math.max(1.2, u * 0.035);
+      const a0 = (spin + k * 1.3) % (Math.PI * 2); // a streak circling round the front of each ring
+      ctx.beginPath(); ctx.ellipse(px, py, R, R * 0.28, 0, a0, a0 + 2.2); ctx.stroke();
+      ctx.strokeStyle = rgb(mix([150, 160, 182], COL.haze, fk), 0.7); ctx.lineWidth = Math.max(1, u * 0.02);
+      ctx.beginPath(); ctx.ellipse(px, py, R * 0.85, R * 0.22, 0, a0 + 3.1, a0 + 4.6); ctx.stroke();
+    }
+    for (let k = 0; k < 6; k++) { // bits of cloud whirled round it
+      const q = hash(seed + k * 3), ang = spin * (1.2 + q) + k * 1.1, { y, r, x } = ring(0.3 + q * 0.7);
+      const [px, py] = P(x + Math.cos(ang) * r * 1.15, y, z0 + Math.sin(ang) * r * 0.4);
+      ctx.fillStyle = rgb(mix([226, 232, 242], COL.haze, fk), 0.9);
+      ctx.beginPath(); ctx.ellipse(px, py, 0.07 * u, 0.04 * u, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
   }
   // v0.51: what falls from the storm in the arena is a mass of charged cloud (a giant hailstone was rejected)
   function hailBlock(b, z0) { cloudBlock(b, z0, true); }
   function cloudTear(o, z0, z1, w) {
-    const sy = HM, fk = fogK(z0);
-    ctx.fillStyle = rgb(mix([30, 38, 56], COL.haze, fk * 0.5)); // the storm sky beyond
+    // v0.51.1 (user: the black tear was hard to see; picked lightning inside): the dark storm beyond, with
+    // lightning flashing in it now and then (the whole gap lights up and a bolt forks across it)
+    const sy = HM, fk = fogK(z0) * 0.7, seed = Math.floor(o.len * 100);
+    const flash = hash(seed + Math.floor(t * 5)) < 0.35;
+    ctx.fillStyle = rgb(mix(flash ? [96, 120, 170] : [26, 32, 48], COL.haze, fk));
     path([P(-w, sy, z0), P(w, sy, z0), P(w, sy, z1), P(-w, sy, z1)]); ctx.fill();
+    if (flash) {
+      ctx.save();
+      path([P(-w, sy, z0), P(w, sy, z0), P(w, sy, z1), P(-w, sy, z1)]); ctx.clip();
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      for (let k = 0; k < 2; k++) {
+        const za = lerp(z0, z1, 0.2 + 0.6 * Math.random());
+        ctx.beginPath();
+        for (let m = 0; m <= 7; m++) { const q = P(lerp(-w, w, m / 7), sy, za + (Math.random() - 0.5) * (z1 - z0) * 0.5); m ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); }
+        const lw2 = Math.max(1.4, f / (za - CAM_Z) * 0.05);
+        ctx.strokeStyle = 'rgba(80,130,240,.85)'; ctx.lineWidth = lw2 * 2.4; ctx.stroke();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = lw2 * 0.9; ctx.stroke();
+      }
+      ctx.restore();
+    }
     for (const [z, k0] of [[z0, 1], [z1, 2]]) { // ragged cloud lips along both edges
       if (z <= BASE + 0.2) continue;
       const u = f / (z - CAM_Z);
       for (let k = 0; k < 7; k++) {
-        const [px, py] = P(lerp(-w, w, (k + 0.5) / 7), sy - 0.04, z), r = (0.3 + 0.15 * hash(k * 7 + k0 + Math.floor(o.len * 100))) * u;
-        ctx.fillStyle = rgb(mix(k % 2 ? [74, 84, 106] : [56, 64, 84], COL.haze, fk * 0.5), 0.9);
+        const [px, py] = P(lerp(-w, w, (k + 0.5) / 7), sy - 0.04, z), r = (0.3 + 0.15 * hash(k * 7 + k0 + seed)) * u;
+        ctx.fillStyle = rgb(mix(k % 2 ? [74, 84, 106] : [56, 64, 84], COL.haze, fk), 0.95);
         ctx.beginPath(); ctx.ellipse(px, py, r, r * 0.5, 0, 0, Math.PI * 2); ctx.fill();
       }
     }
