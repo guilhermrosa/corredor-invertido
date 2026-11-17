@@ -69,7 +69,7 @@ export const AEGIS_CHANCE = 0.06;  // per regular obstacle spawned
 // apart; BOSS_CHANCE per regular obstacle (about two encounters every 5 km, see tools/balance.mjs).
 export const BOSS_FROM = 1600; // v0.53.5 (user: Zeus later in the run; was 1000), and only once a struck column was seen
 export const BOSS_GAP = 1500;
-// Demeter (work in progress): the fields of Eleusis come once per run, at this distance, with her
+// Demeter: the fields of Eleusis come once per run, at this distance, with her
 // encounter inside them; Zeus keeps this far from the fields' gates
 export const FIELDS_FROM = 2500;
 export const FIELDS_CLEAR = 60;
@@ -167,7 +167,7 @@ export const COL_UNDER = {
 };
 COL_UNDER.bg = COL_UNDER.haze;
 
-// The fields of Eleusis (Demeter's sanctuary, by the sea; work in progress): a path of packed earth
+// The fields of Eleusis (Demeter's sanctuary, by the sea): a path of packed earth
 // under a pergola of vines, wheat on both sides, in a warm afternoon light
 export const COL_FIELDS = {
   ...COL,

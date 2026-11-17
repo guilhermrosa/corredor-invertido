@@ -163,7 +163,7 @@ export function placeBoss(S, sp, rand = Math.random) {
   S.nextZ += sp * 0.8;
 }
 
-// The fields of Eleusis and Demeter's encounter (work in progress): a clear stretch through the gate,
+// The fields of Eleusis and Demeter's encounter: a clear stretch through the gate,
 // her three attacks shuffled, the harvest last, and a clear stretch out. `S.fields` holds where the
 // fields lie (metres) for the renderer; a 'demeter' marker covers the encounter (start/end events).
 export function placeDemeter(S, sp, rand = Math.random) {
@@ -219,7 +219,7 @@ function spawn(S) {
       S.giftSeq = null;
       continue;
     }
-    if (!S.fields && far > FIELDS_FROM) { placeDemeter(S, sp); continue; } // Demeter (work in progress)
+    if (!S.fields && far > FIELDS_FROM) { placeDemeter(S, sp); continue; } // Demeter
     if (far > BOSS_FROM && S.zeusSeen && (S.fields ? far > S.fields.to + 300 : far < FIELDS_FROM - 600) && far - S.lastBoss > BOSS_GAP && Math.random() < S.chances.boss) {
       placeBoss(S, sp); // Zeus's wrath, the mini boss (v0.50)
       continue;

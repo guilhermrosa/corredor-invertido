@@ -65,7 +65,7 @@ export function sfx(type, data = {}) {
       [0, 1, 0, 2, 0].forEach((d, i) => lyre.pluck(deg(d), t + i * 0.14, 0.55 - i * 0.06, { sustain: 40, bright: 0, dur: 0.7 }));
       break;
     }
-    case 'demeterStart': { // Demeter wakes (work in progress): a deep, slow, rooted strum, twice
+    case 'demeterStart': { // Demeter wakes: a deep, slow, rooted strum, twice
       const t = ac.currentTime + 0.01;
       [[0, 2, 4], [0, 3, 5]].forEach((ch, k) => ch.forEach((d, i) => lyre.pluck(deg(d), t + k * 0.5 + i * 0.07, 0.5, { sustain: 60, bright: 15, dur: 0.9 })));
       break;

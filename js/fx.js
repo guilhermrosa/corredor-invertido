@@ -136,7 +136,7 @@ export function onBlessing(god, gift, text, kind = 'gift') { fx.bless = { id: ++
 // Zeus's wrath (v0.50): the same plaque in storm colours
 export function onWrath(title, text) { onBlessing('Zeus', title, text, 'wrath'); }
 // out of the underworld (v0.53): the plaque without a god, headed by the place
-// Demeter's wrath (work in progress): the plaque in the colours of her fields
+// Demeter's wrath: the plaque in the colours of her fields
 export function onDemeter(title, text) { onBlessing('Deméter', title, text, 'harvest'); }
 export function onSurface() { onBlessing('', 'A superfície', 'Xolo escapou do submundo', 'exit'); }
 

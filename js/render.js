@@ -11,7 +11,7 @@ import { drawAxolotl } from './hero.js';
 import { drawAegisFace } from './aegis.js';
 
 // The palette of the area being drawn (v0.53): the seaside ruins, or the underworld below them
-let COL = COL_SURFACE, UNDER = false, FIELDS = false; // FIELDS: the fields of Eleusis (Demeter, work in progress)
+let COL = COL_SURFACE, UNDER = false, FIELDS = false; // FIELDS: the fields of Eleusis (Demeter)
 
 // the split pomegranate, in the HUD icon's 20-unit box (see POMEGRANATE in main.js); built on first use
 let POM = null;
@@ -165,7 +165,7 @@ function drawBackdrop(ctx, W, H, t, Q, storm = 0, zeus = 0, flipStorm = false, d
 
 // Zeus in the storm (v0.50): a huge figure of dark cloud rising behind the sea on the left, with a
 // beard of cloud, eyes of white light and a thunderbolt raised in his right hand; `k` 0..1 fades him in
-// Demeter over her fields (work in progress): a huge figure of warm earth rising behind the wheat on
+// Demeter over her fields: a huge figure of warm earth rising behind the wheat on
 // the right, veiled, crowned with ears of wheat, a torch raised in one hand (she searched the world
 // for Persephone by torchlight) and a sheaf in the other; soft green eyes; `k` 0..1 fades her in
 function drawDemeter(ctx, W, H, t, k) {
@@ -487,7 +487,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   let zeus = 0;
   const arenas = S.obs.filter(o => o.type === 'boss');
   for (const o of arenas) zeus = Math.max(zeus, clamp((60 - o.z) / 30, 0, 1) * clamp((o.z + o.len + 10) / 25, 0, 1));
-  let demeter = 0; // Demeter over her fields (work in progress), during her encounter
+  let demeter = 0; // Demeter over her fields, during her encounter
   for (const o of S.obs) if (o.type === 'demeter') demeter = Math.max(demeter, clamp((70 - o.z) / 30, 0, 1) * clamp((o.z + o.len + 10) / 25, 0, 1));
   const inArena = z => arenas.some(o => z > o.z - 6 && z < o.z + o.len + 6);
   ctx.fillStyle = rgb(COL.haze);
@@ -576,7 +576,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       poly([P(x - w, top + 0.3, mouthZ), P(x + w, top + 0.3, mouthZ), P(x + 0.05, top - len, mouthZ)], rgb([30, 38, 44]));
     }
   }
-  // The propylon of Eleusis (Demeter, work in progress): a marble gateway across the way, a doorway
+  // The propylon of Eleusis (Demeter): a marble gateway across the way, a doorway
   // a little wider than the corridor, two Doric columns, a frieze with blue triglyphs, a pediment,
   // and a gold garland of wheat over the door
   function drawPropylon() {
@@ -899,7 +899,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       }
     }
   }
-  // The fields' roof (Demeter, work in progress): a pergola, a canopy of vine leaves on wooden
+  // The fields' roof (Demeter): a pergola, a canopy of vine leaves on wooden
   // cross beams, with side beams along its edges and leaves and grapes hanging near
   function pergola(a, b, z0, idx) {
     quad(P(-EDGE, HM, a), P(EDGE, HM, a), P(EDGE, HM, b), P(-EDGE, HM, b), fog(mix(COL.ceiling, COL.grassDark, 0.3 * hash(idx * 3)), a));
@@ -1763,10 +1763,10 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   // tall ones a cluster of stalagmites (on the floor) or stalactites (from the roof), jagged at the tip
   // Obstacles in the fields (same boxes and hitboxes): on the floor a hay bale (low) or a stack of
   // tied sheaves (tall); from the pergola a curtain of vines
-  // how far one of Demeter's things has grown (work in progress): small shoots from afar, full grown
+  // how far one of Demeter's things has grown: small shoots from afar, full grown
   // a little before the hero gets there (its hitbox is always full: the sim knows nothing of this)
   function growth(b) { return b.grow ? clamp((S.speed * 1.1 + 4 - b.z0) / 8, 0.15, 1) : 1; }
-  // Demeter's roots splitting the ground (work in progress): cracks running ahead of the hole and
+  // Demeter's roots splitting the ground: cracks running ahead of the hole and
   // roots reaching over its edges, so it reads from afar; the hole itself is drawn as any other
   function rootCracks(o) {
     const sy = o.side < 0 ? 0.005 : HM - 0.005, za = Math.max(BASE + 0.2, o.z - 3), zb = o.z + o.len + 0.5;
@@ -1781,7 +1781,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     ctx.lineCap = 'butt';
   }
 
-  // A portal in the fields (work in progress): a curtain of vines hanging across, closing down to
+  // A portal in the fields: a curtain of vines hanging across, closing down to
   // the low gap you slide through (as it is grown; same hitbox as any portal), on two wooden posts
   function fieldPortal(b, z0) {
     const { x0, x1 } = b, W2 = x1 - x0, g = growth(b), lwz = lw(z0);

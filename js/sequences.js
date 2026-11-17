@@ -146,7 +146,7 @@ export const BOSS_PARTS = {
     { t: 2.6, type: 'topple', side: 'any', len: 0.5 },
   ] },
 };
-// Demeter's attacks (work in progress): organic, growing things. `grow` only changes how an item is
+// Demeter's attacks: organic, growing things. `grow` only changes how an item is
 // drawn and animated (wheat shooting up, vines closing in, roots splitting the ground); the rules and
 // hitboxes are those of its type, so the solver proves them like any other stretch.
 export const DEMETER_PARTS = {

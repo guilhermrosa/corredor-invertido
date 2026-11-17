@@ -120,7 +120,7 @@ const emit = (type, data) => {
   if (type === 'strike') { zeusFlash = 1; shake = Math.max(shake, 0.15); }
   if (type === 'surface') { if (!tut) { onSurface(); exitFlash = 1; } return audio.sfx('surface'); }
   if (type === 'bossStart') { if (!tut) { onWrath('Zeus desperta', 'sobreviva à tempestade'); run.zeus = true; stats.recordZeus('faced'); } return; }
-  // Demeter (work in progress): her plaque as the encounter starts, and again if he comes through
+  // Demeter: her plaque as the encounter starts, and again if he comes through
   if (type === 'demeterStart') { if (!tut) { onDemeter('Deméter desperta', 'atravesse os campos'); stats.recordDemeter('faced'); } return audio.sfx('demeterStart'); }
   if (type === 'demeterEnd') { if (!tut && !S.dead) { onDemeter('Deméter se recolhe', 'os campos te deixam passar'); run.demeter = 1; stats.recordDemeter('survived'); earn(1); } return audio.sfx('demeterEnd'); }
   if (type === 'bossEnd') { if (!tut && !S.dead) { onWrath('Zeus se recolhe', 'você resistiu à tempestade'); run.zeusSurvived = (run.zeusSurvived || 0) + 1; stats.recordZeus('survived'); earn(1); } return; }
@@ -275,7 +275,7 @@ function gameOver({ cause, kind, metres }) {
     // falling through the roof is falling into the sky
     const intoSky = cause !== 'block' && S.fallHole && S.fallHole.side > 0;
     $('overCause').textContent = intoSky ? 'Caiu no céu'
-      : S.obs.some(o => o.type === 'demeter' && o.z < 1 && o.z + o.len > -1) ? 'A ira de Deméter: ' + (cause === 'block' ? stats.KIND_LABEL[kind].toLowerCase() : 'caiu') // Demeter (work in progress)
+      : S.obs.some(o => o.type === 'demeter' && o.z < 1 && o.z + o.len > -1) ? 'A ira de Deméter: ' + (cause === 'block' ? stats.KIND_LABEL[kind].toLowerCase() : 'caiu') // Demeter
       : kind === 'pillar' || kind === 'bolt' || kind === 'shock' ? 'A ira de Zeus: ' + stats.KIND_LABEL[kind].toLowerCase() // the toppling column is his wrath
       : CAUSE_TEXT[cause] + (cause === 'block' ? ': ' + stats.KIND_LABEL[kind].toLowerCase() : '');
     $('overDist').textContent = metres + ' m';
