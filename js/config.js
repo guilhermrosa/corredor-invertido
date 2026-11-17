@@ -101,7 +101,7 @@ const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a
 // get used to the new look): up to EXIT_EASE slower around the cave mouth, easing in over the last
 // 80 m below and back out by 900 m
 export const EXIT_EASE = 0.12;
-const exitDip = m => EXIT_EASE * smooth(520, 600, m) * (1 - smooth(660, 900, m));
+const exitDip = m => EXIT_EASE * smooth(UNDER_END - 80, UNDER_END, m) * (1 - smooth(UNDER_END + 60, UNDER_END + 300, m));
 export const speedAt = m => Math.min(SPEED_CAP, SPEED_START + (SPEED_MAX - SPEED_START) * (1 - Math.exp(-m / SPEED_EASE)) + SPEED_LATE * m / 1000) * (1 - exitDip(m));
 
 // Placeholder world: a seaside stoa (covered colonnade) in white marble on a sunny day.
@@ -136,7 +136,7 @@ COL.bg = COL.haze;
 
 // The underworld (v0.53, user: "we flee the underworld but never run in it"): every run starts below,
 // in a cave by the river of the dead, and comes up to the seaside ruins at UNDER_END metres.
-export const UNDER_END = 600;
+export const UNDER_END = 400; // v0.53.9 (user: less time below; was 600)
 // v0.53.8 (user: some obstacles at the way out could not be dodged): no obstacles from this many
 // metres before the cave mouth to this many after it
 export const EXIT_CLEAR = [25, 45];
