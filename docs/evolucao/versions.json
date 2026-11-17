@@ -184,5 +184,11 @@
     "date": "2026-11-17",
     "title": "Colunas da caverna até o teto",
     "text": "As colunas de pedra do submundo agora sobem até o teto e se abrem onde encostam nele, sem o vão por onde aparecia o fundo."
+  },
+  {
+    "v": "0.53.2",
+    "date": "2026-11-17",
+    "title": "O fundo pelos buracos",
+    "text": "Pelos buracos agora se vê o próprio cenário, e não uma cor lisa: o rio ou o mar lá embaixo, a abóbada da caverna ou o céu lá em cima."
   }
 ]
