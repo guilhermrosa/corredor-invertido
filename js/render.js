@@ -92,7 +92,8 @@ const zeusOf = o => (o.p > 0 && o.p < 0.5 ? 1 - o.p / 0.5 * 0.6 : 0);
 let backCaches = {}; // one per area (v0.53.4: at the cave mouth both are drawn in the same frame)
 export function invalidateBackdrop() { backCaches = {}; }
 if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (!document.hidden) backCaches = {}; });
-function drawBackdrop(ctx, W, H, t, Q, storm = 0, zeus = 0, flipStorm = false) {
+// the still backdrop of the current area, painted once into an offscreen canvas and reused
+function backdropCache(W, H) {
   const R = Math.hypot(W, H);
   const key = W + 'x' + H + (UNDER ? 'u' : '');
   let backCache = backCaches[UNDER ? 'u' : 's'];
@@ -108,7 +109,16 @@ function drawBackdrop(ctx, W, H, t, Q, storm = 0, zeus = 0, flipStorm = false) {
     cv.addEventListener('contextlost', () => { cache.lost = true; });
     cv.addEventListener('contextrestored', () => { cache.lost = true; });
   }
-  ctx.drawImage(backCache.cv, -R, -R, 2 * R, 2 * R);
+  return backCache;
+}
+let BACK_RECT = null; // when set ([x0, y0, x1, y1] in the backdrop's own coordinates), only that part is copied
+function drawBackdrop(ctx, W, H, t, Q, storm = 0, zeus = 0, flipStorm = false) {
+  const R = Math.hypot(W, H), bc = backdropCache(W, H);
+  if (BACK_RECT) { // v0.53.5: through the cave mouth, copy only the part of the scenery it shows
+    const k = bc.cv.width / (2 * R), x0 = Math.max(-R, BACK_RECT[0]), y0 = Math.max(-R, BACK_RECT[1]);
+    const x1 = Math.min(R, BACK_RECT[2]), y1 = Math.min(R, BACK_RECT[3]);
+    if (x1 > x0 && y1 > y0) ctx.drawImage(bc.cv, (x0 + R) * k, (y0 + R) * k, (x1 - x0) * k, (y1 - y0) * k, x0, y0, x1 - x0, y1 - y0);
+  } else ctx.drawImage(bc.cv, -R, -R, 2 * R, 2 * R);
   if (storm > 0) { // Zeus's storm (v0.49.1): the sky and sea darken, heavy dark clouds roll in
     ctx.fillStyle = `rgba(44,54,74,${(0.5 * storm).toFixed(3)})`;
     ctx.fillRect(-R, -R, 2 * R, 2 * R);
@@ -299,16 +309,20 @@ function paintStillBackdrop(ctx, W, H, R) {
 export function drawTunnel(ctx, S, W, H, opts = {}) {
   const Q = QUALITY[opts.quality] || QUALITY.high;
   FAR = Q.far;
-  UNDER = (opts.area ?? (S.dist < UNDER_END ? 'under' : 'surface')) === 'under';
+  // v0.53.5: the scene counts as below until the camera (4.4 m behind the hero) passes the mouth
+  UNDER = (opts.area ?? (S.dist + CAM_Z + NEAR < UNDER_END ? 'under' : 'surface')) === 'under';
   COL = UNDER ? COL_UNDER : COL_SURFACE;
   // the way out (v0.53.4): the cave mouth on cape Tainaron is a place at UNDER_END. While it is in
   // view, what lies beyond it (the ruins in daylight, the sky and the sea) is drawn with the surface's
   // look, seen only through its opening; the dark lifts over the last 40 m
   const baseUnder = UNDER;
-  const mouthZ = baseUnder && !opts.area ? UNDER_END - S.dist : -1;
+  const mouthZ = baseUnder && !opts.area ? UNDER_END - S.dist : -Infinity; // v0.53.5: was -1, which counted as in view (the near plane is at -3.8)
   const mouthOn = mouthZ > BASE && mouthZ < FAR + 2;
   const exitK = mouthZ > 0 ? clamp(1 - mouthZ / 40, 0, 1) : 0;
   const setArea = under => { UNDER = under; COL = under ? COL_UNDER : COL_SURFACE; };
+  // v0.53.5 (user: the frame rate dropped at the way out): the surface's backdrop is painted when a run
+  // starts below, not on the frame the cave mouth first comes into view
+  if (baseUnder && !opts.area && !backCaches.s) { setArea(false); backdropCache(W, H); setArea(true); }
   // opts.fixedCamera: the screen never turns. The camera stays at mid-height and upright,
   // so the floor is always at the bottom and the hero runs upside down along the roof.
   const fixedCam = !!opts.fixedCamera;
@@ -385,8 +399,10 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     }
     path(pts);
   };
-  const beyondOn = () => { ctx.save(); opening(); ctx.clip(); setArea(false); };
-  const beyondOff = () => { ctx.restore(); setArea(baseUnder); };
+  // v0.53.5: no clip (it made every polygon beyond the mouth expensive): what lies beyond fits inside
+  // the opening, and the rock ring, drawn over it, covers the rest
+  const beyondOn = () => setArea(false);
+  const beyondOff = () => setArea(baseUnder);
   // the rock around the opening, with a rim lit by the daylight outside and a few teeth on its lip
   function drawMouth() {
     ctx.save();
@@ -407,7 +423,17 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       poly([P(x - w, top + 0.3, mouthZ), P(x + w, top + 0.3, mouthZ), P(x + 0.05, top - len, mouthZ)], rgb([30, 38, 44]));
     }
   }
-  if (mouthOn) { beyondOn(); paintBack(); beyondOff(); }
+  if (mouthOn) {
+    const ox = [], oy = [];
+    for (let i = 0; i < 28; i++) { // the opening's bounds, in the backdrop's coordinates (it pans with yaw and pitch)
+      const g = i / 28 * Math.PI * 2, c = Math.cos(g), sn = Math.sin(g);
+      const q = P(Math.sign(c) * Math.pow(Math.abs(c), 0.55) * (EDGE + 0.4), sn > 0 ? HM * 0.5 + Math.pow(sn, 0.8) * (HM * 0.5 + 0.2) : HM * 0.5 + sn * (HM * 0.5 + 1.6), mouthZ);
+      ox.push(q[0] - Math.tan(yaw) * f); oy.push(q[1] + Math.tan(pitch) * f / Math.cos(yaw));
+    }
+    BACK_RECT = [Math.min(...ox) - 4, Math.min(...oy) - 4, Math.max(...ox) + 4, Math.max(...oy) + 4];
+    beyondOn(); paintBack(); beyondOff();
+    BACK_RECT = null;
+  }
   let inBeyond = false, mouthDrawn = !mouthOn;
 
   // 1. the stoa, slice by slice, far to near: floor, roof, painted band, columns

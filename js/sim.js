@@ -108,6 +108,7 @@ export function createSim(opts = {}) {
     // chances of the gifts of the gods per regular obstacle (opts.chances overrides them: tools/balance.mjs)
     chances: { heart: HEART_CHANCE, sandals: HERMES_CHANCE, aegis: AEGIS_CHANCE, boss: BOSS_CHANCE, ...opts.chances },
     lastBoss: -1e9, // where the last encounter with Zeus's wrath began (metres)
+    zeusSeen: false, // v0.53.5: a column struck by Zeus has fallen in view (the boss waits for one)
   };
   spawn(S);
   return S;
@@ -195,7 +196,7 @@ function spawn(S) {
       S.giftSeq = null;
       continue;
     }
-    if (far > BOSS_FROM && far - S.lastBoss > BOSS_GAP && Math.random() < S.chances.boss) {
+    if (far > BOSS_FROM && S.zeusSeen && far - S.lastBoss > BOSS_GAP && Math.random() < S.chances.boss) {
       placeBoss(S, sp); // Zeus's wrath, the mini boss (v0.50)
       continue;
     }
@@ -381,7 +382,7 @@ export function update(S, dt, emit, opts = {}) {
   // falling obstacles: start when the player gets close, wobble, fall, land
   for (const o of S.obs) {
     if (!(o.topple || o.drop) || o.landed) continue;
-    if (!o.p && o.z < S.speed * FALL_LEAD + 3) { o.p = 1e-6; emit('crack', { kind: obstacleKind(o) }); }
+    if (!o.p && o.z < S.speed * FALL_LEAD + 3) { o.p = 1e-6; if (o.topple) S.zeusSeen = true; emit('crack', { kind: obstacleKind(o) }); }
     if (o.p) {
       o.p = Math.min(1, o.p + dt / (o.topple ? TOPPLE_TIME : DROP_TIME));
       // the struck column breaks at its foot as the wobble ends and it starts to fall (v0.48.3)

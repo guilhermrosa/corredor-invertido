@@ -67,7 +67,7 @@ export const AEGIS_FROM = 300;
 export const AEGIS_CHANCE = 0.06;  // per regular obstacle spawned
 // Zeus's wrath, the mini boss (v0.50, user design): rare and random from BOSS_FROM m, at least BOSS_GAP m
 // apart; BOSS_CHANCE per regular obstacle (about two encounters every 5 km, see tools/balance.mjs).
-export const BOSS_FROM = 1000;
+export const BOSS_FROM = 1600; // v0.53.5 (user: Zeus later in the run; was 1000), and only once a struck column was seen
 export const BOSS_GAP = 1500;
 export const BOSS_CHANCE = 0.05;
 export const MARK_LEAD = 0.45;     // seconds before the hero reaches it that a marked bolt strikes
@@ -96,7 +96,13 @@ export const SPEED_MAX = 21;
 export const SPEED_EASE = 450;  // metres
 export const SPEED_LATE = 1;    // m/s gained per km on top of the eased part
 export const SPEED_CAP = 26;
-export const speedAt = m => Math.min(SPEED_CAP, SPEED_START + (SPEED_MAX - SPEED_START) * (1 - Math.exp(-m / SPEED_EASE)) + SPEED_LATE * m / 1000);
+const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+// v0.53.5 (user: coming out of the cave it is already quite fast; slow it a little so the player can
+// get used to the new look): up to EXIT_EASE slower around the cave mouth, easing in over the last
+// 80 m below and back out by 900 m
+export const EXIT_EASE = 0.12;
+const exitDip = m => EXIT_EASE * smooth(520, 600, m) * (1 - smooth(660, 900, m));
+export const speedAt = m => Math.min(SPEED_CAP, SPEED_START + (SPEED_MAX - SPEED_START) * (1 - Math.exp(-m / SPEED_EASE)) + SPEED_LATE * m / 1000) * (1 - exitDip(m));
 
 // Placeholder world: a seaside stoa (covered colonnade) in white marble on a sunny day.
 export const COL = {
