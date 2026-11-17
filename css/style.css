@@ -205,6 +205,7 @@ h2 { font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; }
 #charon .eyebrow { color: #d8b45a; }
 #charon h2 { color: #f1e6c8; }
 #charon .hint { color: #b9b3a3; }
+#charon .charonSays { margin: -6px 0 0; font: italic 500 15px/1.4 var(--body); color: #9fd8cf; }
 #charon .hint b { color: #ffd36b; }
 #charon .btn:disabled { opacity: .5; cursor: default; }
 .charonScene { width: 100%; height: auto; border-radius: 10px; display: block; }

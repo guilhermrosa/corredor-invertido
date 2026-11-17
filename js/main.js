@@ -199,12 +199,22 @@ function onDie({ cause, kind, metres }) {
     return;
   }
 
-  pendingDeath = { cause, kind, metres };
+  pendingDeath = { cause, kind, metres, sky: cause !== 'block' && !!S.fallHole && S.fallHole.side > 0 };
   setTimeout(() => { if (state === 'dead') showCharon(); }, cause === 'block' ? 380 : 600);
 }
 
 // Charon (v0.52, user design; a placeholder scene until the user's own art): pay to go back, or stay
+// What Charon says as Xolo comes back to his boat (v0.53.6), by how he died
+function charonLine(d) {
+  if ((run.continues || 0) > 0) return 'De volta tão cedo? Quem insiste paga mais caro.';
+  if (['pillar', 'bolt', 'shock'].includes(d.kind)) return 'Zeus te mandou de volta. Hades vai gostar de saber.';
+  if (d.sky) return 'Até o céu te devolveu para mim.';
+  if (d.metres < UNDER_END) return 'Nem chegou a ver o sol, pequeno.';
+  if (d.cause !== 'block') return 'O mar te engoliu, e o rio te trouxe até aqui.';
+  return 'Pedra é pedra, aqui embaixo ou lá em cima.';
+}
 function showCharon() {
+  $('charonSays').textContent = `“${charonLine(pendingDeath)}”`;
   state = 'charon';
   const price = charonPrice(), can = obols >= price;
   $('charonPrice').textContent = price;
