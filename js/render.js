@@ -12,6 +12,7 @@ import { drawAegisFace } from './aegis.js';
 
 // The palette of the area being drawn (v0.53): the seaside ruins, or the underworld below them
 let COL = COL_SURFACE, UNDER = false;
+const CAVE_STYLE = (typeof location !== 'undefined' && new URLSearchParams(location.search).get('colunas')) || 'flow'; // preview switch
 
 // the split pomegranate, in the HUD icon's 20-unit box (see POMEGRANATE in main.js); built on first use
 let POM = null;
@@ -452,7 +453,12 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       // a toppling column takes the place of the left column near it
       // a toppling column takes the place of the colonnade's column at its spot, on its side
       const gone = S.obs.find(o => o.topple && Math.abs(o.z - zc) < 2.2);
-      for (const s of [-1, 1]) if (!gone || s !== (gone.col || -1)) (UNDER ? drawFlowstone : drawDoric)(s, zc, h, broken, idx);
+      for (const s of [-1, 1]) if (!gone || s !== (gone.col || -1)) {
+        if (!UNDER) drawDoric(s, zc, h, broken, idx);
+        else if (CAVE_STYLE === 'arcos') caveArch(s, zc, h, broken, idx);
+        else if (CAVE_STYLE === 'pontas') caveTeeth(s, zc, h, broken, idx);
+        else drawFlowstone(s, zc, h, broken, idx);
+      }
     }
     // v0.48.2: a toppling column that is still mostly upright, and Zeus's bolt striking it, are drawn
     // here, at their own depth among the colonnade, so the nearer columns pass in front of them
@@ -656,6 +662,46 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       ctx.strokeStyle = fog(COL.columnDark, zc); ctx.lineWidth = lw(zc) * 0.45;
       ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.stroke();
     }
+  }
+
+  // Option A, arches: thick rock pillars that flare into the roof, joined by a rock curtain hanging
+  // from the roof's edge and cut in an arch between each pair, so the side opens in arched windows
+  function caveArch(s, zc, h, broken, idx) {
+    const x0 = s * COL_X0, xc = s * (COL_X0 + COL_X1) / 2, n = 8, L = [], R2 = [];
+    for (let i = 0; i <= n; i++) {
+      const k = i / n, y = h * k;
+      let w = broken ? 0.26 * (1 - k * 0.9) : 0.17 + 0.05 * (1 - k) + (k > 0.7 ? Math.pow((k - 0.7) / 0.3, 2) * 0.5 : 0);
+      w *= 0.9 + 0.2 * hash(idx * 17 + i + s);
+      L.push([xc - w, y]); R2.push([xc + w, y]);
+    }
+    poly([...L, ...R2.slice().reverse()].map(([x, y]) => P(x, y, zc)), fog(COL.column, zc));
+    const side = s < 0 ? R2 : L;
+    poly([...side, ...side.map(([x, y]) => [lerp(x, xc, 0.6), y]).reverse()].map(([x, y]) => P(x, y, zc)), fog(COL.columnShade, zc));
+    if (broken || missingAt(S.obs, 1, zc + 2)) return;
+    // the curtain: from this pillar to the next one, 4 m on, in the plane of the pillars' lane side
+    const za = zc + 0.05, zb = zc + 4, pts = [];
+    for (let i = 0; i <= 12; i++) {
+      const u = i / 12, z = lerp(za, zb, u), d = 0.3 + 1.1 * Math.pow(Math.abs(u - 0.5) * 2, 2.2) + 0.06 * hash(idx * 7 + i);
+      if (z > BASE) pts.push(P(x0, HM - d, z));
+    }
+    if (pts.length < 2) return;
+    pts.push(P(x0, HM, zb), P(x0, HM, Math.max(BASE, za)));
+    poly(pts, fog(mix(COL.ceiling, COL.columnShade, 0.5), Math.max(BASE, za)));
+  }
+  // Option B, points: no columns at all; the roof's edge is a jagged rock lip, and at the sides
+  // stalactites hang from it toward stalagmites rising from the floor, never quite meeting
+  function caveTeeth(s, zc, h, broken, idx) {
+    const xc = s * (COL_X0 + COL_X1) / 2;
+    const up = HM * (0.25 + 0.2 * hash(idx * 3 + s)), down = HM * (0.2 + 0.25 * hash(idx * 5 + s));
+    const w = 0.16 + 0.08 * hash(idx * 7 + s);
+    poly([P(xc - w, 0, zc), P(xc + w, 0, zc), P(xc + w * 0.1, up, zc)], fog(COL.column, zc));
+    poly([P(xc - w, 0, zc), P(xc + w * 0.1, up, zc), P(xc - w * 0.2, 0, zc)], fog(COL.columnShade, zc));
+    if (broken) return;
+    const z2 = zc + 1.6 + hash(idx * 9 + s), w2 = w * 0.9;
+    poly([P(xc - w2, HM, z2), P(xc + w2, HM, z2), P(xc, HM - down, z2)], fog(mix(COL.column, COL.columnShade, 0.3), z2));
+    const pts = []; // the roof's jagged lip, hanging a little at its edge
+    for (let i = 0; i <= 8; i++) { const z = zc + i * 0.5; if (z > BASE) pts.push(P(s * (HW + 0.1), HM - 0.15 - 0.3 * hash(idx * 11 + i + s), z)); }
+    if (pts.length > 1) { pts.push(P(s * (HW + 0.1), HM, zc + 4), P(s * (HW + 0.1), HM, Math.max(BASE, zc))); poly(pts, fog(mix(COL.ceiling, COL.columnShade, 0.5), Math.max(BASE, zc))); }
   }
 
   // A Doric column (v0.41, from the user's references): no base, a shaft that narrows a little
