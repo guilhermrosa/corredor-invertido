@@ -119,7 +119,7 @@ const emit = (type, data) => {
   if (type === 'crack' && data.kind === 'pillar') zeusFlash = 1;
   if (type === 'strike') { zeusFlash = 1; shake = Math.max(shake, 0.15); }
   if (type === 'bossStart') { if (!tut) { onWrath('Zeus desperta', 'sobreviva à tempestade'); run.zeus = true; stats.recordZeus('faced'); } return; }
-  if (type === 'bossEnd') { if (!tut && !S.dead) { onWrath('Zeus se recolhe', 'você resistiu à tempestade'); run.zeusSurvived = (run.zeusSurvived || 0) + 1; stats.recordZeus('survived'); earn(2); } return; }
+  if (type === 'bossEnd') { if (!tut && !S.dead) { onWrath('Zeus se recolhe', 'você resistiu à tempestade'); run.zeusSurvived = (run.zeusSurvived || 0) + 1; stats.recordZeus('survived'); earn(1); } return; }
   if (type === 'break') { onColumnBreak(data.z, HW, data.col); shake = Math.max(shake, 0.1); } // Zeus's wrath: a white-blue flash as the lightning strikes
   if (type === 'land') onLand(data.side);
   else if (type === 'thud') { onThud(data.z); shake = Math.max(shake, 0.12); }
