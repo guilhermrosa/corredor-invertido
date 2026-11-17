@@ -71,6 +71,11 @@ export const BOSS_FROM = 1000;
 export const BOSS_GAP = 1500;
 export const BOSS_CHANCE = 0.05;
 export const MARK_LEAD = 0.45;     // seconds before the hero reaches it that a marked bolt strikes
+// Charon (v0.52, user design): obols, the coin the dead paid the ferryman, kept on the device. Earned
+// 1 per OBOL_EVERY metres as you run, plus some for feats; a continue costs CHARON_PRICE, doubling with
+// every continue in the same run (5, 10, 20, ...).
+export const OBOL_EVERY = 750;
+export const CHARON_PRICE = 5;
 export const AEGIS_HITS = 2;       // walls it breaks before it is gone (v0.47.8, user: "it could take 2 hits"; 1 before)
 
 // Falling obstacles (from FALL_FROM m): a column of the left colonnade that topples across

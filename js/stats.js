@@ -94,6 +94,12 @@ export function recordZeus(what) { // Zeus's wrath: encounters faced and survive
   save();
 }
 
+export function recordContinue(price) { // Charon bribed (v0.52)
+  data.charon = data.charon || { continues: 0, spent: 0 };
+  data.charon.continues++; data.charon.spent += price;
+  save();
+}
+
 export function recordSmash(kind) {
   data.smashes = data.smashes || {}; // walls broken by Athena's shield, by kind
   data.smashes[kind] = (data.smashes[kind] || 0) + 1;

@@ -529,6 +529,18 @@ function hit(S, emit, cause, o) {
   emit('hurt', { cause, kind: obstacleKind(o), lives: S.lives });
 }
 
+// Charon took the bribe (v0.52): back to life where he fell, all lives back, a moment of protection,
+// and the stretch right ahead cleared (the storm and Zeus's arena stay)
+export function revive(S, emit = () => {}) {
+  S.dead = false; S.falling = false; S.fallT = 0; S.fallHole = null;
+  S.lives = S.maxLives; S.gold = false;
+  S.invuln = INVULN_TIME * 2;
+  S.obs = S.obs.filter(x => x.type === 'boss' || x.type === 'storm' || !(x.z < 20 && x.z + x.len > -1));
+  S.sink = 0; S.py = S.grav < 0 ? 0 : HM - PH; S.vy = 0; S.grounded = true; S.mode = 'ground';
+  S.slide = 0; S.slideQueued = false; S.buffer = 0;
+  emit('revive');
+}
+
 function die(S, emit, cause, o) {
   S.dead = true;
   S.falling = cause !== 'block';

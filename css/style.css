@@ -197,3 +197,18 @@ h2 { font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; }
 .boost.ending { animation: boost-blink .25s steps(2) infinite; }
 @keyframes boost-blink { 50% { opacity: .45; } }
 @media (prefers-reduced-motion: reduce) { .boost.ending { animation: none; } }
+
+/* Charon (v0.52): placeholder scene on death; pay obols to go back */
+#charon .card { background: #182129; color: #e6ddc8; border-color: #3a4a55; }
+#charon .eyebrow { color: #d8b45a; }
+#charon h2 { color: #f1e6c8; }
+#charon .hint { color: #b9b3a3; }
+#charon .hint b { color: #ffd36b; }
+#charon .btn:disabled { opacity: .5; cursor: default; }
+.charonScene { width: 100%; height: auto; border-radius: 10px; display: block; }
+.chBoat { animation: chBob 3.2s ease-in-out infinite; transform-origin: 160px 130px; }
+.chMist { animation: chMist 7s ease-in-out infinite alternate; }
+@keyframes chBob { 0%, 100% { transform: translateY(0) rotate(-.6deg); } 50% { transform: translateY(3px) rotate(.6deg); } }
+@keyframes chMist { from { transform: translateX(-8px); } to { transform: translateX(8px); } }
+@media (prefers-reduced-motion: reduce) { .chBoat, .chMist { animation: none; } }
+.obols { color: #a07a1e; }

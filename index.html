@@ -74,11 +74,55 @@
     </div>
   </div>
 
+  <div class="overlay charon" id="charon" hidden>
+    <div class="card">
+      <svg class="charonScene" viewBox="0 0 320 180" aria-hidden="true">
+        <defs>
+          <radialGradient id="chGlow"><stop offset="0" stop-color="#ffe9a8" stop-opacity=".9"/><stop offset="1" stop-color="#ffcf5a" stop-opacity="0"/></radialGradient>
+          <linearGradient id="chRiver" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d2a33"/><stop offset="1" stop-color="#0b1116"/></linearGradient>
+        </defs>
+        <rect width="320" height="180" fill="#121a21"/>
+        <path d="M0 70 Q60 52 120 66 T240 60 T320 68 V180 H0Z" fill="#18222a"/>
+        <rect y="112" width="320" height="68" fill="url(#chRiver)"/>
+        <g class="chMist" fill="#8fa3ad" opacity=".12"><ellipse cx="70" cy="114" rx="70" ry="5"/><ellipse cx="250" cy="118" rx="80" ry="6"/></g>
+        <g class="chBoat">
+          <line x1="236" y1="20" x2="196" y2="150" stroke="#5a4532" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="132" cy="64" r="34" fill="url(#chGlow)"/>
+          <path d="M70 116 L250 116 Q244 136 206 140 L104 140 Q76 136 70 116Z" fill="#3b2c20"/>
+          <path d="M70 116 L250 116" stroke="#6b5440" stroke-width="2"/>
+          <path d="M60 106 Q66 116 74 118" stroke="#3b2c20" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <path d="M196 116 Q194 66 214 44 Q228 32 238 46 Q252 70 246 116Z" fill="#20262c"/>
+          <path d="M214 46 Q226 38 234 50 Q232 62 222 64 Q212 62 214 46Z" fill="#05080a"/>
+          <circle cx="220" cy="54" r="1.4" fill="#cfe6ef"/><circle cx="228" cy="54" r="1.4" fill="#cfe6ef"/>
+          <path d="M200 76 Q218 70 234 78" stroke="#2c343b" stroke-width="7" fill="none" stroke-linecap="round"/>
+          <line x1="132" y1="58" x2="132" y2="116" stroke="#5a4532" stroke-width="2.5"/>
+          <path d="M132 58 Q150 52 160 60" stroke="#5a4532" stroke-width="2.5" fill="none"/>
+          <rect x="155" y="60" width="10" height="13" rx="2" fill="#ffd36b" stroke="#6b5440" stroke-width="1.5"/>
+          <g class="chXolo">
+            <path d="M104 116 Q102 98 112 92 Q122 98 120 116Z" fill="#d2483e"/>
+            <ellipse cx="112" cy="86" rx="11" ry="8" fill="#d2483e"/>
+            <path d="M101 82 l-7 -4 M101 86 l-8 0 M101 90 l-7 4 M123 82 l7 -4 M123 86 l8 0 M123 90 l7 4" stroke="#e8786c" stroke-width="2.2" stroke-linecap="round"/>
+          </g>
+        </g>
+        <g class="chRipples" stroke="#5f7a87" stroke-width="1" opacity=".5" fill="none"><path d="M40 150 q10 -3 20 0"/><path d="M262 158 q12 -3 24 0"/><path d="M150 166 q10 -3 20 0"/></g>
+      </svg>
+      <p class="eyebrow">O barqueiro do submundo</p>
+      <h2>Caronte</h2>
+      <p class="hint">Xolo está de volta ao barco. Por <b id="charonPrice">5</b> óbolos, Caronte rema contra a correnteza e o devolve à corrida, de onde caiu.</p>
+      <p class="hint" id="charonWallet"></p>
+      <div class="actions">
+        <button class="btn primary" id="btnBribe" type="button">Subornar Caronte</button>
+        <button class="btn" id="btnStay" type="button">Ficar no submundo</button>
+      </div>
+    </div>
+  </div>
+
   <div class="overlay" id="over" hidden>
     <div class="card">
       <p class="eyebrow" id="overCause">Fim da corrida</p>
       <h2 id="overDist">0 m</h2>
       <p class="hint" id="overBest">Recorde: 0 m</p>
+      <p class="hint obols" id="overObols"></p>
       <div class="actions">
         <button class="btn primary" id="btnAgain" type="button">Jogar de novo</button>
         <button class="btn" id="btnBack" type="button">Menu</button>

@@ -1,8 +1,8 @@
 // Entry point: game loop, game flow (runs, tutorial, pause, game over), menus, keys and offline support.
 // Options live in options.js, touch gestures in input.js, the stats and achievements panels in panels.js.
 
-import { COL, rgb, HERMES_TIME, HW } from './config.js';
-import { createSim, update, press, flipUp, slide } from './sim.js';
+import { COL, rgb, HERMES_TIME, HW, OBOL_EVERY, CHARON_PRICE } from './config.js';
+import { createSim, update, press, flipUp, slide, revive } from './sim.js';
 import { drawTunnel, QUALITY } from './render.js';
 import { store } from './store.js';
 import { opt, quality, buzz, watchFrames, renderOptions, bindOptions, SWIPE } from './options.js';
@@ -81,7 +81,12 @@ function checkGiftIntro(dt) {
   $('giftIntro').hidden = false;
   giftIntroT = 3.6;
 }
-let hermesLeft = 0;          // last frame's S.hermes, for the countdown ticks
+let hermesLeft = 0;
+// Charon (v0.52): the obols kept on the device, what this run earned, and the death waiting for a choice
+let obols = store.get('obols', 0);
+let pendingDeath = null;
+function earn(n) { if (n <= 0) return; obols += n; run.earned = (run.earned || 0) + n; store.set('obols', obols); }
+const charonPrice = () => CHARON_PRICE * 2 ** (run.continues || 0);          // last frame's S.hermes, for the countdown ticks
 let shake = 0, flash = 0, deadAt = 0, zeusFlash = 0;
 let countdownLeft = 0;
 let debug = store.get('debug', false); // hitbox view: H key, or tap the version label 5 times
@@ -114,7 +119,7 @@ const emit = (type, data) => {
   if (type === 'crack' && data.kind === 'pillar') zeusFlash = 1;
   if (type === 'strike') { zeusFlash = 1; shake = Math.max(shake, 0.15); }
   if (type === 'bossStart') { if (!tut) { onWrath('Zeus desperta', 'sobreviva à tempestade'); run.zeus = true; stats.recordZeus('faced'); } return; }
-  if (type === 'bossEnd') { if (!tut && !S.dead) { onWrath('Zeus se recolhe', 'você resistiu à tempestade'); run.zeusSurvived = (run.zeusSurvived || 0) + 1; stats.recordZeus('survived'); } return; }
+  if (type === 'bossEnd') { if (!tut && !S.dead) { onWrath('Zeus se recolhe', 'você resistiu à tempestade'); run.zeusSurvived = (run.zeusSurvived || 0) + 1; stats.recordZeus('survived'); earn(2); } return; }
   if (type === 'break') { onColumnBreak(data.z, HW, data.col); shake = Math.max(shake, 0.1); } // Zeus's wrath: a white-blue flash as the lightning strikes
   if (type === 'land') onLand(data.side);
   else if (type === 'thud') { onThud(data.z); shake = Math.max(shake, 0.12); }
@@ -193,12 +198,51 @@ function onDie({ cause, kind, metres }) {
     return;
   }
 
+  pendingDeath = { cause, kind, metres };
+  setTimeout(() => { if (state === 'dead') showCharon(); }, cause === 'block' ? 380 : 600);
+}
+
+// Charon (v0.52, user design; a placeholder scene until the user's own art): pay to go back, or stay
+function showCharon() {
+  state = 'charon';
+  const price = charonPrice(), can = obols >= price;
+  $('charonPrice').textContent = price;
+  $('charonWallet').textContent = `Você tem ${obols} ${obols === 1 ? 'óbolo' : 'óbolos'}.`;
+  $('btnBribe').disabled = !can;
+  $('btnBribe').textContent = can ? `Pagar ${price} óbolos` : `Faltam ${price - obols} ${price - obols === 1 ? 'óbolo' : 'óbolos'}`;
+  $('charon').hidden = false;
+  (can ? $('btnBribe') : $('btnStay')).focus({ preventScroll: true });
+}
+function bribeCharon() {
+  if (state !== 'charon') return;
+  const price = charonPrice();
+  if (obols < price) return;
+  obols -= price; store.set('obols', obols);
+  run.continues = (run.continues || 0) + 1;
+  stats.recordContinue(price);
+  revive(S);
+  pendingDeath = null;
+  $('charon').hidden = true;
+  renderLives(S.lives);
+  state = 'countdown';
+  countdownLeft = 1.8; // 3, 2, 1, then the run goes on from where he fell
+  $('countdown').hidden = false;
+  cvs.focus({ preventScroll: true });
+}
+function stayBelow() {
+  if (state !== 'charon' || !pendingDeath) return;
+  $('charon').hidden = true;
+  state = 'dead';
+  deadAt = performance.now();
+  gameOver(pendingDeath);
+  pendingDeath = null;
+}
+function gameOver({ cause, kind, metres }) {
   stats.recordRun({ metres, seconds: runSeconds, kind });
   checkAchievements(metres);
   const isRecord = metres > best;
-  if (isRecord) { best = metres; store.set('best-tunnel', best); }
-  setTimeout(() => {
-    if (state !== 'dead') return;
+  if (isRecord) { best = metres; store.set('best-tunnel', best); earn(3); }
+  {
     // falling through the roof is falling into the sky
     const intoSky = cause !== 'block' && S.fallHole && S.fallHole.side > 0;
     $('overCause').textContent = intoSky ? 'Caiu no céu'
@@ -206,9 +250,10 @@ function onDie({ cause, kind, metres }) {
       : CAUSE_TEXT[cause] + (cause === 'block' ? ': ' + stats.KIND_LABEL[kind].toLowerCase() : '');
     $('overDist').textContent = metres + ' m';
     $('overBest').textContent = isRecord ? 'Novo recorde!' : `Recorde: ${best} m`;
+    $('overObols').textContent = `+${run.earned || 0} ${(run.earned || 0) === 1 ? 'óbolo' : 'óbolos'} nesta corrida · você tem ${obols}`;
     $('over').hidden = false;
     $('btnAgain').focus({ preventScroll: true });
-  }, cause === 'block' ? 380 : 600);
+  }
 }
 
 // ---- loop ----
@@ -275,6 +320,8 @@ function frame(now) {
     if (S.hermes > 0 && Math.ceil(S.hermes) < Math.ceil(hermesLeft) && Math.ceil(S.hermes) <= 3) audio.sfx('boostTick', { left: Math.ceil(S.hermes) });
     hermesLeft = S.hermes;
     if (!frozen) checkGiftIntro(dt);
+    const marks = Math.floor(S.dist / OBOL_EVERY); // an obol every OBOL_EVERY metres, credited as you go
+    if (marks > (run.obolMarks || 0)) { earn(marks - (run.obolMarks || 0)); run.obolMarks = marks; }
     achCheckIn -= dt;
     if (achCheckIn <= 0) { achCheckIn = 0.5; checkAchievements(Math.floor(S.dist)); }
   }
@@ -318,7 +365,7 @@ function runState(metres) {
   return { metres, cleanMetres: run.cleanMetres, flips: run.flips, slides: run.slides, gods: run.gods.size, zeus: run.zeusSurvived || 0 };
 }
 function checkAchievements(metres) {
-  for (const a of ach.evaluate(runState(metres), stats.get())) toast(a);
+  for (const a of ach.evaluate(runState(metres), stats.get())) { toast(a); if (!tut) earn(1); }
 }
 
 function finishTutorial() {
@@ -342,7 +389,7 @@ function skipTutorial() {
 function enterPlay() {
   state = 'play';
   runSeconds = 0;
-  for (const id of ['menu', 'over', 'pause', 'stats', 'options', 'countdown']) $(id).hidden = true;
+  for (const id of ['menu', 'over', 'pause', 'stats', 'options', 'countdown', 'charon']) $(id).hidden = true;
   $('hud').hidden = false;
   audio.startMusic(tempo);
   cvs.focus({ preventScroll: true });
@@ -355,7 +402,7 @@ function start() {
   $('btnSkipTut').hidden = true;
   S = createSim();
   clearFx();
-  run = { flips: 0, slides: 0, cleanMetres: 0, hurt: false, gods: new Set() };
+  run = { flips: 0, slides: 0, cleanMetres: 0, hurt: false, gods: new Set(), earned: 0, continues: 0, obolMarks: 0 };
   enterPlay();
   $('dist').classList.remove('compact');
   $('dist').textContent = '0 m';
@@ -387,12 +434,12 @@ function toMenu() {
   audio.stopMusic();
   S = createSim();
   clearFx();
-  for (const id of ['over', 'hud', 'pause', 'stats', 'options', 'achPanel', 'countdown', 'tutHint', 'pop', 'blessing', 'boost', 'giftIntro']) $(id).hidden = true;
+  for (const id of ['over', 'hud', 'pause', 'stats', 'options', 'achPanel', 'countdown', 'tutHint', 'pop', 'blessing', 'boost', 'giftIntro', 'charon']) $(id).hidden = true;
   $('menu').hidden = false;
   refreshMenu();
 }
 function refreshMenu() {
-  $('bestMenu').textContent = 'Recorde: ' + (best ? best + ' m' : '—');
+  $('bestMenu').textContent = 'Recorde: ' + (best ? best + ' m' : '—') + ' · Óbolos: ' + obols;
   $('verLabel').textContent = VERSION_LABEL + (debug ? ' · colisões visíveis' : '');
   renderOptions();
 }
@@ -449,6 +496,8 @@ function feedbackUrl() {
 $('btnFeedback').addEventListener('click', () => { window.open(feedbackUrl(), '_blank', 'noopener'); });
 $('btnAgain').addEventListener('click', start);
 $('btnBack').addEventListener('click', toMenu);
+$('btnBribe').addEventListener('click', bribeCharon);
+$('btnStay').addEventListener('click', stayBelow);
 $('btnPause').addEventListener('click', e => { e.stopPropagation(); pause(); });
 $('btnResume').addEventListener('click', resume);
 $('btnQuit').addEventListener('click', toMenu);
@@ -490,6 +539,7 @@ addEventListener('keydown', e => {
   else if (k === 'Escape' && !$('options').hidden) { $('options').hidden = true; $('menu').hidden = false; }
   else if (k === 'Escape' && !$('achPanel').hidden) { $('achPanel').hidden = true; $('menu').hidden = false; }
   else if (k === 'Escape' && state === 'dead') toMenu();
+  else if (state === 'charon' && k === 'Escape') { e.preventDefault(); stayBelow(); }
   else if (k === 'KeyH') toggleDebug();
 });
 
