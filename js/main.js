@@ -208,7 +208,7 @@ function onDie({ cause, kind, metres }) {
 function charonLine(d) {
   if ((run.continues || 0) > 0) return 'De volta tão cedo? Quem insiste paga mais caro.';
   if (['pillar', 'bolt', 'shock'].includes(d.kind)) return 'Zeus te mandou de volta. Hades vai gostar de saber.';
-  if (d.sky) return 'Fugir pelo céu? Original. Inútil, mas original.';
+  if (d.sky) return 'Os deuses moram lá em cima, pequeno. E não recebem visitas.';
   if (d.metres < UNDER_END) return 'Nem chegou a ver o sol, pequeno.';
   if (d.cause !== 'block') return 'O mar te engoliu, e o rio te trouxe até aqui.';
   return 'Pedra é pedra, aqui embaixo ou lá em cima.';
