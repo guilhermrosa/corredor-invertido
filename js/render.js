@@ -12,7 +12,6 @@ import { drawAegisFace } from './aegis.js';
 
 // The palette of the area being drawn (v0.53): the seaside ruins, or the underworld below them
 let COL = COL_SURFACE, UNDER = false;
-const CAVE_STYLE = (typeof location !== 'undefined' && new URLSearchParams(location.search).get('colunas')) || 'flow'; // preview switch
 
 // the split pomegranate, in the HUD icon's 20-unit box (see POMEGRANATE in main.js); built on first use
 let POM = null;
@@ -454,10 +453,8 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       // a toppling column takes the place of the colonnade's column at its spot, on its side
       const gone = S.obs.find(o => o.topple && Math.abs(o.z - zc) < 2.2);
       for (const s of [-1, 1]) if (!gone || s !== (gone.col || -1)) {
-        if (!UNDER) drawDoric(s, zc, h, broken, idx);
-        else if (CAVE_STYLE === 'arcos') caveArch(s, zc, h, broken, idx);
-        else if (CAVE_STYLE === 'pontas') caveTeeth(s, zc, h, broken, idx);
-        else drawFlowstone(s, zc, h, broken, idx);
+        if (UNDER) caveArch(s, zc, h, broken, idx);
+        else drawDoric(s, zc, h, broken, idx);
       }
     }
     // v0.48.2: a toppling column that is still mostly upright, and Zeus's bolt striking it, are drawn
@@ -613,7 +610,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   // The underworld's roof (v0.53): bare rock, darker toward the edges, with small stalactites hanging
   // from it outside the running lane (never over it, so they never read as obstacles)
   function caveRoof(a, b, z0, idx) {
-    quad(P(-EDGE, HM, a), P(EDGE, HM, a), P(EDGE, HM, b), P(-EDGE, HM, b), fog(idx & 1 ? COL.ceiling : mix(COL.ceiling, COL.beam, 0.5), a));
+    quad(P(-EDGE, HM, a), P(EDGE, HM, a), P(EDGE, HM, b), P(-EDGE, HM, b), fog(mix(COL.ceiling, COL.beam, 0.25 * hash(idx * 3)), a));
     for (const s of [-1, 1]) {
       quad(P(s * HW, HM, a), P(s * EDGE, HM, a), P(s * EDGE, HM, b), P(s * HW, HM, b), fog(COL.beam, a));
       if (a > 40) continue;
@@ -639,69 +636,57 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       ctx.closePath(); ctx.fill();
     }
   }
-  // A column of the cave (v0.53): where a stalactite has grown down into a stalagmite, a natural
-  // pillar wide at both ends with a narrow waist; where the roof is gone, only the stalagmite stands
-  function drawFlowstone(s, zc, h, broken, idx) {
-    const xc = s * (COL_X0 + COL_X1) / 2, n = 8, L = [], Rr = [];
-    for (let i = 0; i <= n; i++) {
-      const y = h * i / n, k = i / n;
-      let w = broken ? 0.24 * (1 - k) + 0.01 : 0.1 + 0.16 * Math.pow(Math.abs(k - 0.55) / 0.55, 1.4);
-      w *= 0.85 + 0.3 * hash(idx * 17 + i + s);
-      const dx = (hash(idx * 29 + i * 3 + s) - 0.5) * 0.05;
-      L.push([xc + dx - w, y]); Rr.push([xc + dx + w, y]);
-    }
-    const front = [...L, ...Rr.reverse()].map(([x, y]) => P(x, y, zc));
-    poly(front, fog(COL.column, zc));
-    const shade = L.map(([x, y], i) => [s < 0 ? x : x, y]); // the lane side in shade
-    const inner = L.map(([x, y], i) => [lerp(x, Rr[n - i][0], 0.4), y]);
-    const side = s < 0 ? Rr.slice().reverse() : L; // edge facing the lane
-    const mid = side.map(([x, y]) => [lerp(x, xc, 0.55), y]);
-    poly([...side, ...mid.reverse()].map(([x, y]) => P(x, y, zc)), fog(COL.columnShade, zc));
-    if (zc < 22) for (const q of [0.3, 0.7]) { // drip lines down the flowstone
-      const pts = L.map(([x, y], i) => P(lerp(x, Rr[n - i] ? Rr[n - i][0] : x, q), y, zc));
-      ctx.strokeStyle = fog(COL.columnDark, zc); ctx.lineWidth = lw(zc) * 0.45;
-      ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.stroke();
-    }
-  }
-
-  // Option A, arches: thick rock pillars that flare into the roof, joined by a rock curtain hanging
-  // from the roof's edge and cut in an arch between each pair, so the side opens in arched windows
+  // The cave's sides (v0.53.1, the user picked the arches of three options and asked to polish
+  // them): rough rock pillars that flare into the roof, joined by a rock curtain hanging from the
+  // roof's edge and cut in an arch between each pair, so the side opens in arched windows onto the
+  // river. The pillars and the arches have depth (a shaded side and an underside), rough edges, a
+  // few strata, and small drips hanging from the arches. Where the roof is gone only a stump stands.
   function caveArch(s, zc, h, broken, idx) {
-    const x0 = s * COL_X0, xc = s * (COL_X0 + COL_X1) / 2, n = 8, L = [], R2 = [];
+    const x0 = s * COL_X0, x1 = s * COL_X1, xc = (x0 + x1) / 2, n = 10, L = [], R2 = [];
     for (let i = 0; i <= n; i++) {
       const k = i / n, y = h * k;
-      let w = broken ? 0.26 * (1 - k * 0.9) : 0.17 + 0.05 * (1 - k) + (k > 0.7 ? Math.pow((k - 0.7) / 0.3, 2) * 0.5 : 0);
-      w *= 0.9 + 0.2 * hash(idx * 17 + i + s);
-      L.push([xc - w, y]); R2.push([xc + w, y]);
+      let w = broken ? 0.24 * (1 - k * 0.85) : 0.16 + 0.06 * (1 - k) + (k > 0.62 ? Math.pow((k - 0.62) / 0.38, 2.2) * 0.62 : 0);
+      const jl = (hash(idx * 17 + i + s) - 0.5) * 0.05, jr = (hash(idx * 23 + i - s) - 0.5) * 0.05;
+      L.push([xc - w + jl, y]); R2.push([xc + w + jr, y]);
     }
-    poly([...L, ...R2.slice().reverse()].map(([x, y]) => P(x, y, zc)), fog(COL.column, zc));
-    const side = s < 0 ? R2 : L;
-    poly([...side, ...side.map(([x, y]) => [lerp(x, xc, 0.6), y]).reverse()].map(([x, y]) => P(x, y, zc)), fog(COL.columnShade, zc));
+    const near = s < 0 ? R2 : L; // the pillar's edge facing the lane
+    const za = zc, zb = zc + COL_D;
+    // its side facing the lane, in shade, then its front
+    for (let i = 0; i < n; i++) quad(P(near[i][0], near[i][1], za), P(near[i + 1][0], near[i + 1][1], za), P(near[i + 1][0], near[i + 1][1], zb), P(near[i][0], near[i][1], zb), fog(COL.columnShade, za));
+    poly([...L, ...R2.slice().reverse()].map(([x, y]) => P(x, y, za)), fog(COL.column, za));
+    if (za < 26) { // strata and a crack, near only
+      const dk = fog(COL.columnDark, za), lwz = lw(za) * 0.5;
+      for (const k of [0.22, 0.47]) { const i = Math.round(k * n); line(P(lerp(L[i][0], R2[i][0], 0.15), L[i][1], za), P(lerp(L[i][0], R2[i][0], 0.7), L[i][1] + 0.05, za), dk, lwz); }
+      const cx = lerp(L[3][0], R2[3][0], 0.6);
+      ctx.strokeStyle = dk; ctx.lineWidth = lwz; ctx.beginPath();
+      [[0, 0.55], [0.03, 0.66], [-0.02, 0.78], [0.02, 0.88]].forEach(([dx, k], i) => { const p = P(cx + dx, h * k, za); i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); });
+      ctx.stroke();
+    }
     if (broken || missingAt(S.obs, 1, zc + 2)) return;
-    // the curtain: from this pillar to the next one, 4 m on, in the plane of the pillars' lane side
-    const za = zc + 0.05, zb = zc + 4, pts = [];
-    for (let i = 0; i <= 12; i++) {
-      const u = i / 12, z = lerp(za, zb, u), d = 0.3 + 1.1 * Math.pow(Math.abs(u - 0.5) * 2, 2.2) + 0.06 * hash(idx * 7 + i);
-      if (z > BASE) pts.push(P(x0, HM - d, z));
+    // the arch from this pillar to the next, 4 m on: its curve, in the plane of the pillars' lane side
+    const z1 = zc + 4, curve = [];
+    for (let i = 0; i <= 16; i++) {
+      const u = i / 16, z = lerp(zb, z1, u);
+      const d = 0.32 + 1.15 * Math.pow(Math.abs(u - 0.5) * 2, 2.4) + 0.05 * (hash(idx * 7 + i + s) - 0.5);
+      curve.push([z, HM - d]);
     }
-    if (pts.length < 2) return;
-    pts.push(P(x0, HM, zb), P(x0, HM, Math.max(BASE, za)));
-    poly(pts, fog(mix(COL.ceiling, COL.columnShade, 0.5), Math.max(BASE, za)));
-  }
-  // Option B, points: no columns at all; the roof's edge is a jagged rock lip, and at the sides
-  // stalactites hang from it toward stalagmites rising from the floor, never quite meeting
-  function caveTeeth(s, zc, h, broken, idx) {
-    const xc = s * (COL_X0 + COL_X1) / 2;
-    const up = HM * (0.25 + 0.2 * hash(idx * 3 + s)), down = HM * (0.2 + 0.25 * hash(idx * 5 + s));
-    const w = 0.16 + 0.08 * hash(idx * 7 + s);
-    poly([P(xc - w, 0, zc), P(xc + w, 0, zc), P(xc + w * 0.1, up, zc)], fog(COL.column, zc));
-    poly([P(xc - w, 0, zc), P(xc + w * 0.1, up, zc), P(xc - w * 0.2, 0, zc)], fog(COL.columnShade, zc));
-    if (broken) return;
-    const z2 = zc + 1.6 + hash(idx * 9 + s), w2 = w * 0.9;
-    poly([P(xc - w2, HM, z2), P(xc + w2, HM, z2), P(xc, HM - down, z2)], fog(mix(COL.column, COL.columnShade, 0.3), z2));
-    const pts = []; // the roof's jagged lip, hanging a little at its edge
-    for (let i = 0; i <= 8; i++) { const z = zc + i * 0.5; if (z > BASE) pts.push(P(s * (HW + 0.1), HM - 0.15 - 0.3 * hash(idx * 11 + i + s), z)); }
-    if (pts.length > 1) { pts.push(P(s * (HW + 0.1), HM, zc + 4), P(s * (HW + 0.1), HM, Math.max(BASE, zc))); poly(pts, fog(mix(COL.ceiling, COL.columnShade, 0.5), Math.max(BASE, zc))); }
+    const vis = curve.filter(([z]) => z > BASE);
+    if (vis.length < 2) return;
+    const zs = Math.max(BASE, zb);
+    // its underside, from the lane side back to the pillars' far side, darker
+    for (let i = 0; i < vis.length - 1; i++) {
+      const [za2, ya] = vis[i], [zb2, yb] = vis[i + 1];
+      quad(P(x0, ya, za2), P(x1 + s * 0.12, ya, za2), P(x1 + s * 0.12, yb, zb2), P(x0, yb, zb2), fog(mix(COL.columnShade, COL.columnDark, 0.5), za2));
+    }
+    // its face
+    poly([...vis.map(([z, y]) => P(x0, y, z)), P(x0, HM, vis[vis.length - 1][0]), P(x0, HM, vis[0][0])], fog(mix(COL.ceiling, COL.columnShade, 0.55), zs));
+    // small drips hanging from it
+    if (zs < 30) for (let k = 0; k < 3; k++) {
+      const i = 3 + Math.floor(hash(idx * 31 + k + s) * 10), c = curve[i];
+      if (!c || c[0] <= BASE || hash(idx * 37 + k * 5 + s) > 0.65) continue;
+      const len = 0.08 + 0.18 * hash(idx * 41 + k), w = 0.025 + 0.02 * hash(idx * 43 + k);
+      poly([P(x0, c[1] + 0.02, c[0] - w * 2), P(x0, c[1] + 0.02, c[0] + w * 2), P(x0, c[1] - len, c[0])], fog(mix(COL.columnShade, COL.column, 0.3), c[0]));
+    }
   }
 
   // A Doric column (v0.41, from the user's references): no base, a shaft that narrows a little
