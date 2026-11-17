@@ -146,6 +146,44 @@ export const BOSS_PARTS = {
     { t: 2.6, type: 'topple', side: 'any', len: 0.5 },
   ] },
 };
+// Demeter's attacks (work in progress): organic, growing things. `grow` only changes how an item is
+// drawn and animated (wheat shooting up, vines closing in, roots splitting the ground); the rules and
+// hitboxes are those of its type, so the solver proves them like any other stretch.
+export const DEMETER_PARTS = {
+  'trigo-brota': { end: 3.2, items: [ // rows of wheat shoot up one after another: jump, jump, then a tall sheaf to flip from
+    { t: 0, type: 'low', side: 'a', len: 0.7, grow: 'wheat' },
+    { t: 0.65, type: 'low', side: 'a', len: 0.7, grow: 'wheat' },
+    { t: 1.35, type: 'tall', side: 'a', len: 1.2, grow: 'wheat' },
+    { t: 2.05, type: 'low', side: 'b', len: 0.7, grow: 'wheat' },
+    { t: 2.7, type: 'low', side: 'b', len: 0.7, grow: 'wheat' },
+  ] },
+  'vinhas-fecham': { end: 2.8, items: [ // vines close in from the pergola: slide under, flip, slide again
+    { t: 0, type: 'portal', side: 'a', len: 0.8, grow: 'vine' },
+    { t: 1.1, type: 'portal', side: 'b', len: 0.8, grow: 'vine' },
+    { t: 2.1, type: 'tall', side: 'a', len: 1.0, grow: 'vine' },
+  ] },
+  'raizes-racham': { end: 3.2, items: [ // roots split the ground in a line: jump, jump, flip, jump, jump
+    { t: 0, type: 'hole', side: 'a', len: 2.0, grow: 'root' },
+    { t: 0.7, type: 'hole', side: 'a', len: 2.0, grow: 'root' },
+    { t: 1.4, type: 'tall', side: 'a', len: 1.0, grow: 'wheat' },
+    { t: 2.0, type: 'hole', side: 'b', len: 2.0, grow: 'root' },
+    { t: 2.7, type: 'hole', side: 'b', len: 2.0, grow: 'root' },
+  ] },
+  'colheita-final': { end: 3.4, items: [ // the three together, faster
+    { t: 0, type: 'low', side: 'a', len: 0.7, grow: 'wheat' },
+    { t: 0.6, type: 'hole', side: 'a', len: 1.8, grow: 'root' },
+    { t: 1.2, type: 'portal', side: 'a', len: 0.8, grow: 'vine' },
+    { t: 1.9, type: 'tall', side: 'a', len: 1.0, grow: 'wheat' },
+    { t: 2.5, type: 'hole', side: 'b', len: 1.8, grow: 'root' },
+    { t: 3.0, type: 'low', side: 'b', len: 0.7, grow: 'wheat' },
+  ] },
+};
+export function demeterOrder(rand = Math.random) {
+  const a = ['trigo-brota', 'vinhas-fecham', 'raizes-racham'];
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return [...a, 'colheita-final'];
+}
+
 // The order of one encounter: the three attacks shuffled, the final fury last.
 export function bossOrder(rand = Math.random) {
   const a = ['raio-marcado', 'ceu-desaba', 'corrente'];

@@ -156,6 +156,12 @@ h2 { font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; }
 .blessing.wrath small::before, .blessing.wrath small::after { background: linear-gradient(90deg, transparent, #7fa8ff); }
 .blessing.wrath b { background: linear-gradient(#ffffff, #9cc0ff); -webkit-background-clip: text; background-clip: text; }
 .blessing.wrath span { color: #d6e2ff; }
+/* Demeter's wrath (work in progress): the plaque in the green and gold of her fields */
+.blessing.harvest { background: radial-gradient(ellipse at 50% 0%, rgba(74,96,52,.97), rgba(46,62,34,.95)); box-shadow: 0 0 0 2px #d9b24a, 0 0 0 5px rgba(46,62,34,.6), 0 0 0 6px rgba(230,200,110,.6), 0 0 28px rgba(220,190,90,.6); }
+.blessing.harvest small { color: #f0d890; }
+.blessing.harvest small::before, .blessing.harvest small::after { background: linear-gradient(90deg, transparent, #e6c46a); }
+.blessing.harvest b { background: linear-gradient(#fff6d8, #e6c46a); -webkit-background-clip: text; background-clip: text; }
+.blessing.harvest span { color: #eef0d8; }
 .lives { display: flex; gap: 4px; justify-content: center; margin-top: 2px; }
 .heart { display: block; width: 20px; height: 20px; color: #c9413f; filter: drop-shadow(0 1px 3px rgba(255, 255, 255, .9)); }
 .heart svg { display: block; width: 100%; height: 100%; }

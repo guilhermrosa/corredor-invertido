@@ -69,6 +69,13 @@ export const AEGIS_CHANCE = 0.06;  // per regular obstacle spawned
 // apart; BOSS_CHANCE per regular obstacle (about two encounters every 5 km, see tools/balance.mjs).
 export const BOSS_FROM = 1600; // v0.53.5 (user: Zeus later in the run; was 1000), and only once a struck column was seen
 export const BOSS_GAP = 1500;
+// Demeter (work in progress): the fields of Eleusis come once per run, at this distance, with her
+// encounter inside them; Zeus keeps this far from the fields' gates
+export const FIELDS_FROM = 2500;
+export const FIELDS_CLEAR = 60;
+// the user's idea: every passage from one area to the next is open to the sky, the roof missing for
+// this many metres before and after the gate, so the gate is seen whole and the change feels softer
+export const GATE_OPEN = 35;
 export const BOSS_CHANCE = 0.05;
 export const MARK_LEAD = 0.45;     // seconds before the hero reaches it that a marked bolt strikes
 // Charon (v0.52, user design): obols, the coin the dead paid the ferryman, kept on the device. Earned
@@ -159,6 +166,25 @@ export const COL_UNDER = {
   ink: [200, 236, 232],
 };
 COL_UNDER.bg = COL_UNDER.haze;
+
+// The fields of Eleusis (Demeter's sanctuary, by the sea; work in progress): a path of packed earth
+// under a pergola of vines, wheat on both sides, in a warm afternoon light
+export const COL_FIELDS = {
+  ...COL,
+  haze: [244, 230, 198],
+  skyTop: [118, 170, 214], sea: [206, 176, 96], seaDeep: [176, 140, 64], shallows: [222, 194, 110],
+  sun: [255, 238, 196], cloud: [255, 250, 240],
+  marble: [194, 160, 114], marble2: [184, 150, 104], joint: [150, 118, 80], stylobate: [132, 146, 74],
+  ceiling: [104, 144, 72], beam: [122, 88, 56],
+  column: [152, 112, 72], columnShade: [114, 82, 52], columnDark: [82, 58, 36],
+  frieze: [88, 130, 60], friezeAlt: [122, 88, 56],
+  wall: [224, 192, 112], ruin: [210, 174, 92], lintel: [86, 128, 58],
+  grass: [122, 160, 70], grassDark: [86, 120, 52], grassLight: [178, 200, 100], vine: [82, 132, 60],
+  flowers: [[212, 52, 42], [232, 72, 50], [246, 214, 92]], // poppies and a few yellow ones
+  rubble: [172, 140, 100], edge: [122, 90, 56],
+  wheat: [226, 188, 96], wheatDark: [184, 142, 62],
+};
+COL_FIELDS.bg = COL_FIELDS.haze;
 
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export const lerp = (a, b, t) => a + (b - a) * t;

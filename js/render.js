@@ -5,13 +5,13 @@
 // Where a surface is missing (an "open" stretch in the simulation) nothing is drawn,
 // so the backdrop shows through: open sky above, the sea far below.
 
-import { HM, HW, PH, PL, OH, HIT, RUIN_DIP, PORTAL_GAP, HEART_LIFT, HERMES_TIME, TOPPLE_TIME, clamp, lerp, mix, rgb, COL as COL_SURFACE, COL_UNDER, UNDER_END } from './config.js';
+import { HM, HW, PH, PL, OH, HIT, RUIN_DIP, PORTAL_GAP, HEART_LIFT, HERMES_TIME, TOPPLE_TIME, clamp, lerp, mix, rgb, COL as COL_SURFACE, COL_UNDER, COL_FIELDS, UNDER_END } from './config.js';
 import { blockHitbox, holeKillZone, playerBox, fallAmount } from './sim.js';
 import { drawAxolotl } from './hero.js';
 import { drawAegisFace } from './aegis.js';
 
 // The palette of the area being drawn (v0.53): the seaside ruins, or the underworld below them
-let COL = COL_SURFACE, UNDER = false;
+let COL = COL_SURFACE, UNDER = false, FIELDS = false; // FIELDS: the fields of Eleusis (Demeter, work in progress)
 
 // the split pomegranate, in the HUD icon's 20-unit box (see POMEGRANATE in main.js); built on first use
 let POM = null;
@@ -95,8 +95,8 @@ if (typeof document !== 'undefined') document.addEventListener('visibilitychange
 // the still backdrop of the current area, painted once into an offscreen canvas and reused
 function backdropCache(W, H) {
   const R = Math.hypot(W, H);
-  const key = W + 'x' + H + (UNDER ? 'u' : '');
-  let backCache = backCaches[UNDER ? 'u' : 's'];
+  const area = UNDER ? 'u' : FIELDS ? 'f' : 's', key = W + 'x' + H + area;
+  let backCache = backCaches[area];
   if (!backCache || backCache.key !== key || backCache.lost || backCache.c.isContextLost?.()) {
     const k = Math.min(1.25, devicePixelRatio || 1); // soft scenery: no need for full resolution
     const cv = document.createElement('canvas');
@@ -104,7 +104,7 @@ function backdropCache(W, H) {
     const c = cv.getContext('2d');
     c.scale(k, k); c.translate(R, R);
     paintStillBackdrop(c, W, H, R);
-    backCache = backCaches[UNDER ? 'u' : 's'] = { key, cv, c, lost: false };
+    backCache = backCaches[area] = { key, cv, c, lost: false };
     const cache = backCache;
     cv.addEventListener('contextlost', () => { cache.lost = true; });
     cv.addEventListener('contextrestored', () => { cache.lost = true; });
@@ -112,7 +112,7 @@ function backdropCache(W, H) {
   return backCache;
 }
 let BACK_RECT = null; // when set ([x0, y0, x1, y1] in the backdrop's own coordinates), only that part is copied
-function drawBackdrop(ctx, W, H, t, Q, storm = 0, zeus = 0, flipStorm = false) {
+function drawBackdrop(ctx, W, H, t, Q, storm = 0, zeus = 0, flipStorm = false, demeter = 0, flipDem = false) {
   const R = Math.hypot(W, H), bc = backdropCache(W, H);
   if (BACK_RECT) { // v0.53.5: through the cave mouth, copy only the part of the scenery it shows
     const k = bc.cv.width / (2 * R), x0 = Math.max(-R, BACK_RECT[0]), y0 = Math.max(-R, BACK_RECT[1]);
@@ -137,7 +137,9 @@ function drawBackdrop(ctx, W, H, t, Q, storm = 0, zeus = 0, flipStorm = false) {
     ctx.restore();
   }
   if (zeus > 0) { ctx.save(); if (flipStorm) ctx.scale(-1, 1); drawZeus(ctx, W, H, t, zeus); ctx.restore(); }
+  if (demeter > 0 && FIELDS) { ctx.save(); if (flipDem) ctx.scale(-1, 1); drawDemeter(ctx, W, H, t, demeter); ctx.restore(); } // mirrored on the roof, like Zeus
   if (UNDER) { caveLife(ctx, W, H, t, Q); return; }
+  if (FIELDS) Q = { ...Q, glints: 0 }; // no sea to glint on
   // drifting clouds
   ctx.fillStyle = rgb(COL.cloud, 0.92 * (1 - storm * 0.8));
   for (const c of CLOUDS) {
@@ -163,6 +165,36 @@ function drawBackdrop(ctx, W, H, t, Q, storm = 0, zeus = 0, flipStorm = false) {
 
 // Zeus in the storm (v0.50): a huge figure of dark cloud rising behind the sea on the left, with a
 // beard of cloud, eyes of white light and a thunderbolt raised in his right hand; `k` 0..1 fades him in
+// Demeter over her fields (work in progress): a huge figure of warm earth rising behind the wheat on
+// the right, veiled, crowned with ears of wheat, a torch raised in one hand (she searched the world
+// for Persephone by torchlight) and a sheaf in the other; soft green eyes; `k` 0..1 fades her in
+function drawDemeter(ctx, W, H, t, k) {
+  const r = W * 0.075, x = -W * 0.3, base = H * 0.035, bob = Math.sin(t * 0.7) * r * 0.05;
+  const body = `rgba(112,84,52,${(0.7 * k).toFixed(3)})`, veil = `rgba(78,104,60,${(0.75 * k).toFixed(3)})`, gold = `rgba(232,190,90,${(0.95 * k).toFixed(3)})`;
+  ctx.save(); ctx.translate(x, base + bob);
+  ctx.fillStyle = body; ctx.beginPath(); ctx.ellipse(0, -r * 0.4, r * 2.4, r * 1.7, 0, Math.PI, 0); ctx.fill(); // shoulders
+  ctx.fillStyle = veil; ctx.beginPath(); // the veil over head and shoulders
+  ctx.moveTo(-r * 1.5, -r * 0.6); ctx.quadraticCurveTo(-r * 1.3, -r * 3.6, 0, -r * 3.7); ctx.quadraticCurveTo(r * 1.3, -r * 3.6, r * 1.5, -r * 0.6); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = body; ctx.beginPath(); ctx.ellipse(0, -r * 2.4, r * 0.75, r * 0.95, 0, 0, Math.PI * 2); ctx.fill(); // face
+  ctx.fillStyle = gold; // the crown of wheat ears
+  for (let i = 0; i < 7; i++) { const a = -Math.PI / 2 + (i - 3) * 0.28; ctx.beginPath(); ctx.ellipse(Math.cos(a) * r * 0.95, -r * 2.4 + Math.sin(a) * r * 1.15, r * 0.12, r * 0.32, a + Math.PI / 2, 0, Math.PI * 2); ctx.fill(); }
+  const glow = 0.7 + 0.3 * Math.sin(t * 3);
+  for (const ex of [-0.3, 0.3]) { // the eyes
+    const g = ctx.createRadialGradient(ex * r, -r * 2.45, 0, ex * r, -r * 2.45, r * 0.3);
+    g.addColorStop(0, `rgba(210,255,190,${(k * glow).toFixed(3)})`); g.addColorStop(1, 'rgba(150,220,120,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(ex * r, -r * 2.45, r * 0.3, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.fillStyle = body; ctx.beginPath(); // the raised arm with the torch, to the left
+  ctx.moveTo(-r * 1.5, -r * 1.2); ctx.quadraticCurveTo(-r * 2.6, -r * 2, -r * 2.5, -r * 3.4); ctx.lineTo(-r * 2.05, -r * 3.4); ctx.quadraticCurveTo(-r * 2.1, -r * 2.2, -r * 1.1, -r * 1.5); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = `rgba(92,64,40,${k.toFixed(3)})`; ctx.fillRect(-r * 2.35, -r * 4.3, r * 0.16, r * 1.0);
+  const fl = 0.85 + 0.15 * Math.sin(t * 13), fg = ctx.createRadialGradient(-r * 2.27, -r * 4.5, 0, -r * 2.27, -r * 4.5, r * 0.9);
+  fg.addColorStop(0, `rgba(255,236,170,${(k * fl).toFixed(3)})`); fg.addColorStop(0.4, `rgba(255,170,60,${(0.8 * k * fl).toFixed(3)})`); fg.addColorStop(1, 'rgba(255,140,40,0)');
+  ctx.fillStyle = fg; ctx.beginPath(); ctx.arc(-r * 2.27, -r * 4.5, r * 0.9, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = gold; ctx.lineWidth = Math.max(1, r * 0.06); // the sheaf in her other arm
+  for (let i = -3; i <= 3; i++) { ctx.beginPath(); ctx.moveTo(r * 1.7, -r * 0.6); ctx.lineTo(r * (1.9 + i * 0.12), -r * 2.4); ctx.stroke(); }
+  ctx.restore();
+}
+
 function drawZeus(ctx, W, H, t, k) {
   const r = W * 0.075, x = -W * 0.36, base = H * 0.03, bob = Math.sin(t * 0.8) * r * 0.05;
   const body = `rgba(36,44,62,${(0.85 * k).toFixed(3)})`, rim = `rgba(150,180,230,${(0.35 * k).toFixed(3)})`;
@@ -239,6 +271,40 @@ function paintCave(ctx, W, H, R) {
     }
     ctx.lineTo(R, y0); ctx.lineTo(R, -R); ctx.closePath(); ctx.fill();
   };
+  // faint strata across the vault, a little lighter where the far light reaches
+  for (let i = 0; i < 7; i++) {
+    const y = -H * (0.42 + i * 0.09), a = 0.05 + 0.04 * hash(i * 17);
+    ctx.fillStyle = rgb([60, 110, 112], a); ctx.beginPath(); ctx.moveTo(-R, y);
+    for (let k = 0; k <= 20; k++) { const x = lerp(-R, R, k / 20); ctx.lineTo(x, y + Math.sin(k * 0.9 + i) * H * 0.012); }
+    for (let k = 20; k >= 0; k--) { const x = lerp(-R, R, k / 20); ctx.lineTo(x, y + H * (0.018 + 0.01 * hash(i + k)) + Math.sin(k * 0.9 + i) * H * 0.012); }
+    ctx.closePath(); ctx.fill();
+  }
+  // glowworms: a scatter of tiny teal-green lights on the vault, in clusters, some hanging on threads
+  for (let c = 0; c < 9; c++) {
+    const cx = (hash(c * 11 + 3) * 2.4 - 1.2) * W, cy = -H * (0.32 + 0.5 * hash(c * 13 + 5)), cr = W * (0.12 + 0.18 * hash(c * 7));
+    for (let i = 0; i < 26; i++) {
+      const a = hash(c * 100 + i) * Math.PI * 2, d = Math.sqrt(hash(c * 100 + i + 50)) * cr;
+      const x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d * 0.5, r = Math.max(0.8, W * (0.002 + 0.003 * hash(i * 3 + c)));
+      if (hash(c * 31 + i) < 0.25) { // a silk thread with drops
+        const l = H * (0.02 + 0.05 * hash(i + c * 9));
+        ctx.strokeStyle = rgb([120, 200, 190], 0.18); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y + l); ctx.stroke();
+        ctx.fillStyle = rgb([170, 250, 236], 0.55); ctx.beginPath(); ctx.arc(x, y + l, r * 0.8, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.fillStyle = rgb([120, 240, 220], 0.12); ctx.beginPath(); ctx.arc(x, y, r * 3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = rgb([190, 255, 240], 0.7 + 0.3 * hash(i)); ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  // great stalactites hanging high in the vault, their side toward the far light lit teal
+  for (let i = 0; i < 11; i++) {
+    const x = (hash(i * 19 + 2) * 2.6 - 1.3) * W, top = -H * (0.75 + 0.2 * hash(i)), w = W * (0.04 + 0.05 * hash(i * 3 + 1));
+    const tip = top + H * (0.18 + 0.2 * hash(i * 5 + 7)), lean = (hash(i * 23) - 0.5) * w * 0.4;
+    ctx.fillStyle = rgb([14, 24, 30]); ctx.beginPath(); ctx.moveTo(x - w, top);
+    ctx.quadraticCurveTo(x - w * 0.5, lerp(top, tip, 0.6), x + lean, tip); ctx.quadraticCurveTo(x + w * 0.5, lerp(top, tip, 0.6), x + w, top); ctx.closePath(); ctx.fill();
+    const lit = x > -W * 0.35 ? -1 : 1; // the edge facing the light on the left
+    ctx.strokeStyle = rgb([90, 190, 176], 0.35); ctx.lineWidth = Math.max(1, W * 0.003); ctx.beginPath();
+    ctx.moveTo(x + lit * w, top); ctx.quadraticCurveTo(x + lit * w * 0.5, lerp(top, tip, 0.6), x + lean, tip); ctx.stroke();
+    ctx.fillStyle = rgb([170, 250, 236], 0.6); ctx.beginPath(); ctx.arc(x + lean, tip + W * 0.004, Math.max(1, W * 0.003), 0, Math.PI * 2); ctx.fill(); // a drip
+  }
   teeth([30, 52, 60], -H * 0.2, H * 0.14, W * 0.05, 11);
   teeth([24, 40, 48], -H * 0.27, H * 0.17, W * 0.07, 23);
   teeth([16, 26, 34], -H * 0.36, H * 0.2, W * 0.09, 37);
@@ -248,8 +314,47 @@ function paintCave(ctx, W, H, R) {
   ctx.fillStyle = river; ctx.fillRect(-R, 0, 2 * R, R);
 }
 
+// The fields' still backdrop: a warm sky, blue mountains far away, and golden wheat rolling to the
+// horizon below it (what the sea is elsewhere), with rows, a few olive trees and cypresses
+function paintFields(ctx, W, H, R) {
+  const sky = ctx.createLinearGradient(0, -R * 0.6, 0, 0);
+  sky.addColorStop(0, rgb(COL.skyTop)); sky.addColorStop(1, rgb(COL.haze));
+  ctx.fillStyle = sky; ctx.fillRect(-R, -R, 2 * R, R);
+  const sx = W * 0.22, sy = -H * 0.18, sr = Math.min(W, H) * 0.06;
+  const glow = ctx.createRadialGradient(sx, sy, sr * 0.5, sx, sy, sr * 6);
+  glow.addColorStop(0, rgb(COL.sun, 0.8)); glow.addColorStop(1, rgb(COL.sun, 0));
+  ctx.fillStyle = glow; ctx.fillRect(sx - sr * 6, sy - sr * 6, sr * 12, sr * 12);
+  ctx.fillStyle = rgb(COL.sun); ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fill();
+  const ridge = (col, amp, seed, x0, x1) => {
+    ctx.fillStyle = rgb(col); ctx.beginPath(); ctx.moveTo(x0, 1);
+    for (let i = 0; i <= 24; i++) { const x = lerp(x0, x1, i / 24), e = Math.sin(i / 24 * Math.PI); ctx.lineTo(x, -H * amp * e * (0.55 + 0.45 * hash(seed + i))); }
+    ctx.lineTo(x1, 1); ctx.closePath(); ctx.fill();
+  };
+  ridge(mix([150, 168, 190], COL.haze, 0.35), 0.05, 5, -W * 1.2, W * 0.1);
+  ridge(mix([150, 168, 190], COL.haze, 0.45), 0.04, 13, W * 0.2, W * 1.3);
+  const field = ctx.createLinearGradient(0, 0, 0, R * 0.6);
+  field.addColorStop(0, rgb(mix(COL.sea, COL.haze, 0.5))); field.addColorStop(0.15, rgb(COL.sea));
+  field.addColorStop(0.6, rgb(COL.seaDeep)); field.addColorStop(1, rgb(COL.shallows));
+  ctx.fillStyle = field; ctx.fillRect(-R, 0, 2 * R, R);
+  for (let i = 1; i < 26; i++) { // rows of wheat, closer together toward the horizon
+    const y = Math.pow(i / 26, 2.2) * R * 0.6;
+    ctx.fillStyle = rgb(COL.wheatDark, 0.18 + 0.1 * hash(i));
+    ctx.fillRect(-R, y, 2 * R, Math.max(1, y * 0.03));
+  }
+  const tree = (x, s, olive) => { // an olive tree (round, grey-green) or a cypress (tall, dark)
+    ctx.fillStyle = rgb(olive ? [120, 138, 96] : [58, 92, 62]);
+    ctx.beginPath();
+    if (olive) ctx.ellipse(x, -s * 0.9, s * 1.1, s * 0.75, 0, 0, Math.PI * 2);
+    else ctx.ellipse(x, -s * 1.6, s * 0.3, s * 1.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = rgb([92, 72, 50]); ctx.fillRect(x - s * 0.08, -s * 0.4, s * 0.16, s * 0.42);
+  };
+  for (let i = 0; i < 9; i++) tree((hash(i * 5 + 1) * 2.2 - 1.1) * W, H * (0.012 + 0.01 * hash(i * 7)), i % 3 !== 0);
+}
+
 function paintStillBackdrop(ctx, W, H, R) {
   if (UNDER) { paintCave(ctx, W, H, R); return; }
+  if (FIELDS) { paintFields(ctx, W, H, R); return; }
 
   // sky down to the horizon (local y = 0 is the horizon at any camera height)
   const sky = ctx.createLinearGradient(0, -R * 0.6, 0, 0);
@@ -310,19 +415,30 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   const Q = QUALITY[opts.quality] || QUALITY.high;
   FAR = Q.far;
   // v0.53.5: the scene counts as below until the camera (4.4 m behind the hero) passes the mouth
-  UNDER = (opts.area ?? (S.dist + CAM_Z + NEAR < UNDER_END ? 'under' : 'surface')) === 'under';
-  COL = UNDER ? COL_UNDER : COL_SURFACE;
+  // which area a place (metres) is in: the underworld, the fields of Eleusis (Demeter, work in
+  // progress) or the seaside ruins
+  const areaAt = abs => opts.area || (abs < UNDER_END ? 'under' : S.fields && abs >= S.fields.from && abs < S.fields.to ? 'fields' : 'surface');
+  const setArea = a => { UNDER = a === 'under'; FIELDS = a === 'fields'; COL = UNDER ? COL_UNDER : FIELDS ? COL_FIELDS : COL_SURFACE; };
+  const camAbs = S.dist + CAM_Z + NEAR, baseArea = areaAt(camAbs);
+  setArea(baseArea);
   // the way out (v0.53.4): the cave mouth on cape Tainaron is a place at UNDER_END. While it is in
   // view, what lies beyond it (the ruins in daylight, the sky and the sea) is drawn with the surface's
   // look, seen only through its opening; the dark lifts over the last 40 m
-  const baseUnder = UNDER;
-  const mouthZ = baseUnder && !opts.area ? UNDER_END - S.dist : -Infinity; // v0.53.5: was -1, which counted as in view (the near plane is at -3.8)
+  // The same is done at the gates of the fields of Eleusis (a propylon), going in and coming out.
+  const baseUnder = baseArea === 'under';
+  let gateAbs = -Infinity, gateStyle = 'cave';
+  if (!opts.area) {
+    if (baseUnder) gateAbs = UNDER_END;
+    else if (S.fields && camAbs < S.fields.from) { gateAbs = S.fields.from; gateStyle = 'propylon'; }
+    else if (baseArea === 'fields') { gateAbs = S.fields.to; gateStyle = 'propylon'; }
+  }
+  const mouthZ = gateAbs - S.dist; // v0.53.5: no gate is -Infinity (-1 counted as in view: the near plane is at -3.8)
   const mouthOn = mouthZ > BASE && mouthZ < FAR + 2;
-  const exitK = mouthZ > 0 ? clamp(1 - mouthZ / 40, 0, 1) : 0;
-  const setArea = under => { UNDER = under; COL = under ? COL_UNDER : COL_SURFACE; };
+  const farArea = mouthOn ? areaAt(gateAbs + 0.01) : baseArea;
+  const exitK = baseUnder && mouthZ > 0 ? clamp(1 - mouthZ / 40, 0, 1) : 0;
   // v0.53.5 (user: the frame rate dropped at the way out): the surface's backdrop is painted when a run
   // starts below, not on the frame the cave mouth first comes into view
-  if (baseUnder && !opts.area && !backCaches.s) { setArea(false); backdropCache(W, H); setArea(true); }
+  if (!opts.area && (!backCaches.s || !backCaches.f)) { for (const a of ['surface', 'fields']) { setArea(a); backdropCache(W, H); } setArea(baseArea); }
   // opts.fixedCamera: the screen never turns. The camera stays at mid-height and upright,
   // so the floor is always at the bottom and the hero runs upside down along the roof.
   const fixedCam = !!opts.fixedCamera;
@@ -371,6 +487,8 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   let zeus = 0;
   const arenas = S.obs.filter(o => o.type === 'boss');
   for (const o of arenas) zeus = Math.max(zeus, clamp((60 - o.z) / 30, 0, 1) * clamp((o.z + o.len + 10) / 25, 0, 1));
+  let demeter = 0; // Demeter over her fields (work in progress), during her encounter
+  for (const o of S.obs) if (o.type === 'demeter') demeter = Math.max(demeter, clamp((70 - o.z) / 30, 0, 1) * clamp((o.z + o.len + 10) / 25, 0, 1));
   const inArena = z => arenas.some(o => z > o.z - 6 && z < o.z + o.len + 6);
   ctx.fillStyle = rgb(COL.haze);
   ctx.fillRect(0, 0, W, H);
@@ -378,42 +496,77 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   ctx.translate(W * CAMERA.anchorX, H * CAMERA.anchorY);
   ctx.rotate(roll);
   // the backdrop is infinitely far: it only pans (also redrawn inside holes, v0.53.2)
-  const paintBack = () => { ctx.save(); ctx.translate(Math.tan(yaw) * f, -Math.tan(pitch) * f / Math.cos(yaw)); drawBackdrop(ctx, W, H, t, Q, storm, zeus, zeus > 0 && ease > 0.5); ctx.restore(); };
+  const paintBack = () => { ctx.save(); ctx.translate(Math.tan(yaw) * f, -Math.tan(pitch) * f / Math.cos(yaw)); drawBackdrop(ctx, W, H, t, Q, storm, zeus, zeus > 0 && ease > 0.5, demeter, ease > 0.5); ctx.restore(); };
   ctx.save();
   ctx.translate(Math.tan(yaw) * f, -Math.tan(pitch) * f / Math.cos(yaw));
   // v0.50.9 (user, after a preview): in Zeus's fight, while the hero runs on the clouds, the backdrop is
   // mirrored left to right, so on the rolled screen it is the floor's view turned upside down: the sea
   // on top, and below, seen through the clouds under his feet, the storm with Zeus hanging upside down
   // v0.51 (user): only Zeus and his storm clouds get it; the rest of the backdrop stays as it is
-  drawBackdrop(ctx, W, H, t, Q, storm, zeus, zeus > 0 && ease > 0.5);
+  drawBackdrop(ctx, W, H, t, Q, storm, zeus, zeus > 0 && ease > 0.5, demeter, ease > 0.5);
   ctx.restore();
   // the cave mouth's opening, as a path at its depth: a wide, rough arch reaching below the floor
-  const opening = () => {
+  // the gate's opening, in world points at its depth: the cave's rough arch, or the propylon's doorway
+  const openingPts = (grow = 0) => {
+    if (gateStyle === 'propylon') { const x = EDGE + 0.15 + grow, y0 = -1.6, y1 = HM + 0.25 + grow; return [[-x, y0], [x, y0], [x, y1], [-x, y1]]; }
     const pts = [];
     for (let i = 0; i < 28; i++) {
       const g = i / 28 * Math.PI * 2, c = Math.cos(g), sn = Math.sin(g);
-      const r = 1 + 0.09 * (hash(i * 7 + 3) - 0.5);
-      const x = Math.sign(c) * Math.pow(Math.abs(c), 0.55) * (EDGE + 0.25) * r;
-      const y = sn > 0 ? HM * 0.5 + Math.pow(sn, 0.8) * (HM * 0.5 + 0.1) * r : HM * 0.5 + sn * (HM * 0.5 + 1.6);
-      pts.push(P(x, y, mouthZ));
+      const r = grow ? 1 : 1 + 0.09 * (hash(i * 7 + 3) - 0.5);
+      pts.push([Math.sign(c) * Math.pow(Math.abs(c), 0.55) * (EDGE + 0.25 + grow) * r, sn > 0 ? HM * 0.5 + Math.pow(sn, 0.8) * (HM * 0.5 + 0.1 + grow) * r : HM * 0.5 + sn * (HM * 0.5 + 1.6)]);
     }
-    path(pts);
+    return pts;
   };
   // v0.53.5: no clip (it made every polygon beyond the mouth expensive): what lies beyond fits inside
   // the opening, and the rock ring, drawn over it, covers the rest
-  const beyondOn = () => setArea(false);
-  const beyondOff = () => setArea(baseUnder);
+  const beyondOn = () => setArea(farArea);
+  const beyondOff = () => setArea(baseArea);
   // the rock around the opening, with a rim lit by the daylight outside and a few teeth on its lip
   function drawMouth() {
+    if (gateStyle === 'propylon') { drawPropylon(); return; }
     ctx.save();
     ctx.beginPath(); ctx.rect(-4 * W, -4 * H, 9 * W, 9 * H);
-    const pts = [];
-    for (let i = 0; i < 28; i++) {
-      const g = i / 28 * Math.PI * 2, c = Math.cos(g), sn = Math.sin(g), r = 1 + 0.09 * (hash(i * 7 + 3) - 0.5);
-      pts.push(P(Math.sign(c) * Math.pow(Math.abs(c), 0.55) * (EDGE + 0.25) * r, sn > 0 ? HM * 0.5 + Math.pow(sn, 0.8) * (HM * 0.5 + 0.1) * r : HM * 0.5 + sn * (HM * 0.5 + 1.6), mouthZ));
-    }
+    const pts = openingPts().map(([x, y]) => P(x, y, mouthZ));
     ctx.moveTo(pts[0][0], pts[0][1]); for (const q of pts.slice(1)) ctx.lineTo(q[0], q[1]); ctx.closePath();
     ctx.fillStyle = rgb([26, 34, 40]); ctx.fill('evenodd');
+    ctx.clip('evenodd'); // the rock face: facets, daylight spilling round the opening, cracks, glowworms, moss
+    const fac = (x, y, r, k, c, a) => { // an irregular slab of rock
+      const q = []; for (let j = 0; j < 6; j++) { const an = j / 6 * Math.PI * 2 + hash(k * 7 + j); q.push(P(x + Math.cos(an) * r * (0.7 + 0.5 * hash(k + j * 3)), y + Math.sin(an) * r * 0.7 * (0.7 + 0.5 * hash(k * 5 + j)), mouthZ)); }
+      poly(q, rgb(c, a));
+    };
+    for (let i = 0; i < 46; i++) {
+      const x = (hash(i * 7 + 1) * 2 - 1) * (EDGE + 6), y = -2 + hash(i * 11 + 3) * (HM + 7), r = 0.5 + 1.1 * hash(i * 13);
+      fac(x, y, r, i, hash(i * 17) < 0.5 ? [44, 56, 62] : [16, 22, 28], 0.55);
+    }
+    const [cx, cy] = P(0, HM * 0.5, mouthZ), R0 = 3.4 * f / (mouthZ - CAM_Z);
+    const day = ctx.createRadialGradient(cx, cy, R0 * 0.5, cx, cy, R0 * 2.2);
+    day.addColorStop(0, 'rgba(240,230,196,0.32)'); day.addColorStop(0.45, 'rgba(150,200,190,0.12)'); day.addColorStop(1, 'rgba(150,200,190,0)');
+    ctx.fillStyle = day; ctx.fillRect(cx - R0 * 3, cy - R0 * 3, R0 * 6, R0 * 6);
+    for (let i = 0; i < 9; i++) { // cracks
+      let x = (hash(i * 29 + 4) * 2 - 1) * (EDGE + 4), y = -1.5 + hash(i * 31) * (HM + 5);
+      ctx.strokeStyle = rgb([8, 12, 16], 0.7); ctx.lineWidth = Math.max(1, lw(mouthZ) * 0.8); ctx.beginPath();
+      let q = P(x, y, mouthZ); ctx.moveTo(q[0], q[1]);
+      for (let j = 0; j < 5; j++) { x += (hash(i * 9 + j) - 0.5) * 0.8; y -= 0.3 + 0.4 * hash(i + j * 5); q = P(x, y, mouthZ); ctx.lineTo(q[0], q[1]); }
+      ctx.stroke();
+    }
+    for (let i = 0; i < 60; i++) { // glowworms in the dark upper rock, away from the daylight
+      const x = (hash(i * 3 + 7) * 2 - 1) * (EDGE + 6), y = HM + 0.6 + hash(i * 5 + 2) * 5;
+      if (Math.abs(x) < EDGE + 0.6 && y < HM + 1.2) continue;
+      const [gx, gy] = P(x, y, mouthZ), r = Math.max(0.8, 0.035 * f / (mouthZ - CAM_Z)), tw = 0.6 + 0.4 * Math.sin(t * 2 + i * 1.7);
+      ctx.fillStyle = rgb([120, 240, 220], 0.15 * tw); ctx.beginPath(); ctx.arc(gx, gy, r * 3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = rgb([200, 255, 240], 0.85 * tw); ctx.beginPath(); ctx.arc(gx, gy, r, 0, Math.PI * 2); ctx.fill();
+    }
+    const op = openingPts(); // moss and ferns along the rim, where the daylight reaches
+    for (let i = 0; i < op.length; i++) {
+      if (hash(i * 41) < 0.35) continue;
+      const [x, y] = op[i], out = Math.hypot(x, y - HM * 0.5) || 1, nx = x / out, ny = (y - HM * 0.5) / out;
+      for (let j = 0; j < 3; j++) {
+        const s = 0.1 + 0.14 * hash(i * 5 + j), a = P(x + (j - 1) * 0.12, y, mouthZ);
+        const m = P(x + nx * s + (j - 1) * 0.16, y + ny * s, mouthZ), b = P(x + nx * s * 1.3 + (j - 1) * 0.22, y + ny * s - s * 0.7, mouthZ); // droops
+        ctx.strokeStyle = rgb(j === 1 ? [92, 132, 84] : [62, 98, 66], 0.85); ctx.lineWidth = Math.max(1, lw(mouthZ) * 1.2); ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.quadraticCurveTo(m[0], m[1], b[0], b[1]); ctx.stroke();
+      }
+    }
     ctx.restore();
     ctx.save();
     path(pts); ctx.strokeStyle = 'rgba(255,236,190,0.55)'; ctx.lineWidth = Math.max(2, lw(mouthZ) * 3); ctx.stroke();
@@ -423,11 +576,47 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       poly([P(x - w, top + 0.3, mouthZ), P(x + w, top + 0.3, mouthZ), P(x + 0.05, top - len, mouthZ)], rgb([30, 38, 44]));
     }
   }
+  // The propylon of Eleusis (Demeter, work in progress): a marble gateway across the way, a doorway
+  // a little wider than the corridor, two Doric columns, a frieze with blue triglyphs, a pediment,
+  // and a gold garland of wheat over the door
+  function drawPropylon() {
+    const z = mouthZ, M = COL_SURFACE, col = c => rgb(mix(c, COL.haze, fogK(z) * 0.8));
+    const o = openingPts().map(([x, y]) => P(x, y, z)), X = EDGE + 4, top = HM + 1.7;
+    ctx.save(); // the wall around the doorway
+    path([P(-X, -1.8, z), P(X, -1.8, z), P(X, top, z), P(-X, top, z)]);
+    ctx.moveTo(o[0][0], o[0][1]); for (const q of o.slice(1)) ctx.lineTo(q[0], q[1]); ctx.closePath();
+    ctx.fillStyle = col(M.column); ctx.fill('evenodd');
+    ctx.restore();
+    poly([P(-X - 0.2, top, z), P(X + 0.2, top, z), P(0, top + 1.1, z)], col(M.column)); // pediment
+    ctx.strokeStyle = col(M.columnShade); ctx.lineWidth = lw(z); path([P(-X - 0.2, top, z), P(X + 0.2, top, z), P(0, top + 1.1, z)]); ctx.stroke();
+    const fy0 = HM + 0.3, fy1 = HM + 0.85; // the frieze
+    quad(P(-X, fy0, z), P(X, fy0, z), P(X, fy1, z), P(-X, fy1, z), col(M.friezeAlt));
+    for (let i = 0; i < 9; i++) { const x = -X + (i + 0.3) * (2 * X / 9); quad(P(x, fy0, z), P(x + 0.25, fy0, z), P(x + 0.25, fy1, z), P(x, fy1, z), col(M.frieze)); }
+    for (const s of [-1, 1]) { // a column at each side of the doorway
+      const x0 = s * (EDGE + 0.35), x1 = s * (EDGE + 0.85);
+      quad(P(x0, -1.6, z), P(x1, -1.6, z), P(x1, HM + 0.3, z), P(x0, HM + 0.3, z), col(M.column));
+      for (const q of [0.25, 0.5, 0.75]) line(P(lerp(x0, x1, q), -1.4, z), P(lerp(x0, x1, q), HM + 0.1, z), col(M.columnShade), lw(z) * 0.6);
+      quad(P(x0 - s * 0.08, HM + 0.1, z), P(x1 + s * 0.08, HM + 0.1, z), P(x1 + s * 0.08, HM + 0.3, z), P(x0 - s * 0.08, HM + 0.3, z), col(M.columnShade));
+    }
+    ctx.strokeStyle = col(M.columnShade); ctx.lineWidth = Math.max(1.5, lw(z) * 1.5); path(o); ctx.stroke(); // the doorway's frame
+    for (const sd of [-1, 1]) { // a tall bronze torch on each side of the door, lit for Demeter
+      const x = sd * (EDGE + 1.5), top2 = HM - 0.2;
+      quad(P(x - 0.05, 0, z), P(x + 0.05, 0, z), P(x + 0.05, top2, z), P(x - 0.05, top2, z), col([150, 104, 52]));
+      quad(P(x - 0.2, top2, z), P(x + 0.2, top2, z), P(x + 0.12, top2 - 0.22, z), P(x - 0.12, top2 - 0.22, z), col([170, 120, 60]));
+      const [fx, fy] = P(x, top2 + 0.3, z), fr = 0.55 * f / (z - CAM_Z), fl = 0.85 + 0.15 * Math.sin(t * 12 + sd);
+      const g = ctx.createRadialGradient(fx, fy, 0, fx, fy, fr);
+      g.addColorStop(0, `rgba(255,238,170,${fl.toFixed(3)})`); g.addColorStop(0.45, `rgba(255,160,50,${(0.8 * fl).toFixed(3)})`); g.addColorStop(1, 'rgba(255,140,40,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(fx, fy, fr, 0, Math.PI * 2); ctx.fill();
+    }
+    for (let i = 0; i < 11; i++) { // the garland of golden wheat over the door
+      const x = (i / 10 - 0.5) * 2 * EDGE, y = HM + 0.12 - 0.12 * Math.sin(i / 10 * Math.PI), p = P(x, y, z), r = Math.max(1.2, 0.07 * f / (z - CAM_Z));
+      ctx.fillStyle = col([226, 184, 84]); ctx.beginPath(); ctx.ellipse(p[0], p[1], r * 0.55, r * 1.3, (i - 5) * 0.12, 0, Math.PI * 2); ctx.fill();
+    }
+  }
   if (mouthOn) {
     const ox = [], oy = [];
-    for (let i = 0; i < 28; i++) { // the opening's bounds, in the backdrop's coordinates (it pans with yaw and pitch)
-      const g = i / 28 * Math.PI * 2, c = Math.cos(g), sn = Math.sin(g);
-      const q = P(Math.sign(c) * Math.pow(Math.abs(c), 0.55) * (EDGE + 0.4), sn > 0 ? HM * 0.5 + Math.pow(sn, 0.8) * (HM * 0.5 + 0.2) : HM * 0.5 + sn * (HM * 0.5 + 1.6), mouthZ);
+    for (const [x, y] of openingPts(0.15)) { // the opening's bounds, in the backdrop's coordinates (it pans with yaw and pitch)
+      const q = P(x, y, mouthZ);
       ox.push(q[0] - Math.tan(yaw) * f); oy.push(q[1] + Math.tan(pitch) * f / Math.cos(yaw));
     }
     BACK_RECT = [Math.min(...ox) - 4, Math.min(...oy) - 4, Math.max(...ox) + 4, Math.max(...oy) + 4];
@@ -464,6 +653,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     for (const [a, b] of solidParts(S.obs, 1, za, zb)) {
       if (inArena(a)) { stormRoof(a, b, idx); continue; } // v0.50.1: over Zeus's arena the roof is his storm
       if (UNDER) { caveRoof(a, b, z0, idx); continue; }
+      if (FIELDS) { pergola(a, b, z0, idx); continue; }
       quad(P(-EDGE, HM, a), P(EDGE, HM, a), P(EDGE, HM, b), P(-EDGE, HM, b), fog(COL.ceiling, a));
       if (Q.coffers && b - a > 0.9) { // coffer
         const ca = a + 0.3, cb = b - 0.3;
@@ -496,12 +686,13 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
         const spots = [[s * (COL_X0 - 0.06), z0 + 0.75, 0.22], [s * HW * (0.62 + 0.3 * hash(idx * 5 + s)), z0 + 2 * hash(idx * 9 + s), 0.08]];
         for (const [tx, tz, chance] of spots) {
           if (tz < BASE + 0.3 || hash(idx * 13 + s * 7 + tx) > chance || missingAt(S.obs, -1, tz)) continue;
-          if (UNDER) asphodel(tx, tz, 0.3 + 0.25 * hash(idx * 3 + tx), idx * 31 + s, t);
+          if (FIELDS) poppy(tx, tz, 0.28 + 0.2 * hash(idx * 3 + tx), idx * 31 + s, t);
+          else if (UNDER) asphodel(tx, tz, 0.3 + 0.25 * hash(idx * 3 + tx), idx * 31 + s, t);
           else tuft(tx, tz, 0.16 + 0.16 * hash(idx * 3 + tx), idx * 31 + s, t);
         }
         // a vine hanging from the roof edge, swaying a little
         const vz = z0 + 0.4 + hash(idx * 17 + s) * 1.2;
-        if (!UNDER && hash(idx * 11 + s * 5) < 0.1 && vz > BASE + 0.5 && !missingAt(S.obs, 1, vz) && !inArena(vz)) vine(s * (HW + 0.02), vz, 0.5 + 0.9 * hash(idx * 19 + s), idx * 7 + s, t);
+        if (!UNDER && !FIELDS && hash(idx * 11 + s * 5) < 0.1 && vz > BASE + 0.5 && !missingAt(S.obs, 1, vz) && !inArena(vz)) vine(s * (HW + 0.02), vz, 0.5 + 0.9 * hash(idx * 19 + s), idx * 7 + s, t);
       }
     }
 
@@ -509,11 +700,11 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     if (Q.nature && z0 + 2 > BASE && z0 < Q.nature + 6) {
       // a floor mosaic: an 8 m "carpet" of light tesserae with a blue Greek-key border and a star
       const blk = Math.floor(idx / 4), first = blk * 4;
-      if (!UNDER && hash(blk * 13 + 5) < 0.05) mosaic(z0, za, zb, idx - first, S, blk);
+      if (!UNDER && !FIELDS && hash(blk * 13 + 5) < 0.05) mosaic(z0, za, zb, idx - first, S, blk);
       // a black-figure vase between two columns (some knocked over and broken), and loose stones
       if (idx & 1) for (const s of [-1, 1]) {
         const h = hash(idx * 23 + s * 3);
-        if (h < 0.04 && !UNDER && !missingAt(S.obs, -1, z0 + 1)) vase(s * (HW + 0.27), z0 + 1, idx * 3 + s, h < 0.012); // v0.43.1: 20% rarer (user)
+        if (h < 0.04 && !UNDER && !FIELDS && !missingAt(S.obs, -1, z0 + 1)) vase(s * (HW + 0.27), z0 + 1, idx * 3 + s, h < 0.012); // v0.43.1: 20% rarer (user)
         else if (h > 0.9 && !missingAt(S.obs, -1, z0 + 0.6)) rubble(s * (HW + 0.2), z0 + 0.6, idx * 5 + s);
       }
     }
@@ -523,12 +714,13 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     if (!(idx & 1) && zc > BASE && !missingAt(S.obs, -1, zc + COL_D / 2)) {
       const ruin = inArena(zc); // Zeus's arena: the colonnade in ruins, low stumps under the open storm
       const broken = ruin || missingAt(S.obs, 1, zc + COL_D / 2);
-      const h = ruin ? HM * (0.12 + 0.28 * hash(idx * 3)) : broken ? HM * (0.3 + 0.4 * hash(idx)) : UNDER ? HM : HM - FRIEZE; // v0.53.1: the cave's columns reach the roof
+      const h = ruin ? HM * (0.12 + 0.28 * hash(idx * 3)) : broken ? HM * (0.3 + 0.4 * hash(idx)) : UNDER || FIELDS ? HM : HM - FRIEZE; // v0.53.1: the cave's columns reach the roof
       // a toppling column takes the place of the left column near it
       // a toppling column takes the place of the colonnade's column at its spot, on its side
       const gone = S.obs.find(o => o.topple && Math.abs(o.z - zc) < 2.2);
-      for (const s of [-1, 1]) if (!gone || s !== (gone.col || -1)) (UNDER ? drawFlowstone : drawDoric)(s, zc, h, broken, idx);
+      for (const s of [-1, 1]) if (!gone || s !== (gone.col || -1)) (UNDER ? drawFlowstone : FIELDS ? drawPost : drawDoric)(s, zc, h, broken, idx);
     }
+    if (FIELDS && z0 + 2 > BASE && z0 < (Q.nature ? 40 : 20)) wheat(z0, za, zb, idx);
     // v0.48.2: a toppling column that is still mostly upright, and Zeus's bolt striking it, are drawn
     // here, at their own depth among the colonnade, so the nearer columns pass in front of them
     for (const o of S.obs) {
@@ -686,6 +878,19 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     for (const s of [-1, 1]) {
       quad(P(s * HW, HM, a), P(s * EDGE, HM, a), P(s * EDGE, HM, b), P(s * HW, HM, b), fog(COL.beam, a));
       if (a > 40) continue;
+      for (let k = 0; k < 3; k++) { // glowworms on the rock overhead, some hanging on a thread
+        const z = lerp(a, b, hash(idx * 19 + k * 5 + s)), x = s * (0.3 + (EDGE - 0.3) * hash(idx * 23 + k * 7 - s));
+        if (z < BASE + 0.4 || hash(idx * 29 + k + s * 4) > 0.55) continue;
+        const r = clamp(0.03 * f / (z - CAM_Z), 0.8, W * 0.005), tw = 0.6 + 0.4 * Math.sin(t * 2.2 + idx * 1.3 + k * 2.1 + s), fade = 1 - z / 40;
+        let [gx, gy] = P(x, HM, z);
+        if (hash(idx * 31 + k - s) < 0.3) {
+          const [hx, hy] = P(x, HM - 0.15 - 0.3 * hash(idx + k * 9), z);
+          ctx.strokeStyle = rgb([120, 200, 190], 0.25 * fade); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(hx, hy); ctx.stroke();
+          gx = hx; gy = hy;
+        }
+        ctx.fillStyle = rgb([120, 240, 220], 0.16 * tw * fade); ctx.beginPath(); ctx.arc(gx, gy, r * 3, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = rgb([200, 255, 240], 0.85 * tw * fade); ctx.beginPath(); ctx.arc(gx, gy, r, 0, Math.PI * 2); ctx.fill();
+      }
       for (let k = 0; k < 2; k++) {
         const z = z0 + 0.5 + k + 0.4 * hash(idx * 7 + k + s), x = s * (HW + 0.12 + 0.3 * hash(idx * 3 + k - s));
         if (z < a || z > b || z < BASE + 0.3 || hash(idx * 5 + k * 3 + s) > 0.6) continue;
@@ -694,6 +899,69 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       }
     }
   }
+  // The fields' roof (Demeter, work in progress): a pergola, a canopy of vine leaves on wooden
+  // cross beams, with side beams along its edges and leaves and grapes hanging near
+  function pergola(a, b, z0, idx) {
+    quad(P(-EDGE, HM, a), P(EDGE, HM, a), P(EDGE, HM, b), P(-EDGE, HM, b), fog(mix(COL.ceiling, COL.grassDark, 0.3 * hash(idx * 3)), a));
+    for (const s of [-1, 1]) { // the side beams resting on the posts
+      const x = s * (COL_X0 + COL_X1) / 2;
+      quad(P(x, HM - 0.22, a), P(x, HM - 0.22, b), P(x, HM, b), P(x, HM, a), fog(COL.beam, a));
+    }
+    if (z0 >= a && z0 < b) { // a cross beam every slice
+      quad(P(-EDGE, HM - 0.14, z0), P(EDGE, HM - 0.14, z0), P(EDGE, HM, z0), P(-EDGE, HM, z0), fog(COL.beam, z0));
+      if (z0 < 30) line(P(-EDGE, HM - 0.14, z0), P(EDGE, HM - 0.14, z0), fog(COL.columnDark, z0), lw(z0) * 0.5);
+    }
+    if (a > 34) return;
+    for (let k = 0; k < 4; k++) { // leaves hanging under the canopy, some with grapes
+      const z = lerp(a, b, hash(idx * 13 + k * 7)), x = (hash(idx * 17 + k * 3) - 0.5) * 2 * EDGE;
+      if (z <= 3) continue; // not right over the camera
+      const r = (0.12 + 0.08 * hash(idx + k)) * f / (z - CAM_Z), [cx, cy] = P(x, HM - 0.06, z);
+      ctx.fillStyle = fog(k % 2 ? COL.vine : COL.grass, z);
+      ctx.beginPath(); ctx.ellipse(cx, cy, r * 1.3, r * 0.7, 0.4 * (k - 1.5), 0, Math.PI * 2); ctx.fill();
+      if (Math.abs(x) > HW && hash(idx * 29 + k) < 0.35) { // a bunch of grapes outside the lane
+        ctx.fillStyle = fog([96, 52, 104], z);
+        for (let g = 0; g < 6; g++) { const p = P(x + ((g % 3) - 1) * 0.05, HM - 0.14 - Math.floor(g / 3) * 0.07 - (g === 5 ? 0.07 : 0), z); ctx.beginPath(); ctx.arc(p[0], p[1], Math.max(1, r * 0.25), 0, Math.PI * 2); ctx.fill(); }
+      }
+    }
+  }
+  // A wooden post of the pergola with a vine climbing it
+  function drawPost(s, zc, h, broken, idx) {
+    const xc = s * (COL_X0 + COL_X1) / 2, w = 0.09, xl = xc - w, xr = xc + w, near = s < 0 ? xr : xl;
+    quad(P(near, 0, zc), P(near, 0, zc + 0.18), P(near, h, zc + 0.18), P(near, h, zc), fog(COL.columnShade, zc));
+    quad(P(xl, 0, zc), P(xr, 0, zc), P(xr, h, zc), P(xl, h, zc), fog(COL.column, zc));
+    if (zc > 30) return;
+    line(P(xc - w * 0.3, 0.1, zc), P(xc - w * 0.2, h - 0.2, zc), fog(COL.columnDark, zc), lw(zc) * 0.4); // grain
+    const pts = []; // the vine winding up
+    for (let i = 0; i <= 12; i++) { const y = h * i / 12, sw = Math.sin(i * 1.3 + idx); pts.push(P(xc + sw * w * 1.2, y, zc - 0.02)); }
+    ctx.strokeStyle = fog(COL.grassDark, zc); ctx.lineWidth = lw(zc) * 0.6;
+    ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.stroke();
+    const r = Math.max(1, 0.06 * f / (zc - CAM_Z));
+    for (let i = 2; i <= 12; i += 2) { ctx.fillStyle = fog(i % 4 ? COL.vine : COL.grass, zc); ctx.beginPath(); ctx.ellipse(pts[i][0] + (i % 4 ? r : -r), pts[i][1], r * 1.1, r * 0.7, 0.5, 0, Math.PI * 2); ctx.fill(); }
+  }
+  // Wheat along both sides of the path, swaying, never on the lane
+  function wheat(z0, za, zb, idx) {
+    for (const s of [-1, 1]) {
+      if (missingAt(S.obs, -1, z0 + 1)) continue;
+      const n = z0 < 18 ? 9 : 5;
+      for (let k = 0; k < n; k++) {
+        const z = lerp(za, zb, (k + hash(idx * 7 + k + s)) / n), x = s * (HW + 0.06 + 0.5 * hash(idx * 11 + k * 3 + s));
+        if (z <= BASE + 0.3) continue;
+        const h = 0.75 + 0.3 * hash(idx * 5 + k), sway = Math.sin(t * 1.6 + idx + k) * 0.05;
+        line(P(x, 0, z), P(x + sway, h, z), fog(COL.wheatDark, z), lw(z) * 0.45);
+        const [hx, hy] = P(x + sway * 1.1, h + 0.06, z), r = Math.max(1, 0.035 * f / (z - CAM_Z));
+        ctx.fillStyle = fog(COL.wheat, z); ctx.beginPath(); ctx.ellipse(hx, hy, r * 0.6, r * 2.2, sway * 3, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+  }
+  // A poppy: a thin stem with a red flower
+  function poppy(x, z, h, seed, t) {
+    const sway = Math.sin(t * 1.7 + seed) * 0.03;
+    line(P(x, 0, z), P(x + sway, h, z), fog(COL.grassDark, z), lw(z) * 0.45);
+    const p = P(x + sway, h, z), r = Math.max(1.2, 0.05 * f / (z - CAM_Z));
+    ctx.fillStyle = fog(COL.flowers[Math.floor(hash(seed) * COL.flowers.length)], z); ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = fog([40, 30, 30], z); ctx.beginPath(); ctx.arc(p[0], p[1], r * 0.3, 0, Math.PI * 2); ctx.fill();
+  }
+
   // An asphodel (v0.53): the pale flower of the fields of the dead, a thin stem with a few white stars
   function asphodel(x, z, h, seed, t) {
     const sway = Math.sin(t * 1.5 + seed) * 0.03;
@@ -785,6 +1053,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     if (far) beyondOff();
   }
   function drawHole(o) {
+    if (o.grow === 'root' && FIELDS) rootCracks(o);
     if (o.type !== 'hole' || o.z > FAR) return;
     const z0 = Math.max(o.z, BASE), z1 = o.z + o.len;
     if (z1 <= z0) return;
@@ -843,7 +1112,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     if (o.z > FAR || o.smashed) continue; // a wall broken by Athena's shield is gone
     if (o.type === 'portal') {
       items.push({
-        x0: -HW, x1: HW, z0: o.z, z1: o.z + o.len, col: COL.ruin, kind: 'portal', side: o.side, seed: o.len,
+        x0: -HW, x1: HW, z0: o.z, z1: o.z + o.len, col: COL.ruin, kind: 'portal', side: o.side, seed: o.len, grow: o.grow,
         y0: o.side < 0 ? PORTAL_GAP : 0, y1: o.side < 0 ? HM : HM - PORTAL_GAP,
       });
       continue;
@@ -873,7 +1142,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     const bh = o.h || OH;
     const kind = o.h ? (hash(o.len * 97) < 0.5 ? 'wall' : 'drum') : (o.side < 0 ? 'ruin' : 'lintel');
     const col = { wall: COL.wall, drum: COL.column, ruin: COL.ruin, lintel: COL.lintel }[kind];
-    items.push({ x0: -HW, x1: HW, y0: o.side < 0 ? 0 : HM - bh, y1: o.side < 0 ? bh : HM, z0: o.z, z1: o.z + o.len, col, kind, seed: o.len });
+    items.push({ x0: -HW, x1: HW, y0: o.side < 0 ? 0 : HM - bh, y1: o.side < 0 ? bh : HM, z0: o.z, z1: o.z + o.len, col, kind, seed: o.len, grow: o.grow });
   }
   const pbox = playerBox(S);
   items.push({ x0: -0.36, x1: 0.36, y0: S.py, y1: S.py + PH, z0: 0, z1: PL, player: true });
@@ -1492,6 +1761,91 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
 
   // Obstacles in the underworld (v0.53), same boxes and hitboxes: low ones are a heap of boulders,
   // tall ones a cluster of stalagmites (on the floor) or stalactites (from the roof), jagged at the tip
+  // Obstacles in the fields (same boxes and hitboxes): on the floor a hay bale (low) or a stack of
+  // tied sheaves (tall); from the pergola a curtain of vines
+  // how far one of Demeter's things has grown (work in progress): small shoots from afar, full grown
+  // a little before the hero gets there (its hitbox is always full: the sim knows nothing of this)
+  function growth(b) { return b.grow ? clamp((S.speed * 1.1 + 4 - b.z0) / 8, 0.15, 1) : 1; }
+  // Demeter's roots splitting the ground (work in progress): cracks running ahead of the hole and
+  // roots reaching over its edges, so it reads from afar; the hole itself is drawn as any other
+  function rootCracks(o) {
+    const sy = o.side < 0 ? 0.005 : HM - 0.005, za = Math.max(BASE + 0.2, o.z - 3), zb = o.z + o.len + 0.5;
+    if (zb <= za) return;
+    ctx.strokeStyle = fog([92, 62, 36], o.z); ctx.lineWidth = lw(o.z) * 0.9; ctx.lineCap = 'round';
+    for (let k = 0; k < 5; k++) {
+      ctx.beginPath();
+      let x = (hash(o.len * 7 + k) - 0.5) * 2 * HW * 0.9;
+      for (let i = 0; i <= 8; i++) { const z = lerp(za, zb, i / 8); x += (hash(o.len * 13 + k * 9 + i) - 0.5) * 0.25; const p = P(x, sy, z); i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }
+      ctx.stroke();
+    }
+    ctx.lineCap = 'butt';
+  }
+
+  // A portal in the fields (work in progress): a curtain of vines hanging across, closing down to
+  // the low gap you slide through (as it is grown; same hitbox as any portal), on two wooden posts
+  function fieldPortal(b, z0) {
+    const { x0, x1 } = b, W2 = x1 - x0, g = growth(b), lwz = lw(z0);
+    const sy = b.side < 0 ? 0 : HM, gy = b.side < 0 ? PORTAL_GAP : HM - PORTAL_GAP, far = b.side < 0 ? HM : 0;
+    const edge = lerp(far, gy, g);
+    for (const [da, db] of [[x0, x0 + 0.16], [x1 - 0.16, x1]]) quad(P(da, sy, z0), P(db, sy, z0), P(db, far, z0), P(da, far, z0), fog(COL.column, z0));
+    const pts = [P(x0, far, z0)];
+    for (let i = 0; i <= 12; i++) pts.push(P(x0 + W2 * i / 12, edge + (b.side < 0 ? 1 : -1) * 0.1 * Math.abs(Math.sin(i * 1.7 + b.seed)), z0));
+    pts.push(P(x1, far, z0));
+    poly(pts, fog(COL.lintel, z0));
+    const r = Math.max(1, 0.09 * f / (z0 - CAM_Z));
+    for (let i = 0; i < 18; i++) {
+      const p = P(x0 + W2 * hash(b.seed * 3 + i), lerp(far, edge, 0.15 + 0.85 * hash(b.seed * 5 + i)), z0);
+      ctx.fillStyle = fog(i % 3 ? COL.vine : COL.grassLight, z0); ctx.beginPath(); ctx.ellipse(p[0], p[1], r, r * 0.65, i, 0, Math.PI * 2); ctx.fill();
+    }
+    line(P(x0, edge, z0), P(x1, edge, z0), fog(COL.grassDark, z0), lwz);
+  }
+
+  function fieldThing(b, z0) {
+    const { x0, x1 } = b, W2 = x1 - x0, onFloor = b.y0 < 0.05, lwz = lw(z0), g = growth(b);
+    const y0 = onFloor ? b.y0 : b.y1 - (b.y1 - b.y0) * g, y1 = onFloor ? b.y0 + (b.y1 - b.y0) * g : b.y1, Hh = y1 - y0;
+    if (b.grow === 'wheat' && onFloor && b.y1 - b.y0 < 1) { // a row of wheat shooting up: a dense golden tuft
+      const pts = [P(x0, y0, z0)];
+      for (let i = 0; i <= 16; i++) pts.push(P(x0 + W2 * i / 16, y0 + Hh * (i % 2 ? 1 : 0.62) * (0.85 + 0.15 * hash(b.seed * 3 + i)), z0));
+      pts.push(P(x1, y0, z0));
+      poly(pts, fog(mix(COL.wheat, COL.wheatDark, 0.35), z0));
+      for (let i = 0; i < 16; i++) {
+        const x = x0 + W2 * (i + 0.5) / 16, h = Hh * (0.8 + 0.2 * hash(b.seed * 7 + i)), lean = (hash(i + b.seed) - 0.5) * 0.1;
+        line(P(x, y0, z0), P(x + lean, y0 + h, z0), fog(COL.wheatDark, z0), lwz * 0.9);
+        const [hx, hy] = P(x + lean, y0 + h + 0.05, z0), r = Math.max(1, 0.04 * f / (z0 - CAM_Z));
+        ctx.fillStyle = fog(COL.wheat, z0); ctx.beginPath(); ctx.ellipse(hx, hy, r * 0.7, r * 2, lean * 4, 0, Math.PI * 2); ctx.fill();
+      }
+      return;
+    }
+    const face = fog(b.col, z0), dark = fog(mix(b.col, COL.edge, 0.5), z0), lid = fog(mix(b.col, COL.cloud, 0.25), z0);
+    if (onFloor && Hh < 1) { // a hay bale
+      if (camY > y1) quad(P(x0, y1, z0), P(x1, y1, z0), P(x1, y1, b.z1), P(x0, y1, b.z1), lid);
+      quad(P(x0, y0, z0), P(x1, y0, z0), P(x1, y1, z0), P(x0, y1, z0), face);
+      for (let i = 1; i < 6; i++) line(P(x0, y0 + Hh * i / 6, z0), P(x1, y0 + Hh * i / 6 + 0.02, z0), fog(mix(b.col, COL.wheatDark, 0.6), z0), lwz * 0.4);
+      for (const u of [0.25, 0.75]) quad(P(x0 + W2 * u - 0.03, y0, z0), P(x0 + W2 * u + 0.03, y0, z0), P(x0 + W2 * u + 0.03, y1, z0), P(x0 + W2 * u - 0.03, y1, z0), fog(COL.edge, z0));
+      return;
+    }
+    if (onFloor) { // sheaves of wheat, tied at the waist, their heads fanning out at the top
+      const n = 4;
+      for (let i = 0; i < n; i++) {
+        const xa = x0 + W2 * i / n, xb = xa + W2 / n, xm = (xa + xb) / 2, waist = y0 + Hh * 0.45;
+        poly([P(xa + 0.04, y0, z0), P(xb - 0.04, y0, z0), P(xm + 0.07, waist, z0), P(xb + 0.03, y1 - 0.15, z0), P(xm, y1, z0), P(xa - 0.03, y1 - 0.15, z0), P(xm - 0.07, waist, z0)], i % 2 ? face : fog(mix(b.col, COL.wheat, 0.4), z0));
+        line(P(xm - 0.08, waist, z0), P(xm + 0.08, waist, z0), fog(COL.edge, z0), lwz * 1.2);
+        for (const dx of [-0.06, 0, 0.06]) line(P(xm + dx * 0.6, y0 + 0.05, z0), P(xm + dx * 1.6, y1 - 0.2, z0), dark, lwz * 0.4);
+      }
+      return;
+    }
+    // vines hanging from the pergola: a green mass with a leafy, uneven lower edge
+    const pts = [P(x0, y1, z0)];
+    for (let i = 0; i <= 10; i++) pts.push(P(x0 + W2 * i / 10, y0 + 0.12 * Math.abs(Math.sin(i * 1.9 + b.seed)) + (i % 2 ? 0.08 : 0), z0));
+    pts.push(P(x1, y1, z0));
+    poly(pts, face);
+    const r = Math.max(1, 0.09 * f / (z0 - CAM_Z));
+    for (let i = 0; i < 14; i++) {
+      const p = P(x0 + W2 * hash(b.seed * 3 + i), y0 + Hh * hash(b.seed * 5 + i) * 0.9 + 0.05, z0);
+      ctx.fillStyle = fog(i % 3 ? COL.vine : COL.grassLight, z0); ctx.beginPath(); ctx.ellipse(p[0], p[1], r, r * 0.65, i, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
   function caveRock(b, z0) {
     const { x0, x1, y0, y1 } = b, onFloor = y0 < 0.05;
     const sy = onFloor ? y0 : y1, fy = onFloor ? y1 : y0, dir = onFloor ? 1 : -1, Hh = y1 - y0;
@@ -1525,6 +1879,8 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     if (b.kind === 'hail') { hailBlock(b, z0); return; } // v0.51: what falls from his storm is charged cloud
     if (b.y1 >= HM - 0.01 && b.y0 > 0.05 && inArena(b.z0)) { cloudBlock(b, z0); return; } // v0.51: on Zeus's cloud roof
     if (UNDER && b.kind !== 'portal' && b.kind !== 'pillar') { caveRock(b, z0); return; }
+    if (FIELDS && b.kind === 'portal') { fieldPortal(b, z0); return; }
+    if (FIELDS && b.kind !== 'pillar') { fieldThing(b, z0); return; }
     const face = fog(b.col, z0);
     const lid = fog(mix(b.col, COL.cloud, 0.45), z0);
     const dark = fog(mix(b.col, COL.edge, 0.55), z0);

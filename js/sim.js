@@ -10,11 +10,11 @@ import {
   SLIDE_TIME, SLIDE_H, FAST_FALL, PORTAL_GAP, PORTAL_FROM, FLIP_V, LIVES, INVULN_TIME,
   SINK_TIME, SINK_DEPTH, SINK_G, SINK_SLOW,
   FALL_FROM, FALL_LEAD, TOPPLE_TIME, DROP_TIME, FALL_WOBBLE, TOPPLE_H,
-  UNDER_END, EXIT_CLEAR, HEART_FROM, HEART_CHANCE, HEART_LIFT, HERMES_FROM, HERMES_CHANCE, HERMES_TIME, AEGIS_FROM, AEGIS_CHANCE, AEGIS_HITS,
+  UNDER_END, EXIT_CLEAR, FIELDS_FROM, FIELDS_CLEAR, GATE_OPEN, HEART_FROM, HEART_CHANCE, HEART_LIFT, HERMES_FROM, HERMES_CHANCE, HERMES_TIME, AEGIS_FROM, AEGIS_CHANCE, AEGIS_HITS,
   BOSS_FROM, BOSS_GAP, BOSS_CHANCE, MARK_LEAD,
   SPEED_START, speedAt, clamp,
 } from './config.js';
-import { sequenceChance, pickSequence, giftSequence, BOSS_PARTS, bossOrder } from './sequences.js';
+import { sequenceChance, pickSequence, giftSequence, BOSS_PARTS, bossOrder, DEMETER_PARTS, demeterOrder } from './sequences.js';
 
 // The part of an obstacle that kills: follows its drawn shape, trimmed a little (see HIT).
 // The ruined wall is drawn with a jagged top, so it only counts up to its lowest dip.
@@ -138,6 +138,7 @@ export function placeSequence(S, seq, start, sp, a) {
       o = { type: 'block', h: TOPPLE_H, topple: true, z: z + d, len: 0.5, side: -1, col: side };
     }
     else o = { type: it.type, z, len, side }; // 'hole', 'portal'
+    if (it.grow) o.grow = it.grow; // Demeter's things: drawn growing, same rules
     S.obs.push(o);
   }
   // a stretch of Zeus's wrath brings a storm: a marker the renderer reads to darken the sky (v0.49.1)
@@ -160,6 +161,24 @@ export function placeBoss(S, sp, rand = Math.random) {
   S.obs.push({ type: 'boss', z: start, len }, { type: 'storm', z: start, len });
   S.lastBoss = S.dist + start;
   S.nextZ += sp * 0.8;
+}
+
+// The fields of Eleusis and Demeter's encounter (work in progress): a clear stretch through the gate,
+// her three attacks shuffled, the harvest last, and a clear stretch out. `S.fields` holds where the
+// fields lie (metres) for the renderer; a 'demeter' marker covers the encounter (start/end events).
+export function placeDemeter(S, sp, rand = Math.random) {
+  const from = S.nextZ + 8 + GATE_OPEN, start = from + FIELDS_CLEAR;
+  S.obs.push(makeOpen(from - GATE_OPEN, GATE_OPEN * 2, 1)); // no roof around the way in
+  S.nextZ = start + sp * 1.2;
+  for (const id of demeterOrder(rand)) {
+    placeSequence(S, DEMETER_PARTS[id], S.nextZ, sp, rand() < 0.5 ? -1 : 1);
+    S.nextZ += sp * 0.35;
+  }
+  const end = S.nextZ;
+  S.obs.push({ type: 'demeter', z: start, len: end - start });
+  S.fields = { from: S.dist + from, to: S.dist + end + FIELDS_CLEAR };
+  S.obs.push(makeOpen(end + FIELDS_CLEAR - GATE_OPEN, GATE_OPEN * 2, 1)); // nor around the way out
+  S.nextZ = end + FIELDS_CLEAR + GATE_OPEN + 8;
 }
 
 function jumpables(S, from, to, side, sp, jd, avoid = []) {
@@ -189,7 +208,10 @@ function spawn(S) {
     const jd = S.speed * LAYOUT_AIR;
     const roll = Math.random();
     const far = S.dist + S.nextZ;
-    if (far > UNDER_END - EXIT_CLEAR[0] && far < UNDER_END + EXIT_CLEAR[1]) { S.nextZ = UNDER_END + EXIT_CLEAR[1] - S.dist; continue; } // the way out stays clear
+    if (far > UNDER_END - EXIT_CLEAR[0] && far < UNDER_END + EXIT_CLEAR[1]) { // the way out stays clear, open to the sky
+      if (!S.exitOpen) { S.exitOpen = true; S.obs.push(makeOpen(UNDER_END - EXIT_CLEAR[0] - S.dist, EXIT_CLEAR[0] + EXIT_CLEAR[1], 1)); }
+      S.nextZ = UNDER_END + EXIT_CLEAR[1] - S.dist; continue;
+    }
 
     if (S.giftSeq) {
       // the stretch that follows a gift of the gods, taken or not (sequences.js)
@@ -197,7 +219,8 @@ function spawn(S) {
       S.giftSeq = null;
       continue;
     }
-    if (far > BOSS_FROM && S.zeusSeen && far - S.lastBoss > BOSS_GAP && Math.random() < S.chances.boss) {
+    if (!S.fields && far > FIELDS_FROM) { placeDemeter(S, sp); continue; } // Demeter (work in progress)
+    if (far > BOSS_FROM && S.zeusSeen && (S.fields ? far > S.fields.to + 300 : far < FIELDS_FROM - 600) && far - S.lastBoss > BOSS_GAP && Math.random() < S.chances.boss) {
       placeBoss(S, sp); // Zeus's wrath, the mini boss (v0.50)
       continue;
     }
@@ -303,6 +326,7 @@ function spawn(S) {
   if (S.dist < b) S.obs = S.obs.filter(o => {
     const s0 = S.dist + o.z, s1 = s0 + o.len;
     if (s1 <= a || s0 >= b) return true;
+    if (o.open && o.side > 0 && s0 >= a - 0.01 && s1 <= b + 0.01) return true; // the open roof over the way out
     if (o.open && s0 < a) { o.len = a - s0; return true; }
     return false;
   });
@@ -387,6 +411,10 @@ export function update(S, dt, emit, opts = {}) {
     if (o.type === 'boss') {
       if (!o.started && o.z < 60) { o.started = true; emit('bossStart'); }
       if (!o.ended && o.z + o.len < 0) { o.ended = true; emit('bossEnd'); }
+    }
+    if (o.type === 'demeter') {
+      if (!o.started && o.z < 60) { o.started = true; emit('demeterStart'); }
+      if (!o.ended && o.z + o.len < 0) { o.ended = true; emit('demeterEnd'); }
     }
   }
   // falling obstacles: start when the player gets close, wobble, fall, land
@@ -537,7 +565,7 @@ function hit(S, emit, cause, o) {
     // rescued from a fall: the broken stretch under the player is filled in, and anything
     // right in front is cleared so the run can pick up again
     // (v0.50.2: not the markers of a storm or of Zeus's arena, or the sky turned back to normal mid-fight)
-    S.obs = S.obs.filter(x => x.type === 'boss' || x.type === 'storm' || !(x.z < 14 && x.z + x.len > -1));
+    S.obs = S.obs.filter(x => x.type === 'boss' || x.type === 'storm' || x.type === 'demeter' || !(x.z < 14 && x.z + x.len > -1));
     S.slide = 0; S.slideQueued = false;
   }
   if (cause !== 'block' || S.sink > 0) { // back up on the surface he slipped from
@@ -552,7 +580,7 @@ export function revive(S, emit = () => {}) {
   S.dead = false; S.falling = false; S.fallT = 0; S.fallHole = null;
   S.lives = S.maxLives; S.gold = false;
   S.invuln = INVULN_TIME * 2;
-  S.obs = S.obs.filter(x => x.type === 'boss' || x.type === 'storm' || !(x.z < 20 && x.z + x.len > -1));
+  S.obs = S.obs.filter(x => x.type === 'boss' || x.type === 'storm' || x.type === 'demeter' || !(x.z < 20 && x.z + x.len > -1));
   S.sink = 0; S.py = S.grav < 0 ? 0 : HM - PH; S.vy = 0; S.grounded = true; S.mode = 'ground';
   S.slide = 0; S.slideQueued = false; S.buffer = 0;
   emit('revive');

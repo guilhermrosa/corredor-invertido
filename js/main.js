@@ -13,7 +13,7 @@ import * as stats from './stats.js';
 import * as ach from './achievements.js';
 import { STEPS, createTutorial, startStep, progress } from './tutorial.js';
 import { aegisSvg } from './aegis.js';
-import { fx, onLand, onThud, whileSliding, onHit, onInstantFlip, onFlipBlessing, whileBlessed, onMilestone, onPop, onBlessing, onWrath, onSurface, onSmash, onColumnBreak, updateFx, clearFx } from './fx.js';
+import { fx, onLand, onThud, whileSliding, onHit, onInstantFlip, onFlipBlessing, whileBlessed, onMilestone, onPop, onBlessing, onWrath, onDemeter, onSurface, onSmash, onColumnBreak, updateFx, clearFx } from './fx.js';
 
 const $ = id => document.getElementById(id);
 const VERSION_LABEL = 'Versão ' + self.APP_VERSION; // from js/version.js
@@ -120,6 +120,9 @@ const emit = (type, data) => {
   if (type === 'strike') { zeusFlash = 1; shake = Math.max(shake, 0.15); }
   if (type === 'surface') { if (!tut) { onSurface(); exitFlash = 1; } return audio.sfx('surface'); }
   if (type === 'bossStart') { if (!tut) { onWrath('Zeus desperta', 'sobreviva à tempestade'); run.zeus = true; stats.recordZeus('faced'); } return; }
+  // Demeter (work in progress): her plaque as the encounter starts, and again if he comes through
+  if (type === 'demeterStart') { if (!tut) { onDemeter('Deméter desperta', 'atravesse os campos'); stats.recordDemeter('faced'); } return audio.sfx('demeterStart'); }
+  if (type === 'demeterEnd') { if (!tut && !S.dead) { onDemeter('Deméter se recolhe', 'os campos te deixam passar'); run.demeter = 1; stats.recordDemeter('survived'); earn(1); } return audio.sfx('demeterEnd'); }
   if (type === 'bossEnd') { if (!tut && !S.dead) { onWrath('Zeus se recolhe', 'você resistiu à tempestade'); run.zeusSurvived = (run.zeusSurvived || 0) + 1; stats.recordZeus('survived'); earn(1); } return; }
   if (type === 'break') { onColumnBreak(data.z, HW, data.col); shake = Math.max(shake, 0.1); } // Zeus's wrath: a white-blue flash as the lightning strikes
   if (type === 'land') onLand(data.side);
@@ -199,15 +202,17 @@ function onDie({ cause, kind, metres }) {
     return;
   }
 
-  pendingDeath = { cause, kind, metres, sky: cause !== 'block' && !!S.fallHole && S.fallHole.side > 0 };
+  pendingDeath = { cause, kind, metres, sky: cause !== 'block' && !!S.fallHole && S.fallHole.side > 0, fields: inFields() };
   setTimeout(() => { if (state === 'dead') showCharon(); }, cause === 'block' ? 380 : 600);
 }
 
 // Charon (v0.52, user design; a placeholder scene until the user's own art): pay to go back, or stay
 // What Charon says as Xolo comes back to his boat (v0.53.6), by how he died
+function inFields() { return !!S.fields && S.dist >= S.fields.from && S.dist < S.fields.to; }
 function charonLine(d) {
   if ((run.continues || 0) > 0) return 'De volta tão cedo? Quem insiste paga mais caro.';
   if (['pillar', 'bolt', 'shock'].includes(d.kind)) return 'Zeus te mandou de volta. Hades vai gostar de saber.';
+  if (d.fields) return 'Nem os campos de Deméter te seguraram. Aqui embaixo nada cresce, pequeno.';
   if (d.sky) return 'Os deuses moram lá em cima, pequeno. E não recebem visitas.';
   if (d.metres < UNDER_END) return 'Nem chegou a ver o sol, pequeno.';
   if (d.cause !== 'block') return 'O mar te engoliu, e o rio te trouxe até aqui.';
@@ -270,6 +275,7 @@ function gameOver({ cause, kind, metres }) {
     // falling through the roof is falling into the sky
     const intoSky = cause !== 'block' && S.fallHole && S.fallHole.side > 0;
     $('overCause').textContent = intoSky ? 'Caiu no céu'
+      : S.obs.some(o => o.type === 'demeter' && o.z < 1 && o.z + o.len > -1) ? 'A ira de Deméter: ' + (cause === 'block' ? stats.KIND_LABEL[kind].toLowerCase() : 'caiu') // Demeter (work in progress)
       : kind === 'pillar' || kind === 'bolt' || kind === 'shock' ? 'A ira de Zeus: ' + stats.KIND_LABEL[kind].toLowerCase() // the toppling column is his wrath
       : CAUSE_TEXT[cause] + (cause === 'block' ? ': ' + stats.KIND_LABEL[kind].toLowerCase() : '');
     $('overDist').textContent = metres + ' m';
@@ -319,15 +325,17 @@ function frame(now) {
   if (flash > 0) { ctx.fillStyle = rgb(COL.haz, flash * 0.45); ctx.fillRect(0, 0, W, H); }
   if (fx.flipFade > 0) { ctx.fillStyle = rgb(COL.cloud, fx.flipFade / 0.16 * 0.55); ctx.fillRect(0, 0, W, H); }
   const below = !tut && S.dist < UNDER_END; // the underworld (v0.53): darker scene, light HUD text
-  if (below !== wasBelow) { wasBelow = below; $('stage').classList.toggle('under', below); audio.setArea(below ? 'under' : 'surface'); }
+  const area = below ? 'under' : !tut && inFields() ? 'fields' : 'surface';
+  if (area !== wasBelow) { wasBelow = area; $('stage').classList.toggle('under', below); audio.setArea(area); }
   if (state === 'menu') { ctx.fillStyle = below ? 'rgba(10,20,26,0.25)' : rgb(COL.bg, 0.25); ctx.fillRect(0, 0, W, H); }
   if (fx.popT > 0 && $('pop').textContent !== fx.popText) { $('pop').textContent = fx.popText; }
   $('pop').hidden = !(fx.popT > 0 && state === 'play');
   const showBless = fx.blessT > 0 && state === 'play';
   if (showBless && $('blessing').dataset.id !== String(fx.bless.id)) {
     $('blessing').dataset.id = fx.bless.id;
-    $('blessGod').textContent = fx.bless.kind === 'wrath' ? 'A ira de Zeus' : fx.bless.kind === 'exit' ? 'Cabo Tênaro' : 'Bênção de ' + fx.bless.god;
+    $('blessGod').textContent = fx.bless.kind === 'wrath' ? 'A ira de Zeus' : fx.bless.kind === 'harvest' ? 'A ira de Deméter' : fx.bless.kind === 'exit' ? 'Cabo Tênaro' : 'Bênção de ' + fx.bless.god;
     $('blessing').classList.toggle('wrath', fx.bless.kind === 'wrath');
+    $('blessing').classList.toggle('harvest', fx.bless.kind === 'harvest');
     $('blessGift').textContent = fx.bless.gift;
     $('blessText').textContent = fx.bless.text;
     $('blessing').hidden = true; void $('blessing').offsetWidth; // restart the animation
@@ -389,7 +397,7 @@ function startTutorial() {
 // ---- achievements ----
 function runState(metres) {
   if (!run.hurt) run.cleanMetres = metres;
-  return { metres, cleanMetres: run.cleanMetres, flips: run.flips, slides: run.slides, gods: run.gods.size, zeus: run.zeusSurvived || 0, continues: run.continues || 0 };
+  return { metres, cleanMetres: run.cleanMetres, flips: run.flips, slides: run.slides, gods: run.gods.size, zeus: run.zeusSurvived || 0, demeter: run.demeter || 0, continues: run.continues || 0 };
 }
 function checkAchievements(metres) {
   for (const a of ach.evaluate(runState(metres), stats.get())) { toast(a); if (!tut) earn(1); }

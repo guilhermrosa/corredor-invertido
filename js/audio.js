@@ -65,6 +65,14 @@ export function sfx(type, data = {}) {
       [0, 1, 0, 2, 0].forEach((d, i) => lyre.pluck(deg(d), t + i * 0.14, 0.55 - i * 0.06, { sustain: 40, bright: 0, dur: 0.7 }));
       break;
     }
+    case 'demeterStart': { // Demeter wakes (work in progress): a deep, slow, rooted strum, twice
+      const t = ac.currentTime + 0.01;
+      [[0, 2, 4], [0, 3, 5]].forEach((ch, k) => ch.forEach((d, i) => lyre.pluck(deg(d), t + k * 0.5 + i * 0.07, 0.5, { sustain: 60, bright: 15, dur: 0.9 })));
+      break;
+    }
+    case 'demeterEnd': // the fields let him pass: a warm rising phrase
+      lyre.strum([deg(2), deg(4), deg(7), deg(9), deg(11)], 0.1, 0.4, { sustain: 60 });
+      break;
     case 'bossEnd': // the storm passes: a calm rising phrase
       lyre.strum([deg(4), deg(7), deg(9), deg(11)], 0.09, 0.4, { sustain: 50 });
       break;
@@ -153,8 +161,9 @@ export function sfx(type, data = {}) {
 // Background music: generative lyre melody over a bass on the downbeat.
 // `getTempo` is read every note, so the music speeds up with the run.
 // The music's mood by area (v0.53): below, the melody stays low, sparse and soft, over a drone
-let under = false;
-export function setArea(area) { under = area === 'under'; }
+// in Demeter's fields it turns warm and pastoral: a rolling broken chord under a higher, busier melody
+let under = false, fields = false;
+export function setArea(area) { under = area === 'under'; fields = area === 'fields'; }
 
 export function startMusic(getTempo) {
   if (!ac || !musicOn) return;
@@ -183,12 +192,13 @@ function schedule() {
     }
     if (beat === 4 && bar % 2 === 1) lyre.pluck(NOTES[2], nextT, 0.3, { to });
     if (under && beat === 4 && bar % 2 === 0) lyre.pluck(NOTES[0], nextT, 0.22, { to });
+    if (fields && beat % 2 === 1) lyre.pluck(NOTES[[2, 4, PER, 4][(beat >> 1) & 3]], nextT, 0.16, { to }); // the rolling chord
     const resolve = bar % 4 === 3 && beat >= 6;
     if (resolve) {
       if (beat === 6) lyre.pluck(NOTES[PER], nextT, 0.42, { to });
-    } else if (Math.random() > (under ? 0.55 : 0.32)) {
+    } else if (Math.random() > (under ? 0.55 : fields ? 0.24 : 0.32)) {
       melody += [-2, -1, -1, 1, 1, 2][Math.floor(Math.random() * 6)];
-      melody = Math.max(under ? 1 : PER - 2, Math.min(under ? PER + 1 : NOTES.length - 1, melody));
+      melody = Math.max(under ? 1 : fields ? PER : PER - 2, Math.min(under ? PER + 1 : NOTES.length - 1, melody));
       lyre.pluck(NOTES[melody], nextT, (beat % 2 ? 0.3 : 0.38) * (under ? 0.75 : 1), { to });
     }
     nextT += eighth * (beat % 2 ? 0.9 : 1.1); // light swing

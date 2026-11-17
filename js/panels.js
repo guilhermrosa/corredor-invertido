@@ -56,6 +56,12 @@ export function renderStats() {
       ['Escudos de Atena', g.shields],
       ['Muros quebrados com o escudo', g.smashes],
     ])}
+    <h3>A ira dos deuses</h3>${bars([
+      ['Tempestades de Zeus enfrentadas', (d.zeus || {}).faced || 0],
+      ['Tempestades de Zeus vencidas', (d.zeus || {}).survived || 0],
+      ['Campos de Deméter enfrentados', (d.demeter || {}).faced || 0],
+      ['Campos de Deméter atravessados', (d.demeter || {}).survived || 0],
+    ])}
     <h3>Até onde as corridas chegaram</h3>${bars(bucketRows)}
     <h3>Ações</h3>${bars([['Pulos', d.actions.jump], ['Inversões', d.actions.flip], ['Deslizes', d.actions.slide]])}
     <h3>Tutorial</h3>

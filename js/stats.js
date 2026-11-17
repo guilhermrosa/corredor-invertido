@@ -94,6 +94,12 @@ export function recordZeus(what) { // Zeus's wrath: encounters faced and survive
   save();
 }
 
+export function recordDemeter(what) { // Demeter's fields: crossings faced and survived
+  data.demeter = data.demeter || { faced: 0, survived: 0 };
+  data.demeter[what] = (data.demeter[what] || 0) + 1;
+  save();
+}
+
 export function recordContinue(price) { // Charon bribed (v0.52)
   data.charon = data.charon || { continues: 0, spent: 0 };
   data.charon.continues++; data.charon.spent += price;

@@ -17,6 +17,7 @@ export const ACHIEVEMENTS = [
   { id: 'athena5', name: 'Égide', desc: 'Quebre 5 muros com o escudo de Atena.', check: (r, t) => giftsOf(t).smashes >= 5 },
   { id: 'favored', name: 'Favorito dos deuses', desc: 'Receba os três presentes (romã, sandálias e escudo) na mesma corrida.', check: r => (r.gods || 0) >= 3 },
   { id: 'zeus1', name: 'Para-raios', desc: 'Sobreviva à ira de Zeus.', check: (r, t) => (r.zeus || 0) >= 1 || ((t.zeus || {}).survived || 0) >= 1 },
+  { id: 'demeter1', name: 'Colheita', desc: 'Atravesse os campos de Deméter.', check: (r, t) => (r.demeter || 0) >= 1 || ((t.demeter || {}).survived || 0) >= 1 },
   { id: 'charon1', name: 'Passagem de volta', desc: 'Suborne Caronte para voltar à corrida.', check: (r, t) => (r.continues || 0) >= 1 || ((t.charon || {}).continues || 0) >= 1 },
   { id: 'charon2', name: 'Freguês do barqueiro', desc: 'Volte do submundo duas vezes na mesma corrida.', check: r => (r.continues || 0) >= 2 },
   { id: 'runs25', name: 'Persistente', desc: 'Jogue 25 corridas.', check: (r, t) => t.runs >= 25 },

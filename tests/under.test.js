@@ -40,7 +40,9 @@ test('the way out of the cave is clear of obstacles (v0.53.8)', () => {
       S.dead = false;
       for (const o of S.obs) {
         const s0 = S.dist + o.z, s1 = s0 + o.len;
-        assert.ok(s1 <= UNDER_END - EXIT_CLEAR[0] + 1e-6 || s0 >= UNDER_END + EXIT_CLEAR[1] - 1e-6, `${o.type} at ${s0.toFixed(0)}–${s1.toFixed(0)} m`);
+        if (o.open && o.side > 0) continue; // the roof is open over the way out (on purpose)
+        if (o.type === 'hole' && o.z < 0) continue; // a hole he slips into stretches ahead of him (the sink grace), by design
+        assert.ok(s1 <= UNDER_END - EXIT_CLEAR[0] + 1e-6 || s0 >= UNDER_END + EXIT_CLEAR[1] - 1e-6, JSON.stringify(o) + ` at ${s0.toFixed(0)}–${s1.toFixed(0)} m`);
       }
     }
   }
