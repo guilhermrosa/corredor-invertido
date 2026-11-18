@@ -460,7 +460,8 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     return [x1 * f / zc, -y2 * f / zc];
   };
   const fogK = z => Math.pow(clamp((z - 4) / (FAR - 8), 0, 1), 0.85);
-  const fog = (c, z) => rgb(mix(c, COL.haze, fogK(z)));
+  // v0.54.4: an area may fade things into its own distance colour (`COL.fog`) instead of the sky's haze
+  const fog = (c, z) => rgb(mix(c, COL.fog || COL.haze, fogK(z)));
   const lw = z => Math.max(0.6, f / (z - CAM_Z) * 0.03);
   const path = pts => {
     ctx.beginPath();
@@ -504,6 +505,15 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   // on top, and below, seen through the clouds under his feet, the storm with Zeus hanging upside down
   // v0.51 (user): only Zeus and his storm clouds get it; the rest of the backdrop stays as it is
   drawBackdrop(ctx, W, H, t, Q, storm, zeus, zeus > 0 && ease > 0.5, demeter, ease > 0.5);
+  // v0.54.3 (user: coming to the fields, the far view stayed the sea and then the colourful fields
+  // popped in all at once): the landscape beyond a propylon fades in over the whole backdrop as the
+  // gate comes near, so it has fully become the next area's by the time the camera passes through
+  const blend = gateStyle === 'propylon' && mouthOn ? clamp((70 - mouthZ) / 62, 0, 1) : 0;
+  if (blend > 0) {
+    ctx.globalAlpha = blend * blend * (3 - 2 * blend);
+    setArea(farArea); drawBackdrop(ctx, W, H, t, Q, storm, zeus, false, demeter, ease > 0.5); setArea(baseArea);
+    ctx.globalAlpha = 1;
+  }
   ctx.restore();
   // the cave mouth's opening, as a path at its depth: a wide, rough arch reaching below the floor
   // the gate's opening, in world points at its depth: the cave's rough arch, or the propylon's doorway
@@ -580,7 +590,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   // a little wider than the corridor, two Doric columns, a frieze with blue triglyphs, a pediment,
   // and a gold garland of wheat over the door
   function drawPropylon() {
-    const z = mouthZ, M = COL_SURFACE, col = c => rgb(mix(c, COL.haze, fogK(z) * 0.8));
+    const z = mouthZ, M = COL_SURFACE, col = c => rgb(mix(c, COL.fog || COL.haze, fogK(z) * 0.8));
     const o = openingPts().map(([x, y]) => P(x, y, z)), X = EDGE + 4, top = HM + 1.7;
     ctx.save(); // the wall around the doorway
     path([P(-X, -1.8, z), P(X, -1.8, z), P(X, top, z), P(-X, top, z)]);
@@ -1390,7 +1400,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
   function cloudBlock(b, z0, falling = false) {
     if (!falling) return cloudMound(b, z0);
     // the charged cloud that falls (v0.51): flat, wide, overlapping dark puffs, a pale lit edge, blue arcs
-    const fk = fogK(z0), dark = mix([46, 54, 74], COL.haze, fk * 0.6), mid = mix([70, 80, 104], COL.haze, fk * 0.6);
+    const fk = fogK(z0), dark = mix([46, 54, 74], COL.fog || COL.haze, fk * 0.6), mid = mix([70, 80, 104], COL.fog || COL.haze, fk * 0.6);
     const u = f / (z0 - CAM_Z), seed = Math.floor(b.seed * 1000), cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2;
     const hgt = b.y1 - b.y0, wdt = b.x1 - b.x0, rows = Math.max(1, Math.round(hgt / 0.45));
     const puffs = [];
@@ -1423,18 +1433,18 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     for (let k = 0; k <= n; k++) { // the funnel's body: soft rings from the root up
       const q = k / n, { y, r, x } = ring(q);
       const [px, py] = P(x, y, z0), R = r * u;
-      ctx.fillStyle = rgb(mix([200, 208, 222], COL.haze, fk), 0.32);
+      ctx.fillStyle = rgb(mix([200, 208, 222], COL.fog || COL.haze, fk), 0.32);
       ctx.beginPath(); ctx.ellipse(px, py, R, R * 0.28, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = rgb(mix([236, 240, 248], COL.haze, fk), 0.85); ctx.lineWidth = Math.max(1.2, u * 0.035);
+      ctx.strokeStyle = rgb(mix([236, 240, 248], COL.fog || COL.haze, fk), 0.85); ctx.lineWidth = Math.max(1.2, u * 0.035);
       const a0 = (spin + k * 1.3) % (Math.PI * 2); // a streak circling round the front of each ring
       ctx.beginPath(); ctx.ellipse(px, py, R, R * 0.28, 0, a0, a0 + 2.2); ctx.stroke();
-      ctx.strokeStyle = rgb(mix([150, 160, 182], COL.haze, fk), 0.7); ctx.lineWidth = Math.max(1, u * 0.02);
+      ctx.strokeStyle = rgb(mix([150, 160, 182], COL.fog || COL.haze, fk), 0.7); ctx.lineWidth = Math.max(1, u * 0.02);
       ctx.beginPath(); ctx.ellipse(px, py, R * 0.85, R * 0.22, 0, a0 + 3.1, a0 + 4.6); ctx.stroke();
     }
     for (let k = 0; k < 6; k++) { // bits of cloud whirled round it
       const q = hash(seed + k * 3), ang = spin * (1.2 + q) + k * 1.1, { y, r, x } = ring(0.3 + q * 0.7);
       const [px, py] = P(x + Math.cos(ang) * r * 1.15, y, z0 + Math.sin(ang) * r * 0.4);
-      ctx.fillStyle = rgb(mix([226, 232, 242], COL.haze, fk), 0.9);
+      ctx.fillStyle = rgb(mix([226, 232, 242], COL.fog || COL.haze, fk), 0.9);
       ctx.beginPath(); ctx.ellipse(px, py, 0.07 * u, 0.04 * u, 0, 0, Math.PI * 2); ctx.fill();
     }
     ctx.restore();
@@ -1446,7 +1456,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     // lightning flashing in it now and then (the whole gap lights up and a bolt forks across it)
     const sy = HM, fk = fogK(z0) * 0.7, seed = Math.floor(o.len * 100);
     const flash = true; // v0.51.2 (user): lightning all the time, a new shape every frame
-    ctx.fillStyle = rgb(mix(flash ? [80 + 30 * Math.random(), 104 + 30 * Math.random(), 160 + 20 * Math.random()] : [26, 32, 48], COL.haze, fk)); // flickering
+    ctx.fillStyle = rgb(mix(flash ? [80 + 30 * Math.random(), 104 + 30 * Math.random(), 160 + 20 * Math.random()] : [26, 32, 48], COL.fog || COL.haze, fk)); // flickering
     path([P(-w, sy, z0), P(w, sy, z0), P(w, sy, z1), P(-w, sy, z1)]); ctx.fill();
     if (flash) {
       ctx.save();
@@ -1467,7 +1477,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       const u = f / (z - CAM_Z);
       for (let k = 0; k < 7; k++) {
         const [px, py] = P(lerp(-w, w, (k + 0.5) / 7), sy - 0.04, z), r = (0.3 + 0.15 * hash(k * 7 + k0 + seed)) * u;
-        ctx.fillStyle = rgb(mix(k % 2 ? [74, 84, 106] : [56, 64, 84], COL.haze, fk), 0.95);
+        ctx.fillStyle = rgb(mix(k % 2 ? [74, 84, 106] : [56, 64, 84], COL.fog || COL.haze, fk), 0.95);
         ctx.beginPath(); ctx.ellipse(px, py, r, r * 0.5, 0, 0, Math.PI * 2); ctx.fill();
       }
     }
@@ -1665,8 +1675,8 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     ctx.save();
     ctx.translate(x, yy);
     ctx.scale(r, (b.side < 0 ? 1 : -1) * r); // upright for the hero on either surface
-    const gold = rgb(mix([236, 178, 64], COL.haze, fk)), dark = rgb(mix([140, 94, 26], COL.haze, fk));
-    const white = rgb(mix([255, 252, 242], COL.haze, fk)), light = rgb(mix([252, 226, 150], COL.haze, fk));
+    const gold = rgb(mix([236, 178, 64], COL.fog || COL.haze, fk)), dark = rgb(mix([140, 94, 26], COL.fog || COL.haze, fk));
+    const white = rgb(mix([255, 252, 242], COL.fog || COL.haze, fk)), light = rgb(mix([252, 226, 150], COL.fog || COL.haze, fk));
     // the wing, rising up and back from the ankle; its feathers lift and settle
     const beat = Math.sin(t * 8 + b.z0) * 0.12;
     const wx = -0.5, wy = -0.3;
@@ -1746,13 +1756,13 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     // a golden pomegranate, Persephone's fruit, split open: ruby seeds in the cut (same drawing as the HUD lives)
     ctx.translate(0, 0.05); ctx.scale(0.12, 0.12); ctx.translate(-10, -11.5);
     const POM = pom();
-    const skin = rgb(mix([244, 196, 92], COL.haze, fk)), edge = rgb(mix([150, 104, 30], COL.haze, fk));
+    const skin = rgb(mix([244, 196, 92], COL.fog || COL.haze, fk)), edge = rgb(mix([150, 104, 30], COL.fog || COL.haze, fk));
     ctx.lineJoin = 'round';
     ctx.fillStyle = skin; ctx.strokeStyle = edge;
     ctx.lineWidth = 1.2; ctx.fill(POM.crown); ctx.stroke(POM.crown);
     ctx.beginPath(); ctx.ellipse(10, 12, 7.4, 6.9, 0, 0, Math.PI * 2); ctx.fill(); ctx.lineWidth = 1; ctx.stroke();
-    ctx.fillStyle = rgb(mix([247, 234, 212], COL.haze, fk)); ctx.fill(POM.pith);
-    ctx.fillStyle = rgb(mix([163, 18, 46], COL.haze, fk));
+    ctx.fillStyle = rgb(mix([247, 234, 212], COL.fog || COL.haze, fk)); ctx.fill(POM.pith);
+    ctx.fillStyle = rgb(mix([163, 18, 46], COL.fog || COL.haze, fk));
     for (const [sx, sy] of POM.seeds) { ctx.beginPath(); ctx.arc(sx, sy, 0.95, 0, Math.PI * 2); ctx.fill(); }
     ctx.beginPath(); ctx.ellipse(6.4, 9.4, 1.4, 2, -0.49, 0, Math.PI * 2);
     ctx.fillStyle = `rgba(255,255,255,${0.5 * (1 - fk)})`; ctx.fill();

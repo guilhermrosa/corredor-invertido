@@ -264,5 +264,15 @@
       "legenda": "Entrando nos campos de Deméter",
       "ate": "o.type==='demeter' && o.z>26 && o.z<34"
     }
+  },
+  {
+    "v": "0.54.4",
+    "date": "2026-11-18",
+    "title": "Os campos sem clarão",
+    "text": "Ao chegar ao portão de Elêusis, a paisagem dos campos vai surgindo aos poucos no fundo, em vez de trocar de uma vez ao atravessar. E lá dentro o fim da pérgola não brilha mais: a distância se apaga num dourado sombreado, como o trigo visto de longe. Antes, na 0.54.2 e 0.54.3: um treino escondido para começar perto da saída da caverna, da ira de Zeus ou dos campos.",
+    "destaque": {
+      "legenda": "No meio dos campos",
+      "ate": "o.type==='demeter' && o.z < -40 && o.z + o.len > 40"
+    }
   }
 ]

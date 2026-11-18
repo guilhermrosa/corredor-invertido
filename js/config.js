@@ -172,6 +172,9 @@ COL_UNDER.bg = COL_UNDER.haze;
 export const COL_FIELDS = {
   ...COL,
   haze: [244, 230, 198],
+  // v0.54.4 (user: a pale glow at the far end of the pergola stood out): things fade into a warm, shaded
+  // gold like the wheat and the vine roof in the distance, not into the pale sky
+  fog: [178, 158, 104],
   skyTop: [118, 170, 214], sea: [206, 176, 96], seaDeep: [176, 140, 64], shallows: [222, 194, 110],
   sun: [255, 238, 196], cloud: [255, 250, 240],
   marble: [194, 160, 114], marble2: [184, 150, 104], joint: [150, 118, 80], stylobate: [132, 146, 74],
