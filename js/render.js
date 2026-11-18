@@ -695,7 +695,7 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       for (const s of [-1, 1]) {
         const spots = [[s * (COL_X0 - 0.06), z0 + 0.75, 0.22], [s * HW * (0.62 + 0.3 * hash(idx * 5 + s)), z0 + 2 * hash(idx * 9 + s), 0.08]];
         for (const [tx, tz, chance] of spots) {
-          if (tz < BASE + 0.3 || hash(idx * 13 + s * 7 + tx) > chance || missingAt(S.obs, -1, tz)) continue;
+          if (tz < BASE + 0.3 || hash(idx * 13 + s * 7 + tx) > chance || missingAt(S.obs, -1, tz) || inArena(tz)) continue; // v0.55: nothing but the fight in Zeus's arena
           if (FIELDS) poppy(tx, tz, 0.28 + 0.2 * hash(idx * 3 + tx), idx * 31 + s, t);
           else if (UNDER) asphodel(tx, tz, 0.3 + 0.25 * hash(idx * 3 + tx), idx * 31 + s, t);
           else tuft(tx, tz, 0.16 + 0.16 * hash(idx * 3 + tx), idx * 31 + s, t);
@@ -710,9 +710,9 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
     if (Q.nature && z0 + 2 > BASE && z0 < Q.nature + 6) {
       // a floor mosaic: an 8 m "carpet" of light tesserae with a blue Greek-key border and a star
       const blk = Math.floor(idx / 4), first = blk * 4;
-      if (!UNDER && !FIELDS && hash(blk * 13 + 5) < 0.05) mosaic(z0, za, zb, idx - first, S, blk);
+      if (!UNDER && !FIELDS && hash(blk * 13 + 5) < 0.05 && !inArena(z0) && !inArena(z0 + 8)) mosaic(z0, za, zb, idx - first, S, blk);
       // a black-figure vase between two columns (some knocked over and broken), and loose stones
-      if (idx & 1) for (const s of [-1, 1]) {
+      if (idx & 1 && !inArena(z0)) for (const s of [-1, 1]) {
         const h = hash(idx * 23 + s * 3);
         if (h < 0.04 && !UNDER && !FIELDS && !missingAt(S.obs, -1, z0 + 1)) vase(s * (HW + 0.27), z0 + 1, idx * 3 + s, h < 0.012); // v0.43.1: 20% rarer (user)
         else if (h > 0.9 && !missingAt(S.obs, -1, z0 + 0.6)) rubble(s * (HW + 0.2), z0 + 0.6, idx * 5 + s);
@@ -1536,10 +1536,13 @@ export function drawTunnel(ctx, S, W, H, opts = {}) {
       // the column of lightning: glowing faces from the surface to wall height, crackling
       const top = o.side < 0 ? OH : HM - OH;
       const front = [P(-HW, sy, z0), P(HW, sy, z0), P(HW, top, z0), P(-HW, top, z0)];
-      ctx.fillStyle = 'rgba(110,165,255,.32)'; path(front); ctx.fill();
-      zeusArcs(front, 1);
+      // v0.55 (user: the fight looked cluttered): once it is about to pass the camera the wall fades
+      // and its arcs stop, or they would sprawl across the whole screen
+      const near = clamp((z0 - 1) / 4, 0, 1);
+      ctx.fillStyle = `rgba(110,165,255,${(0.32 * near).toFixed(3)})`; path(front); ctx.fill();
+      if (near > 0.6) zeusArcs(front, 1);
       const el = (o.sz - o.z) / Math.max(1, S.speed);
-      if (el < 0.25) { // the bolt coming down out of the storm onto the spot
+      if (el < 0.25 && zc > 5) { // the bolt coming down out of the storm onto the spot (v0.55: not once it is near: it smeared huge lines across the screen)
         const s = Math.max(0.6, W / 390), end = P(0, sy, zc), start = P(-3, HM + 8, zc + 6);
         ctx.lineCap = 'round'; ctx.lineJoin = 'round';
         const pts = [start];

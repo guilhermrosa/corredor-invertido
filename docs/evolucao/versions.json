@@ -274,5 +274,15 @@
       "legenda": "No meio dos campos",
       "ate": "o.type==='demeter' && o.z < -40 && o.z + o.len > 40"
     }
+  },
+  {
+    "v": "0.55",
+    "date": "2026-11-18",
+    "title": "A ira de Zeus mais limpa",
+    "text": "A luta com Zeus ficou mais enxuta sem ficar fácil: só raios marcados, colunas que ele derruba em fila, a superfície eletrificada e a fúria final. Sai o bloco que despencava com o chão sumindo, a arena perde vasos, mosaicos e mato, e a parede de raio não risca mais a tela quando passa pela câmera.",
+    "destaque": {
+      "legenda": "Na tempestade de Zeus",
+      "ate": "o.type==='boss' && o.z < -25 && o.z + o.len > 25"
+    }
   }
 ]

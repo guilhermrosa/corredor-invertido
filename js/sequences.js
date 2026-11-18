@@ -126,13 +126,17 @@ export const BOSS_PARTS = {
     { t: 1.8, type: 'mark', side: 'a', len: 1.6 },
     { t: 2.6, type: 'mark', side: 'any', len: 1.6 },
   ] },
-  'ceu-desaba': { end: 2.9, items: [
-    { t: 0, type: 'drop', side: 'ceil', len: 1.2 },
-    { t: 0.6, type: 'void', side: 'floor', len: 0, lenT: 0.5 },
-    { t: 1.6, type: 'drop', side: 'ceil', len: 1.2 },
-    { t: 2.2, type: 'void', side: 'floor', len: 0, lenT: 0.45 },
+  // v0.55 (user: the fight felt cluttered; keep only Zeus's own attacks, no easier): his struck
+  // columns falling one after another from either colonnade, with marks on the roof so that hiding
+  // up there does not work (the falling roof blocks were dropped)
+  'colunas-em-fila': { end: 3.0, items: [
+    { t: 0, type: 'topple', side: 'any', len: 0.5 },
+    { t: 0.45, type: 'mark', side: 'ceil', len: 1.6 },
+    { t: 1.1, type: 'topple', side: 'any', len: 0.5 },
+    { t: 1.55, type: 'mark', side: 'ceil', len: 1.6 },
+    { t: 2.2, type: 'topple', side: 'any', len: 0.5 },
   ] },
-  'corrente': { end: 3.0, items: [
+  'corrente': { end: 3.0, items: [ // the surface electrified (kept in v0.55 at the user's request)
     { t: 0.2, type: 'shock', side: 'a', len: 0, lenT: 2.6 },
     { t: 0.75, type: 'low', side: 'b', len: 0.7 },
     { t: 1.45, type: 'hole', side: 'b', len: 1.4, lenT: 0.1 },
@@ -186,7 +190,7 @@ export function demeterOrder(rand = Math.random) {
 
 // The order of one encounter: the three attacks shuffled, the final fury last.
 export function bossOrder(rand = Math.random) {
-  const a = ['raio-marcado', 'ceu-desaba', 'corrente'];
+  const a = ['raio-marcado', 'colunas-em-fila', 'corrente'];
   for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
   return [...a, 'furia-final'];
 }

@@ -53,8 +53,7 @@ test('Zeus comes rarely: from BOSS_FROM on, at least 1.5 km apart, once a struck
   const events = [];
   S.dist = BOSS_FROM - 50; S.zeusSeen = true;
   for (let i = 0; i < 60 * 20; i++) { update(S, 1 / 60, t => events.push(t), {}); S.dead = false; }
-  const bosses = S.obs.filter(o => o.type === 'boss');
-  assert.ok(bosses.length >= 1);
+  assert.ok(S.lastBoss > 0, 'an encounter was laid'); // (v0.55: it is short enough to be passed and gone by now)
   assert.ok(S.lastBoss >= BOSS_FROM);
 });
 
