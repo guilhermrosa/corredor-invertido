@@ -29,8 +29,10 @@ Cada peça desenhada entra no lugar da provisória quando ficar pronta. Até lá
 Em `docs/arte/modelos/` há grades com a pose provisória do Xolo, clarinha, em cada quadro: a linha vermelha é o chão (os pés de apoio ficam nela) e a tracejada é o centro. No Krita: abra o modelo como camada de baixo, desenhe por cima nas camadas de cima, esconda o modelo e exporte cada quadro na sua tela de 512 × 512.
 
 - `xolo-corrida.png`: 8 quadros de corrida
-- `xolo-ar.png`: pulo (subindo, ápice, descendo)
-- `xolo-deslize.png`: 2 quadros de deslize
+- `xolo-pulo.png`: 5 quadros de pulo (impulso, subindo, ápice, descendo, pouso)
+- `xolo-deslize.png`: 5 quadros de deslize (2 entrando, 2 deslizando, 1 levantando)
+
+Nos quadros de transição que o jogo ainda não tem, a pose de fundo é só uma referência de tamanho e posição (bem mais fraca).
 
 ## Ordem de produção
 
@@ -45,13 +47,15 @@ Visto **de costas**, como hoje. Tela 512 × 512 por quadro, pés de apoio na lin
 | Peça | Arquivos | Notas |
 |---|---|---|
 | Corrida | `xolo-corrida-1.png` … `-8.png` | um passo completo dos dois lados; o quadro 1 segue o 8 sem pulo |
-| Pulo | `xolo-pulo-subindo.png`, `-apice.png`, `-descendo.png` | pernas encolhidas no ápice |
-| Deslize | `xolo-deslize-1.png`, `-2.png` | de barriga, braços à frente (o escudo vai nas costas, o jogo põe) |
+| Pulo | `xolo-pulo-1.png` … `-5.png` | 1 impulso (agacha e empurra), 2 subindo, 3 ápice (pernas encolhidas), 4 descendo, 5 pouso (joelhos dobram) |
+| Deslize | `xolo-deslize-1.png` … `-5.png` | 1–2 entrando (inclina e se joga), 3–4 deslizando de barriga com os braços à frente (o escudo vai nas costas, o jogo põe), 5 levantando |
 | Inversão | `xolo-giro-1.png` … `-4.png` | ele girando para o outro lado; pode ficar para depois |
 | Queda no buraco | `xolo-queda.png` | braços para cima, afundando |
 | Batida | `xolo-batida.png` | um quadro de susto/impacto |
 
 Se der, desenhe as **guelras numa camada separada** e exporte também `xolo-corrida-1-guelras.png` etc.: assim o jogo pinta só as guelras de dourado quando ele está invertido. Se não der, o jogo usa um brilho por cima.
+
+Como o jogo usa os quadros de transição: o pulo dura uns 0,5 s. O impulso e o pouso aparecem por um instante (60 a 80 ms); subindo, ápice e descendo são escolhidos pela altura e velocidade dele no ar, então não precisam de tempo fixo. O deslize dura 0,7 s: os dois quadros de entrada passam rápido, os dois de deslizar se alternam enquanto ele está deitado e o de levantar fecha. Se ele desliza já descendo de um pulo, o jogo pula direto para os quadros 3–4.
 
 O braço com o escudo, as asas das sandálias e a auréola continuam por conta do código no começo.
 
