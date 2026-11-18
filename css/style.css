@@ -74,7 +74,7 @@ h2 { font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; }
 .actions, .toggles { display: flex; flex-wrap: wrap; gap: 10px; }
 .btn { flex: 1 1 140px; font: 700 15px/1 var(--display); padding: 14px 16px; border-radius: 10px; border: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer; }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.practice { margin-top: 14px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.practice { margin: 4px 0 12px; padding: 8px 10px 10px; border: 1px dashed var(--line); border-radius: 10px; }
 .practice .row3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 .btn.small { font-size: 12.5px; padding: 10px 6px; }
 .toggle { flex: 1 1 120px; font: 600 13px/1 var(--body); padding: 10px 12px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; }
