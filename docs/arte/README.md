@@ -34,6 +34,10 @@ Em `docs/arte/modelos/` há grades com a pose provisória do Xolo, clarinha, em 
 
 Nos quadros de transição que o jogo ainda não tem, a pose de fundo é só uma referência de tamanho e posição (bem mais fraca).
 
+## Conceitos
+
+Em `docs/arte/conceitos/` estão as fichas de conceito dos deuses feitas no chat (Zeus de branco com grega, Deméter, Hermes como você descreveu e a proposta de Atena), com as notas de personalidade, roupa e atributos. São referência de desenho, não arte final.
+
 ## Ordem de produção
 
 ### 1. Quadro de estilo (antes de tudo)
